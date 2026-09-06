@@ -1,0 +1,10 @@
+node_modules/
+.next/
+.env
+dist/
+next-env.d.ts
+
+# Arquivos materializados por `node kizuna-core/cli install` são versionados
+# NO SEU projeto (não estão aqui). Depois do primeiro install, commite:
+#   app/  src/  package.json  tsconfig.json  tsconfig.kizuna.json
+#   postcss.config.mjs  next.config.ts  kizuna.lock

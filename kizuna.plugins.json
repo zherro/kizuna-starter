@@ -1,0 +1,17 @@
+{
+  "_comment": "Plugins do kizuna-core a ativar neste projeto. Cada um aplica suas migrations (kizuna-core/plugins/<nome>/NNNN_*.sql) e, quando tem, seu fragmento de casca (kizuna-core/plugins/<nome>/shell/). Edite antes de rodar `node kizuna-core/cli install`. Ver kizuna-core/docs/PLUGINS.md.",
+  "_comment_taxonomy": "NÃO adicione 'taxonomy' aqui — ele faz ALTER em public.categories/categories_sub, que só existem depois de uma migration do app criar essas tabelas. Se for usar taxonomia: crie as tabelas numa migration do app e aplique o plugin taxonomy manualmente entre as migrations e os extras.",
+  "_comment_messaging": "'messaging' (chat) e 'reviews' existem no core mas ainda não têm fragmento de casca genérico — adicione quando precisar e traga as rotas /api/chat|/api/resources correspondentes.",
+  "plugins": [
+    "user_data",
+    "system_config",
+    "account_preferences",
+    "notifications",
+    "onboarding",
+    "storage",
+    "location",
+    "pages",
+    "holidays",
+    "agenda"
+  ]
+}
