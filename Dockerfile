@@ -14,6 +14,16 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Variáveis NEXT_PUBLIC_* são inlineadas no bundle client durante o build —
+# diferente das demais envs, precisam chegar aqui via --build-arg (ver
+# docker-compose.yml -> build.args), não apenas em runtime.
+ARG NEXT_PUBLIC_UI_STYLE
+ARG NEXT_PUBLIC_SHOWCASE_ENABLED
+ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
+ENV NEXT_PUBLIC_UI_STYLE=$NEXT_PUBLIC_UI_STYLE
+ENV NEXT_PUBLIC_SHOWCASE_ENABLED=$NEXT_PUBLIC_SHOWCASE_ENABLED
+ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
