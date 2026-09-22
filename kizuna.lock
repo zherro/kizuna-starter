@@ -1,0 +1,194 @@
+{
+  "lockVersion": 1,
+  "kizunaCore": {
+    "version": "0.9.10",
+    "sha": "b9cb1a82e6c06d2ef4c6d9fed7d23748a9f7cd4d",
+    "syncedAt": "2026-09-19T13:49:35.616Z"
+  },
+  "template": {
+    "version": "0.9.10",
+    "files": {
+      "src/proxy.ts": "sha256:4f6620d9bf7929b2f28b78dcca64de02dd4c54edf83b6e86736c35a4c691d32a",
+      "src/app/api/postgrest/rpc/route.ts": "sha256:90d2cb849519904efa22a7d35001c237f0b625c70a71597478d4b5b99e862269",
+      "src/app/api/resources/[resource]/route.ts": "sha256:b02ef337bd17fe870e03e3415c74cd9c08b99092415bddce227af6eb5c4247db",
+      "src/app/api/resources/[resource]/[id]/route.ts": "sha256:51c07f2ea9a8f043bf78d93742c950733d06d3ac6376c97eca937b6c89494237",
+      "src/app/api/auth/login/route.ts": "sha256:4bd70cb85df3781885a750dfbde8bac238539c29b5b0e6a4d9610461c1f02556",
+      "src/app/api/auth/logout/route.ts": "sha256:cb58f75e0bb0bbb3bae946889110bbe9f624f7a5f944e830340d78ec0450196e",
+      "src/app/api/auth/register/route.ts": "sha256:8bb001945acc2f51e448b3b8dd17bcd81b7a81a9252edc419814f98d4d0cc6a7",
+      "src/app/painel/[...kizuna]/page.tsx": "sha256:68f16e0a77b0249d667c8b42e7dd982048a88f23801d65de0088c7101d73aacf",
+      "src/app/painel/root/[slug]/page.tsx": "sha256:cd99a30c0c2a8ffc49e5a36e0f1e3961ae211266937f405c610d08b77460e707",
+      "src/app/painel/security/[slug]/page.tsx": "sha256:01c0aa1ea0aa8d22b10edfc4d508197a876ae17ce19aa0fb778fedb612711a24",
+      "src/lib/kizuna/registry/index.ts": "sha256:bce97c555cd78c3b41ecf91eca4f57c327e8c67f4a3cbe751fbb7af2caad94b6",
+      "tsconfig.kizuna.json": "sha256:1834ae1653940602bd6bb94d5df5d89b367f8d841e520f18d0550e84431ebc65",
+      "src/app/api/auth/me/route.ts": "sha256:1589670457f3520ed1ab8d77ed689fa103b403f7b43c8b6da69663acb4da4dbb"
+    }
+  },
+  "plugins": {
+    "onboarding": {
+      "shellFiles": {
+        "src/app/api/onboarding/progress/route.ts": "sha256:5e7d61d70db8ec408a547547e0823f0c77fb6ff023666544bc78c093ee5a9488",
+        "src/app/api/onboarding/email/verify-code/route.ts": "sha256:a1bdb8775925ce406318e7e143dc9c05c6c0542cac6b4f9a2b0e94799a761f5b"
+      },
+      "migrations": 1
+    },
+    "storage": {
+      "shellFiles": {
+        "src/app/api/storage/files/route.ts": "sha256:074414bc72788c9555faa46f8d46bd7f891200ddd45e781bb70bc7c37330fae5",
+        "src/app/api/storage/files/[id]/route.ts": "sha256:d580d9b3e7914fdc9ee77f83647679e43b34ded8d89e6fb2ed5c710d2f07dbdd",
+        "src/app/api/storage/files/[id]/content/route.ts": "sha256:abe373bb8b11e5f9b7178a7375b0a81d1d728ba53654d41f56abba8e2543e0f2",
+        "src/app/api/public/storage/files/[id]/content/route.ts": "sha256:23733a324087b2ef7ad0fb0df0e12074439b009216ac9cb0b2573cb2c7d84d80"
+      },
+      "migrations": 3
+    },
+    "location": {
+      "shellFiles": {
+        "src/app/api/location/cep/route.ts": "sha256:7ef35a05015eb7924c3b7469d0480f8d806d41998a2f9a64cc8aa94f685216a1",
+        "src/app/api/location/reverse/route.ts": "sha256:db46c89c7c094235603e3354b80c03e4748094c92bc9ed7f700232925a8e647f",
+        "src/app/api/location/address/search/route.ts": "sha256:ae4a14b2c83521c02383f13015d38c64261128a9e064df4caa25992d21c61d53",
+        "src/app/api/location/states/route.ts": "sha256:b764ec8825ef1ff7e827de99e76caf771049697ffe74ef0acdcf24e82949c492",
+        "src/app/api/location/cities/route.ts": "sha256:4d5bb45769256d3d0beb36bd373cf3d4cb52021f72aafa240555b2fcb76234d9",
+        "src/app/api/location/ip/route.ts": "sha256:ba89017fa5a8f32190dbac47d34b97a44e148a3189393ab28748042ad323d66b"
+      },
+      "migrations": 1
+    },
+    "pages": {
+      "shellFiles": {
+        "src/app/api/pages/revalidate/route.ts": "sha256:d93e7318e369df055f89ba39429927aaf1f8fa735909820ba5b2c2a80920844d"
+      },
+      "migrations": 2
+    },
+    "agenda": {
+      "shellFiles": {
+        "src/app/api/agenda/cities/route.ts": "sha256:e0466f5c3d1ca4704d82394cced5ace97a0e9cebde1e2cd0ac4b3a3e5a971ae1",
+        "src/app/api/agenda/ufs/route.ts": "sha256:5fd0d3a2d77161d86016975961bb944320ded4856d9c33b4153a8df22c2eeb2e"
+      },
+      "migrations": 4
+    },
+    "user_data": {
+      "migrations": 2
+    },
+    "system_config": {
+      "migrations": 1
+    },
+    "account_preferences": {
+      "migrations": 1
+    },
+    "notifications": {
+      "migrations": 2
+    },
+    "holidays": {
+      "migrations": 1
+    },
+    "core": {
+      "migrations": 25
+    }
+  },
+  "packageJson": {
+    "ownedKeys": {
+      "dependencies": {
+        "next": "16.2.6",
+        "react": "19.2.4",
+        "react-dom": "19.2.4",
+        "jsonwebtoken": "^9.0.3",
+        "react-markdown": "^10.1.0",
+        "sonner": "^2.0.7",
+        "formik": "^2.4.9",
+        "yup": "^1.7.1",
+        "lucide-react": "^1.16.0",
+        "clsx": "^2.1.1",
+        "class-variance-authority": "^0.7.1",
+        "tailwind-merge": "^3.6.0",
+        "tinify": "^1.8.2",
+        "embla-carousel-react": "^8.6.0",
+        "@uiw/react-markdown-editor": "^6.1.4",
+        "react-quill-new": "^3.8.3",
+        "@js-temporal/polyfill": "^0.5.1",
+        "@radix-ui/react-dropdown-menu": "^2.1.16",
+        "@radix-ui/react-progress": "^1.1.8",
+        "@radix-ui/react-separator": "^1.1.8",
+        "@radix-ui/react-switch": "^1.2.6",
+        "@radix-ui/react-tabs": "^1.1.13"
+      },
+      "devDependencies": {
+        "typescript": "^5",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "@types/node": "^20",
+        "@types/jsonwebtoken": "^9.0.10",
+        "tailwindcss": "^4",
+        "@tailwindcss/postcss": "^4",
+        "eslint": "^9",
+        "eslint-config-next": "16.2.6"
+      },
+      "scripts": {
+        "kizuna": "node kizuna-core/cli",
+        "predev": "node kizuna-core/cli check",
+        "build:core": "npm --prefix kizuna-core run build",
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "eslint"
+      }
+    }
+  },
+  "materialized": [
+    ".gitignore",
+    "env.example",
+    "next.config.ts",
+    "postcss.config.mjs",
+    "src/app/api/agenda/cities/route.ts",
+    "src/app/api/agenda/ufs/route.ts",
+    "src/app/api/auth/login/route.ts",
+    "src/app/api/auth/logout/route.ts",
+    "src/app/api/auth/me/route.ts",
+    "src/app/api/auth/register/route.ts",
+    "src/app/api/location/address/search/route.ts",
+    "src/app/api/location/cep/route.ts",
+    "src/app/api/location/cities/route.ts",
+    "src/app/api/location/ip/route.ts",
+    "src/app/api/location/reverse/route.ts",
+    "src/app/api/location/states/route.ts",
+    "src/app/api/onboarding/email/verify-code/route.ts",
+    "src/app/api/onboarding/progress/route.ts",
+    "src/app/api/pages/revalidate/route.ts",
+    "src/app/api/postgrest/rpc/route.ts",
+    "src/app/api/public/storage/files/[id]/content/route.ts",
+    "src/app/api/resources/[resource]/[id]/route.ts",
+    "src/app/api/resources/[resource]/route.ts",
+    "src/app/api/storage/files/[id]/content/route.ts",
+    "src/app/api/storage/files/[id]/route.ts",
+    "src/app/api/storage/files/route.ts",
+    "src/app/globals.css",
+    "src/app/layout.tsx",
+    "src/app/login/page.tsx",
+    "src/app/page.tsx",
+    "src/app/painel/[...kizuna]/page.tsx",
+    "src/app/painel/layout.tsx",
+    "src/app/painel/page.tsx",
+    "src/app/painel/root/[slug]/page.tsx",
+    "src/app/painel/security/[slug]/page.tsx",
+    "src/app/registre-se/page.tsx",
+    "src/components/footer.tsx",
+    "src/components/home-content.tsx",
+    "src/components/home/category-rail.tsx",
+    "src/components/home/home-hero.tsx",
+    "src/components/home/home-ink-config.ts",
+    "src/components/home/home-ink-tone-picker.tsx",
+    "src/components/home/how-it-works.tsx",
+    "src/components/home/join-cta.tsx",
+    "src/components/home/mock-data.ts",
+    "src/components/home/nearby-grid.tsx",
+    "src/components/onboarding-banner.tsx",
+    "src/components/painel-wrapper.tsx",
+    "src/components/panel-shell.tsx",
+    "src/i18n/messages.ts",
+    "src/lib/kizuna/registry/index.ts",
+    "src/lib/server/app-preferences-config.ts",
+    "src/lib/server/postgrest-crud.ts",
+    "src/lib/server/resources.ts",
+    "src/lib/server/user-data-fields-config.ts",
+    "src/proxy.ts",
+    "tsconfig.json",
+    "tsconfig.kizuna.json"
+  ]
+}

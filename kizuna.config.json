@@ -1,0 +1,42 @@
+{
+  "_comment": "Configuração do projeto (por cliente). Lida pelo app em runtime — ex.: createWizardFromJson(cfg.wizards.<nome>, registry). Passos são referenciados por chave do registry; componentes novos continuam sendo código. Ver kizuna-core/docs/WIZARD.md.",
+  "wizards": {
+    "servicos": {
+      "resource": "services",
+      "layout": "stepper",
+      "lockLayout": true,
+      "assistant": false,
+      "steps": [ "category", "start", "location", "price", "images", "description", "dynamic-form", "moderation"],
+      "disable": [],
+      "skipStepsByGroup": {
+        "location": ["noticias"]
+      },
+      "stepProfiles": {
+        "location": {
+          "default": {
+            "options": [
+              { "value": "no_estabelecimento", "model": "address", "icon": "MapPin" },
+              { "value": "remoto", "model": "identifier", "icon": "Globe" }
+            ]
+          }
+        },
+        "price": {
+          "default": {
+            "options": [
+              { "value": "service" },
+              { "value": "hour" },
+              { "value": "quote" }
+            ],
+            "defaultValue": "service",
+            "startingPrice": true,
+            "priceTable": { "fields": ["description", "amount", "link"] }
+          }
+        }
+      },
+      "finishHrefByMode": {
+        "create": "/painel/meus-servicos",
+        "review": "/painel/administracao/aprovacoes"
+      }
+    }
+  }
+}

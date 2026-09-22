@@ -1,0 +1,1166 @@
+@import 'tailwindcss';
+
+/* diz ao Tailwind v4 onde escanear */
+@source "../app/**/*.{ts,tsx}";
+@source "../components/**/*.{ts,tsx}";
+
+/* safelist das classes dinâmicas do Typography */
+@utility text-responsive {
+  &.text-xs {
+    font-size: var(--text-xs);
+    line-height: var(--leading-xs);
+  }
+  &.text-sm {
+    font-size: var(--text-sm);
+    line-height: var(--leading-sm);
+  }
+  &.text-base {
+    font-size: var(--text-base);
+    line-height: var(--leading-base);
+  }
+  &.text-lg {
+    font-size: var(--text-lg);
+    line-height: var(--leading-lg);
+  }
+  &.text-xl {
+    font-size: var(--text-xl);
+    line-height: var(--leading-xl);
+  }
+  &.text-2xl {
+    font-size: var(--text-2xl);
+  }
+  &.text-3xl {
+    font-size: var(--text-3xl);
+  }
+  &.text-4xl {
+    font-size: var(--text-4xl);
+  }
+  &.text-5xl {
+    font-size: var(--text-5xl);
+  }
+  &.text-6xl {
+    font-size: var(--text-6xl);
+  }
+}
+
+/* Usam --terracotta/--amber (definidos por tema — hoje: terracotta, bora_cuiaba),
+   então se adaptam sozinhos à cor do tema ativo. Fora desses temas, essas vars não
+   existem e os utilitários abaixo não têm efeito visível. */
+@utility gradient-hero {
+  background: linear-gradient(
+    135deg,
+    var(--terracotta) 0%,
+    color-mix(in oklch, var(--terracotta) 60%, var(--amber) 40%) 50%,
+    var(--amber) 100%
+  );
+}
+
+@utility text-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--terracotta) 0%,
+    color-mix(in oklch, var(--terracotta) 70%, black 15%) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility section-padding {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+
+@keyframes xp-float {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.9);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-42px) scale(1);
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--ring) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 12px color-mix(in oklch, var(--ring) 0%, transparent);
+  }
+}
+
+@utility animate-xp-float {
+  animation: xp-float 1s ease-out forwards;
+}
+
+@utility animate-pop-in {
+  animation: pop-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility animate-pulse-glow {
+  animation: pulse-glow 2s ease-out infinite;
+}
+
+:root {
+  --background-white: hsl(0, 0%, 98%);
+  --background: oklch(0.996 0.006 250);
+  --foreground: oklch(0.22 0.02 260);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.02 260);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.02 260);
+
+  /* Vibrant Indigo */
+  --primary: oklch(0.62 0.22 275);
+  --primary-foreground: oklch(0.99 0 0);
+
+  /* Soft Neon Cyan */
+  --secondary: oklch(0.92 0.08 210);
+  --secondary-foreground: oklch(0.28 0.04 240);
+
+  /* Smooth Gray */
+  --muted: oklch(0.95 0.02 260);
+  --muted-foreground: oklch(0.5 0.03 260);
+
+  /* Vibrant Mint */
+  --accent: oklch(0.88 0.14 165);
+  --accent-foreground: oklch(0.22 0.03 180);
+
+  /* Extra colors */
+  --success: oklch(0.72 0.18 155);
+  --warning: oklch(0.84 0.18 85);
+  --danger: oklch(0.68 0.22 25);
+  --info: oklch(0.74 0.16 235);
+
+  --border: oklch(0.9 0.03 260);
+  --input: oklch(0.9 0.03 260);
+  --ring: oklch(0.7 0.2 275);
+
+  /* Brand tracks the active theme color (--primary) so it updates with the
+     existing data-theme-color switcher instead of needing its own picker.
+     --brand-soft is a lighter mix, not a fixed value, so it stays in sync
+     when the theme changes and adapts correctly in dark mode too. */
+  --brand: var(--primary);
+  --brand-foreground: var(--primary-foreground);
+  --brand-soft: color-mix(in oklch, var(--primary) 20%, var(--background));
+
+  /* Global scrollbar, same "tracks the active theme" idea as --brand above — darkened so the
+     thumb reads as a strong, solid color against a light page instead of a washed-out tint.
+     See the html/::-webkit-scrollbar rules further down. */
+  --scrollbar-thumb: color-mix(in oklch, var(--primary) 65%, black 35%);
+  --scrollbar-thumb-hover: color-mix(in oklch, var(--primary) 50%, black 50%);
+  --scrollbar-track: color-mix(in oklch, var(--muted) 50%, transparent);
+}
+
+/* ================= BLUE ================= */
+
+:root[data-theme-color='blue'] {
+  --primary: oklch(0.66 0.2 250);
+  --secondary: oklch(0.93 0.08 220);
+  --accent: oklch(0.85 0.16 180);
+
+  --success: oklch(0.74 0.17 160);
+  --warning: oklch(0.86 0.18 90);
+  --danger: oklch(0.7 0.21 25);
+  --info: oklch(0.78 0.16 240);
+
+  --border: oklch(0.9 0.04 240);
+  --input: oklch(0.9 0.04 240);
+  --ring: oklch(0.72 0.18 250);
+}
+
+/* ================= GREEN ================= */
+
+:root[data-theme-color='green'] {
+  --primary: oklch(0.7 0.2 155);
+  --secondary: oklch(0.93 0.08 165);
+  --accent: oklch(0.88 0.16 140);
+
+  --success: oklch(0.76 0.18 150);
+  --warning: oklch(0.85 0.18 85);
+  --danger: oklch(0.7 0.21 25);
+  --info: oklch(0.75 0.16 220);
+
+  --border: oklch(0.9 0.04 155);
+  --input: oklch(0.9 0.04 155);
+  --ring: oklch(0.74 0.18 155);
+
+  /* Without this, green inherited the shared :root background (hue 250 — blue/purple range),
+     which fights the green primary instead of harmonizing with it and reads as washed out. A
+     soft mint-tinted white, same hue as --primary, fixes that. */
+  --background: oklch(0.996 0.007 155);
+}
+
+/* ================= PURPLE ================= */
+
+:root[data-theme-color='purple'] {
+  --primary: oklch(0.68 0.24 305);
+  --secondary: oklch(0.94 0.07 295);
+  --accent: oklch(0.88 0.18 330);
+
+  --success: oklch(0.74 0.17 160);
+  --warning: oklch(0.86 0.18 85);
+  --danger: oklch(0.72 0.23 20);
+  --info: oklch(0.78 0.16 250);
+
+  --border: oklch(0.9 0.04 295);
+  --input: oklch(0.9 0.04 295);
+  --ring: oklch(0.76 0.2 305);
+}
+
+/* ================= TEAL ================= */
+
+:root[data-theme-color='teal'] {
+  --primary: oklch(0.64 0.14 190);
+  --secondary: oklch(0.93 0.06 195);
+  --accent: oklch(0.86 0.12 165);
+
+  --success: oklch(0.75 0.17 150);
+  --warning: oklch(0.86 0.18 85);
+  --danger: oklch(0.7 0.21 25);
+  --info: oklch(0.75 0.14 220);
+
+  --border: oklch(0.9 0.03 190);
+  --input: oklch(0.9 0.03 190);
+  --ring: oklch(0.7 0.15 190);
+
+  --background: oklch(0.996 0.006 190);
+}
+
+/* ================= RED ================= */
+
+:root[data-theme-color='red'] {
+  --primary: oklch(0.58 0.22 18);
+  --secondary: oklch(0.93 0.07 20);
+  --accent: oklch(0.85 0.16 40);
+
+  --success: oklch(0.75 0.17 150);
+  --warning: oklch(0.86 0.18 85);
+  --danger: oklch(0.66 0.23 20);
+  --info: oklch(0.76 0.16 235);
+
+  --border: oklch(0.9 0.045 20);
+  --input: oklch(0.9 0.045 20);
+  --ring: oklch(0.64 0.2 18);
+
+  --background: oklch(0.996 0.007 20);
+}
+
+/* ================= ORANGE — tangerina viva, nao pastel ================= */
+
+:root[data-theme-color='orange'] {
+  --primary: oklch(0.7 0.19 48);
+  --secondary: oklch(0.94 0.06 60);
+  --accent: oklch(0.87 0.15 75);
+
+  --success: oklch(0.75 0.17 150);
+  --warning: oklch(0.88 0.19 90);
+  --danger: oklch(0.7 0.22 25);
+  --info: oklch(0.76 0.16 235);
+
+  --border: oklch(0.91 0.04 55);
+  --input: oklch(0.91 0.04 55);
+  --ring: oklch(0.76 0.18 48);
+
+  --background: oklch(0.996 0.007 50);
+}
+
+/* ================= CORAL ================= */
+
+:root[data-theme-color='coral'] {
+  --primary: oklch(0.68 0.2 32);
+  --secondary: oklch(0.94 0.07 38);
+  --accent: oklch(0.86 0.17 55);
+
+  --success: oklch(0.75 0.17 150);
+  --warning: oklch(0.88 0.19 90);
+  --danger: oklch(0.68 0.23 20);
+  --info: oklch(0.76 0.16 235);
+
+  --border: oklch(0.91 0.045 35);
+  --input: oklch(0.91 0.045 35);
+  --ring: oklch(0.74 0.19 32);
+
+  --background: oklch(0.996 0.007 32);
+}
+
+/* ================= BORA CUIABÁ (tema completo — terracota/vermelho vivo, city-guide) ================= */
+
+:root[data-theme-color='bora_cuiaba'] {
+  --background: oklch(0.978 0.01 80);
+  --background-white: oklch(0.978 0.01 80);
+  --foreground: oklch(0.2 0.035 53);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.035 53);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.035 53);
+
+  --primary: oklch(0.66 0.22 33.4);
+  --primary-foreground: oklch(0.99 0.005 85);
+  --secondary: oklch(0.95 0.02 78);
+  --secondary-foreground: oklch(0.24 0.04 53);
+  --muted: oklch(0.94 0.015 78);
+  --muted-foreground: oklch(0.52 0.04 53);
+  --accent: oklch(0.78 0.13 70);
+  --accent-foreground: oklch(0.24 0.04 53);
+
+  --success: oklch(0.75 0.17 150);
+  --warning: oklch(0.88 0.19 90);
+  --info: oklch(0.76 0.16 235);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.99 0.005 85);
+  --danger: oklch(0.55 0.22 25);
+
+  --border: oklch(0.89 0.02 78);
+  --input: oklch(0.89 0.02 78);
+  --ring: oklch(0.61 0.225 31);
+
+  /* extras semânticos deste tema (usados por gradient-hero/text-gradient abaixo) */
+  --terracotta: oklch(0.66 0.22 33.4);
+  --terracotta-foreground: oklch(0.99 0.005 85);
+  --amber: oklch(0.78 0.13 70);
+  --amber-foreground: oklch(0.24 0.04 53);
+  --sand: oklch(0.94 0.015 78);
+
+  /* fontes: só têm efeito se o layout usar var(--font-display)/var(--font-body)
+     em vez das classes do next/font — carregadas em layout.tsx (Playfair Display/Inter). */
+  --font-display: var(--font-playfair-display), Georgia, serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+}
+
+:root[data-theme-color='bora_cuiaba'].dark {
+  --background: oklch(0.18 0.03 53);
+  --background-white: oklch(0.18 0.03 53);
+  --foreground: oklch(0.96 0.01 80);
+
+  --card: oklch(0.24 0.035 53);
+  --card-foreground: oklch(0.96 0.01 80);
+  --popover: oklch(0.24 0.035 53);
+  --popover-foreground: oklch(0.96 0.01 80);
+
+  --primary: oklch(0.72 0.21 36);
+  --primary-foreground: oklch(0.18 0.03 53);
+  --secondary: oklch(0.3 0.04 53);
+  --secondary-foreground: oklch(0.96 0.01 80);
+  --muted: oklch(0.3 0.04 53);
+  --muted-foreground: oklch(0.72 0.05 68);
+  --accent: oklch(0.68 0.13 70);
+  --accent-foreground: oklch(0.18 0.03 53);
+
+  --success: oklch(0.78 0.16 155);
+  --warning: oklch(0.9 0.16 85);
+  --info: oklch(0.8 0.14 240);
+  --destructive: oklch(0.68 0.22 25);
+  --destructive-foreground: oklch(0.99 0.005 85);
+  --danger: oklch(0.68 0.22 25);
+
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.72 0.21 36);
+
+  --terracotta: oklch(0.72 0.21 36);
+  --terracotta-foreground: oklch(0.18 0.03 53);
+  --amber: oklch(0.68 0.13 70);
+  --amber-foreground: oklch(0.18 0.03 53);
+  --sand: oklch(0.3 0.04 53);
+}
+
+/* ================= METRO ORANGE — laranja vivo porém suave (#FF6830 / #FF5E3D / #FF6F54) ================= */
+
+:root[data-theme-color='metro_orange'] {
+  --primary: oklch(0.7 0.196 39.2);
+  --secondary: oklch(0.94 0.06 42);
+  --accent: oklch(0.83 0.14 34);
+
+  --success: oklch(0.75 0.17 150);
+  --warning: oklch(0.88 0.19 90);
+  --danger: oklch(0.68 0.23 20);
+  --info: oklch(0.76 0.16 235);
+
+  --border: oklch(0.91 0.045 35);
+  --input: oklch(0.91 0.045 35);
+  --ring: oklch(0.689 0.202 33.4);
+
+  --background: oklch(0.996 0.007 36);
+}
+
+/* ================= LARANJA INTENSO — primary = tom "ring" do metro_orange (#FF5E3D) ================= */
+
+:root[data-theme-color='laranja_intenso'] {
+  --primary: oklch(0.689 0.202 33.4);
+  --secondary: oklch(0.94 0.06 36);
+  --accent: oklch(0.82 0.15 30);
+
+  --success: oklch(0.75 0.17 150);
+  --warning: oklch(0.88 0.19 90);
+  --danger: oklch(0.68 0.23 20);
+  --info: oklch(0.76 0.16 235);
+
+  --border: oklch(0.91 0.045 32);
+  --input: oklch(0.91 0.045 32);
+  --ring: oklch(0.64 0.21 32);
+
+  --background: oklch(0.996 0.007 33);
+}
+
+/* ================= LARANJA MÉDIO — entre o "ring" (#FF5E3D) e o "primary" (#FF6830) do metro_orange ================= */
+
+:root[data-theme-color='laranja_medio'] {
+  --primary: oklch(0.6945 0.199 36.3);
+  --secondary: oklch(0.94 0.06 39);
+  --accent: oklch(0.83 0.14 36);
+
+  --success: oklch(0.75 0.17 150);
+  --warning: oklch(0.88 0.19 90);
+  --danger: oklch(0.68 0.23 20);
+  --info: oklch(0.76 0.16 235);
+
+  --border: oklch(0.91 0.045 37);
+  --input: oklch(0.91 0.045 37);
+  --ring: oklch(0.66 0.205 35);
+
+  --background: oklch(0.996 0.007 37);
+}
+
+/* ================= PINK ================= */
+
+:root[data-theme-color='pink'] {
+  --primary: oklch(0.72 0.24 350);
+  --secondary: oklch(0.95 0.08 340);
+  --accent: oklch(0.9 0.17 20);
+
+  --success: oklch(0.75 0.18 150);
+  --warning: oklch(0.88 0.19 90);
+  --danger: oklch(0.72 0.24 15);
+  --info: oklch(0.77 0.15 240);
+
+  --border: oklch(0.9 0.05 340);
+  --input: oklch(0.9 0.05 340);
+  --ring: oklch(0.8 0.2 350);
+}
+
+/* ================= TERRACOTA (tema completo — terracota/âmbar/areia) ================= */
+
+:root[data-theme-color='terracotta'] {
+  --background: oklch(0.978 0.01 82);
+  --background-white: oklch(0.978 0.01 82);
+  --foreground: oklch(0.2 0.035 55);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.035 55);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.035 55);
+
+  --primary: oklch(0.56 0.185 35);
+  --primary-foreground: oklch(0.99 0.005 85);
+  --secondary: oklch(0.95 0.02 80);
+  --secondary-foreground: oklch(0.24 0.04 55);
+  --muted: oklch(0.94 0.015 80);
+  --muted-foreground: oklch(0.52 0.04 55);
+  --accent: oklch(0.78 0.13 72);
+  --accent-foreground: oklch(0.24 0.04 55);
+
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.99 0.005 85);
+  --danger: oklch(0.55 0.22 25);
+
+  --border: oklch(0.89 0.02 80);
+  --input: oklch(0.89 0.02 80);
+  --ring: oklch(0.56 0.185 35);
+
+  /* extras semânticos deste tema */
+  --terracotta: oklch(0.56 0.185 35);
+  --terracotta-foreground: oklch(0.99 0.005 85);
+  --amber: oklch(0.76 0.13 72);
+  --amber-foreground: oklch(0.24 0.04 55);
+  --sand: oklch(0.94 0.015 80);
+
+  /* fontes: só têm efeito se o layout usar var(--font-display)/var(--font-body)
+     em vez das classes do next/font — ver docs. */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+/* ================= DARK MODE ================= */
+
+.dark {
+  --background-white: oklch(0.17 0.02 260);
+  --background: oklch(0.17 0.02 260);
+  --foreground: oklch(0.97 0 0);
+
+  --card: oklch(0.22 0.02 260);
+  --card-foreground: oklch(0.97 0 0);
+
+  --popover: oklch(0.22 0.02 260);
+  --popover-foreground: oklch(0.97 0 0);
+
+  --primary: oklch(0.78 0.2 280);
+  --primary-foreground: oklch(0.16 0.02 260);
+
+  --secondary: oklch(0.3 0.03 260);
+  --secondary-foreground: oklch(0.97 0 0);
+
+  --muted: oklch(0.27 0.02 260);
+  --muted-foreground: oklch(0.76 0.03 260);
+
+  --accent: oklch(0.4 0.08 170);
+  --accent-foreground: oklch(0.97 0 0);
+
+  --success: oklch(0.78 0.16 155);
+  --warning: oklch(0.9 0.16 85);
+  --danger: oklch(0.78 0.2 25);
+  --info: oklch(0.8 0.14 240);
+
+  --border: oklch(0.35 0.03 260);
+  --input: oklch(0.35 0.03 260);
+  --ring: oklch(0.82 0.16 280);
+
+  /* Dark mode's --primary is already lightened to pop against a dark page (see above), so the
+     thumb mixes toward white instead of black here — darkening it would sink it into the
+     background instead of standing out. */
+  --scrollbar-thumb: color-mix(in oklch, var(--primary) 80%, white 10%);
+  --scrollbar-thumb-hover: var(--primary);
+  --scrollbar-track: color-mix(in oklch, var(--background) 85%, white 8%);
+}
+
+@theme inline {
+  --color-background: var(--background-white);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+
+  --font-sans: var(--font-roboto), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-bricolage), var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  /* Was a flat, hardcoded #fafafa (zero chroma — reads as dull/gray) masking the theme's own
+     --background token, which carries a faint cool tint instead of flat gray. Using the token
+     directly, brightened, gives a whiter, livelier canvas. */
+  background: var(--background);
+  color: var(--foreground);
+}
+
+* {
+  border-color: var(--border);
+}
+
+::selection {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* customizacao agenda */
+.sx__week-header {
+  position: unset !important;
+}
+
+/* Scrollbar global — sempre presente (o gutter fica reservado mesmo em pagina sem overflow, pra
+   nao "pular" layout ao trocar de uma tela sem scroll pra uma com scroll) e colorida com o tema
+   ativo via --scrollbar-thumb/--scrollbar-track (definidas acima em :root/.dark, seguem
+   --primary igual --brand). Fina, com um respiro (border transparente + background-clip) pra
+   nao ficar colada na borda da janela. */
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Scrollbar do menu lateral do painel — mais fina que a global, propositalmente, pra uma nav
+   interna; sobrescreve as regras acima por especificidade de classe. */
+.panel-menu-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--primary) 55%, transparent) transparent;
+}
+
+.panel-menu-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.panel-menu-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.panel-menu-scroll::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: color-mix(in oklch, var(--primary) 55%, transparent);
+}
+
+.panel-menu-scroll::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--primary) 75%, transparent);
+}
+
+/* QuillJS editor overrides */
+.quill-wrapper .ql-toolbar {
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+}
+
+.quill-wrapper .ql-container {
+  border: none;
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+.quill-wrapper .ql-editor {
+  min-height: 200px;
+  color: var(--foreground);
+}
+
+.quill-wrapper .ql-editor.ql-blank::before {
+  color: var(--muted-foreground);
+  font-style: normal;
+}
+
+.ai-generate-button {
+  position: relative;
+  overflow: hidden;
+  border-color: color-mix(in oklch, var(--primary) 38%, var(--border));
+  background:
+    linear-gradient(
+      110deg,
+      color-mix(in oklch, var(--primary) 10%, transparent) 0%,
+      color-mix(in oklch, var(--primary) 22%, transparent) 45%,
+      color-mix(in oklch, var(--accent) 12%, transparent) 100%
+    ),
+    var(--background);
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--primary) 12%, transparent),
+    0 0 20px color-mix(in oklch, var(--primary) 10%, transparent);
+  animation: ai-button-pulse 3.8s ease-in-out infinite;
+}
+
+.ai-generate-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    color-mix(in oklch, var(--primary) 14%, transparent) 38%,
+    color-mix(in oklch, var(--accent) 18%, transparent) 50%,
+    transparent 62%
+  );
+  transform: translateX(-120%);
+  animation: ai-button-sheen 4.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.ai-generate-button:hover {
+  border-color: color-mix(in oklch, var(--primary) 55%, var(--border));
+}
+
+@keyframes ai-button-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--primary) 10%, transparent),
+      0 0 14px color-mix(in oklch, var(--primary) 8%, transparent);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--primary) 20%, transparent),
+      0 0 26px color-mix(in oklch, var(--primary) 16%, transparent);
+  }
+}
+
+@keyframes ai-button-sheen {
+  0%,
+  65%,
+  100% {
+    transform: translateX(-120%);
+  }
+
+  82% {
+    transform: translateX(120%);
+  }
+}
+
+/* ================= HOME ================= */
+
+/* "Ink" ground for the home hero, the featured pro card, and the closing CTA band.
+   Derived from the active --primary so it re-tints with the theme-color switcher
+   (dark green for the green theme, dark clay for coral, etc.) instead of being a
+   fixed navy. Strength is driven by --home-ink-mix/-base-dark/-glow/-glow-2 — set
+   as an inline style on <main> by getHomeInkStyle() (home-ink-config.ts), not via a
+   CSS selector, so the 1-5 picker's clicks apply instantly through React re-render
+   with no CSS-build/HMR dependency. The two radial bleeds are the only decoration —
+   one brand glow top-left, one faint mint glow bottom-right. A fine grain sits on
+   top via ::before. */
+.home-ink {
+  --home-ink-base: color-mix(
+    in oklab,
+    var(--primary) var(--home-ink-mix, 15%),
+    var(--home-ink-base-dark, #16161c)
+  );
+  position: relative;
+  isolation: isolate;
+  background-color: var(--home-ink-base);
+  background-image:
+    radial-gradient(
+      115% 85% at 8% -10%,
+      color-mix(in oklab, var(--primary) var(--home-ink-glow, 28%), transparent),
+      transparent 58%
+    ),
+    radial-gradient(
+      90% 75% at 108% 115%,
+      color-mix(in oklab, var(--accent) var(--home-ink-glow-2, 13%), transparent),
+      transparent 55%
+    );
+  color: oklch(0.97 0.012 265);
+}
+
+.home-ink::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(255, 255, 255, 0.05) 1px,
+    transparent 0
+  );
+  background-size: 4px 4px;
+}
+
+.home-ink > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Brand-tinted border + halo for the featured card in "Quem esta por perto".
+   Set here (unlayered) rather than via Tailwind `border-primary/*` utilities:
+   this project's globals define an unlayered `* { border-color: var(--border) }`
+   that beats every layered border-color utility, so those would be ignored. */
+.home-ink-featured {
+  border-color: color-mix(in oklab, var(--primary) 38%, transparent);
+  box-shadow: 0 20px 55px -26px color-mix(in oklab, var(--primary) 55%, transparent);
+}
+
+.home-ink-featured:hover {
+  border-color: color-mix(in oklab, var(--primary) 60%, transparent);
+}
+
+/* One orchestrated page-load reveal: hero heading + search rise once. */
+@keyframes home-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.home-rise {
+  animation: home-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Rotating verb in the hero headline — re-runs each time React swaps the key. */
+@keyframes home-verb-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.32em) rotate(1.4deg);
+    filter: blur(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0);
+    filter: blur(0);
+  }
+}
+
+.home-verb {
+  display: inline-block;
+  /* Bright brand tint so the verb stays legible on the ink ground across every theme
+     color (raw --primary can sit too dark against its own dark mix). */
+  color: color-mix(in oklab, var(--primary) 34%, white);
+  animation: home-verb-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-rise,
+  .home-verb {
+    animation: none;
+  }
+}
+
+/* ================= SERVICE WIZARD ================= */
+
+/* Tailwind border-color / ring-color utilities are dead project-wide (the unlayered
+   `* { border-color: var(--border) }` above beats them), so the wizard's selectable
+   cards and the current-step marker get their accent outline here instead. Toggle with
+   a `data-active` / `data-status` attribute, not a utility class. */
+.wz-selectable {
+  border-color: var(--border);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.wz-selectable:hover {
+  border-color: color-mix(in oklch, var(--primary) 45%, var(--border));
+}
+
+.wz-selectable[data-active='true'] {
+  border-color: color-mix(in oklch, var(--primary) 70%, transparent);
+  background-color: color-mix(in oklch, var(--primary) 7%, var(--background));
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--primary) 45%, transparent);
+}
+
+.wz-disc-current {
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+/* One orchestrated reveal each time the active step changes (keyed on currentStep). */
+@keyframes wz-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.wz-step-in {
+  animation: wz-step-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wz-step-in {
+    animation: none;
+  }
+}
+
+/* Layout toggle — segmented control in the wizard chrome. Active pill via `data-active`. */
+.wz-layout-toggle {
+  background-color: color-mix(in oklch, var(--muted) 55%, var(--background));
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--border) 80%, transparent);
+}
+
+.wz-layout-toggle [data-active='true'] {
+  background-color: var(--background);
+  box-shadow:
+    0 1px 2px color-mix(in oklch, var(--foreground) 10%, transparent),
+    inset 0 0 0 1px color-mix(in oklch, var(--primary) 35%, transparent);
+}
+
+/* Scroll (questionnaire) layout — answered steps collapse into accordion rows (`.wz-scroll-summary`);
+   the current step is always open. A re-opened answered step recedes a touch, stays editable. */
+.wz-scroll-step[data-answered][data-open] {
+  box-shadow: inset 2px 0 0 color-mix(in oklch, var(--primary) 28%, transparent);
+  padding-left: 0.75rem;
+  opacity: 0.9;
+  transition:
+    opacity 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.wz-scroll-step[data-answered][data-open]:hover,
+.wz-scroll-step[data-answered][data-open]:focus-within {
+  opacity: 1;
+}
+
+@keyframes wz-scroll-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.wz-scroll-reveal {
+  animation: wz-scroll-reveal 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wz-scroll-reveal {
+    animation: none;
+  }
+}
+
+/* Naví conversacional no wizard — a conversa é o elemento vivo da tela; tudo em volta fica quieto. */
+.wz-navi-preview {
+  opacity: 0.9;
+}
+.wz-navi-ground {
+  background: radial-gradient(
+    120% 60% at 50% 0%,
+    color-mix(in oklch, var(--primary) 9%, var(--background)),
+    var(--background) 65%
+  );
+}
+/* vermelho suave — legível mas sem alarme */
+.wz-navi-error {
+  color: color-mix(in oklch, var(--danger) 68%, var(--muted-foreground) 32%);
+}
+.wz-navi-error-box {
+  color: color-mix(in oklch, var(--danger) 70%, var(--muted-foreground) 30%);
+  background: color-mix(in oklch, var(--danger) 8%, var(--card));
+  border: 1px solid color-mix(in oklch, var(--danger) 24%, transparent);
+}
+.wz-navi-dock {
+  position: sticky;
+  bottom: 1rem;
+  z-index: 30;
+}
+/* passo respondido colapsado (accordion) */
+.wz-scroll-summary {
+  border: 1px solid color-mix(in oklch, var(--primary) 18%, var(--border));
+  background: color-mix(in oklch, var(--primary) 4%, var(--card));
+}
+.wz-scroll-summary:hover {
+  background: color-mix(in oklch, var(--primary) 8%, var(--card));
+}
+.wz-navi-fab-dot {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--primary-foreground);
+  animation: wz-navi-pulse 1s ease-in-out infinite;
+}
+.wz-navi-card {
+  border-radius: 1.15rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--primary) 7%, var(--card)),
+    var(--card) 60%
+  );
+  border: 1px solid color-mix(in oklch, var(--primary) 26%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in oklch, var(--primary) 10%, transparent) inset,
+    0 16px 40px -16px color-mix(in oklch, var(--primary) 55%, transparent);
+}
+.wz-navi-badge {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary) 15%, transparent);
+}
+.wz-navi-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  line-height: 1.1;
+  border: 1px solid color-mix(in oklch, var(--primary) 42%, transparent);
+  color: var(--primary);
+  background: color-mix(in oklch, var(--primary) 8%, var(--card));
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+.wz-navi-chip:hover {
+  background: color-mix(in oklch, var(--primary) 16%, var(--card));
+}
+.wz-navi-chip[data-on] {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+.wz-navi-checkbox {
+  display: grid;
+  place-items: center;
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 0.3rem;
+  border: 1px solid currentColor;
+  opacity: 0.7;
+}
+.wz-navi-chip[data-on] .wz-navi-checkbox {
+  opacity: 1;
+}
+.wz-navi-send {
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 4px 14px -2px color-mix(in oklch, var(--primary) 60%, transparent);
+  animation: wz-navi-pulse 1.9s ease-in-out infinite;
+}
+@keyframes wz-navi-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.045);
+  }
+}
+.wz-navi-fab {
+  position: fixed;
+  right: 1rem;
+  bottom: 5rem;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 8px 22px -6px color-mix(in oklch, var(--primary) 70%, transparent);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wz-navi-send {
+    animation: none;
+  }
+}
+
+/* Provider profile → service detail drawer. Enter/exit are CSS-driven (no JS frame juggling);
+   the parent flips `data-closing` and unmounts after the exit animation. */
+@keyframes drawer-overlay-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes drawer-overlay-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes drawer-panel-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes drawer-panel-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes drawer-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.drawer-overlay {
+  animation: drawer-overlay-in 0.32s ease both;
+}
+.drawer-panel {
+  /* ease-out-expo: fast to place, gentle to settle — the difference between "slides" and "snaps" */
+  animation: drawer-panel-in 0.44s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform;
+}
+.drawer-content-in {
+  animation: drawer-content-in 0.34s 0.04s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+[data-closing='true'] .drawer-overlay {
+  animation: drawer-overlay-out 0.24s ease both;
+}
+[data-closing='true'] .drawer-panel {
+  animation: drawer-panel-out 0.3s cubic-bezier(0.5, 0, 0.75, 0) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer-overlay,
+  .drawer-panel,
+  .drawer-content-in,
+  [data-closing='true'] .drawer-overlay,
+  [data-closing='true'] .drawer-panel {
+    animation-duration: 0.01ms;
+    animation-delay: 0ms;
+  }
+}
