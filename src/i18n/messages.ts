@@ -43,8 +43,8 @@ export const WIZARD_PT_BR = {
 
   category: {
     title: 'Qual o tipo da sua publicação?',
-    // subtitle:
-    //   'Escolha o tipo ',
+    subtitle: 'Escolha o tipo — a categoria vem na sequência.',
+    why: 'Começamos pelo tipo porque ele é mais amplo: a mesma categoria pode aparecer em tipos diferentes, e o tipo certo põe o seu anúncio na frente de quem procura.',
     emptyGroups: 'Nenhum tipo encontrado.',
     pickCategory: 'Escolher categoria',
     changeGroupCategory: "Mudar tipo",
