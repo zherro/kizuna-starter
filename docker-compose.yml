@@ -4,8 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
-    ports:
-      - "3001:3000"
+    # ports:
+    #   - "3001:3000"
     # As variáveis de ambiente (DB, JWT, URLs de serviços internos como
     # PostgREST, etc.) devem ser configuradas na aba "Environment" do
     # Dokploy — não coloque valores sensíveis aqui.
