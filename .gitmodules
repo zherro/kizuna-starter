@@ -1,3 +1,4 @@
 [submodule "kizuna-core"]
 	path = kizuna-core
 	url = https://github.com/zherro/kizuna-core.git
+	branch = develop
