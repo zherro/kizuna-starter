@@ -17,3 +17,10 @@ services:
     # do container em runtime. Não coloque valores sensíveis aqui.
     env_file:
       - .env
+    # Mesma rede externa do stack postgres-postgrest, para chamar
+    # http://postgrest:3000 (POSTGREST_URL) por nome de serviço.
+
+networks:
+  default:
+    name: kizuna_net
+    external: true

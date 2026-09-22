@@ -1,0 +1,23 @@
+services:
+  cloudbeaver:
+    image: dbeaver/cloudbeaver:latest
+    restart: unless-stopped
+    volumes:
+      - cloudbeaver_data:/opt/cloudbeaver/workspace
+    # ports:
+    #   - "8978"
+    # Usuário/senha do admin do CloudBeaver são definidos no primeiro acesso
+    # via wizard web — nada de credenciais aqui. Configure o domínio pelo
+    # Dokploy (Domains) apontando para a porta 8978 deste serviço.
+    #
+    # Para conectar no Postgres do stack postgres-postgrest (host "postgres",
+    # porta 5432), este serviço precisa estar na mesma rede Docker — daí o
+    # `networks:` abaixo, igual ao dos outros dois composes.
+
+volumes:
+  cloudbeaver_data:
+
+networks:
+  default:
+    name: kizuna_net
+    external: true

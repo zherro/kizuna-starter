@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-kizuna}
+    volumes:
+      # Bind mount em disco real do Ubuntu (não volume gerenciado do Docker),
+      # para sobreviver a rebuild/redeploy da app e a limpezas do Dokploy.
+      # Crie o diretório antes: mkdir -p /data/kizuna/postgres
+      - /data/kizuna/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-kizuna}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgrest:
+    image: postgrest/postgrest:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # authenticator é o role de login do PostgREST (ver
+      # kizuna-core/sql/0099_grant_authenticator.sql); anon é o role sem JWT.
+      PGRST_DB_URI: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kizuna}
+      PGRST_DB_SCHEMAS: public,auth
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${PGRST_JWT_SECRET}
+      # As functions de auth do kizuna-core leem `request.jwt.claims` como um
+      # único JSON (current_setting('request.jwt.claims', true)::json) — o
+      # formato legado. Com "false" o PostgREST usaria GUCs por claim
+      # (request.jwt.claim.<nome>) e a auth quebraria.
+      PGRST_DB_USE_LEGACY_GUCS: "true"
+    # Sem `ports:` de propósito — só o app Next.js (e o CloudBeaver, no
+    # Postgres) falam com isso, pela rede interna, por nome de serviço
+    # (postgres:5432, postgrest:3000 — porta padrão da imagem). Publicar no
+    # host exporia o banco/API para a VPS inteira sem necessidade.
+
+networks:
+  default:
+    name: kizuna_net
+    external: true
