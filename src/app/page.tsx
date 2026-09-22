@@ -1,16 +1,15 @@
-// EXEMPLO — home pública. A cara é parametrizada por env (lidas aqui, no
-// servidor, e passadas como props — `process.env` não chega em Client Component):
-//   KIZUNA_HOME_HERO=true|false            → mostra/esconde o hero
-//   KIZUNA_HOME_CATEGORIES=classic|compact → layout do carrossel de categorias
-//   KIZUNA_HOME_DISCOVER=true|false        → banner "Descobrir no swipe"
+// EXEMPLO — home pública. A cara é parametrizada por `kizuna.config.json`
+// (chave "home"), não por env — evita rebuild de Docker com --build-arg
+// para cada toggle novo.
 import { HomeContent } from '@/components/home-content';
+import cfg from '@/../kizuna.config.json';
 
 export default function Home() {
   return (
     <HomeContent
-      showHero={process.env.KIZUNA_HOME_HERO !== 'false'}
-      categoriesVariant={process.env.KIZUNA_HOME_CATEGORIES === 'compact' ? 'compact' : 'classic'}
-      showDiscover={process.env.KIZUNA_HOME_DISCOVER === 'true'}
+      showHero={cfg.home?.showHero !== false}
+      categoriesVariant={cfg.home?.categoriesVariant === 'compact' ? 'compact' : 'classic'}
+      showDiscover={cfg.home?.showDiscover === true}
     />
   );
 }

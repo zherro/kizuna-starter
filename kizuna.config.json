@@ -1,5 +1,10 @@
 {
   "_comment": "Configuração do projeto (por cliente). Lida pelo app em runtime — ex.: createWizardFromJson(cfg.wizards.<nome>, registry). Passos são referenciados por chave do registry; componentes novos continuam sendo código. Ver kizuna-core/docs/WIZARD.md.",
+  "home": {
+    "showHero": true,
+    "categoriesVariant": "classic",
+    "showDiscover": false
+  },
   "wizards": {
     "servicos": {
       "resource": "services",
