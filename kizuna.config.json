@@ -1,9 +1,19 @@
 {
   "_comment": "Configuração do projeto (por cliente). Lida pelo app em runtime — ex.: createWizardFromJson(cfg.wizards.<nome>, registry). Passos são referenciados por chave do registry; componentes novos continuam sendo código. Ver kizuna-core/docs/WIZARD.md.",
+  "site": {
+    "_comment": "Identidade/SEO do site — usada no <title>, meta description, Open Graph, manifest do PWA, robots/sitemap e logo do header. \"url\" é a URL pública em produção (sem barra no final). \"logo\" é opcional (caminho em public/); sem ele o header mostra o nome.",
+    "name": "Bora Cuiabá",
+    "shortName": "Bora Cuiabá",
+    "description": "Os eventos mais badalados, lugares, dicas de lazer e muita cultura!s",
+    "url": "https://boracuiaba.com",
+    "lang": "pt-BR",
+    "logo": "/brand/logo.png"
+  },
   "theme": {
-    "_comment": "Cor/tema visual padrão. \"default\" é aplicado enquanto o usuário não escolhe outro (ou sempre, se \"selectable\" for false — aí o seletor de cor some do botão de preferências). Temas disponíveis: blue, green, purple, teal, red, orange, coral, terracotta, bora_cuiaba, metro_orange, laranja_intenso, laranja_medio.",
+    "_comment": "Cor/tema visual padrão. \"default\" é aplicado enquanto o usuário não escolhe outro (ou sempre, se \"selectable\" for false — aí o seletor de cor some do botão de preferências). Temas disponíveis: blue, green, purple, teal, red, orange, coral, terracotta, bora_cuiaba, metro_orange, laranja_intenso, laranja_medio. \"metaColor\" é a cor da barra do navegador no mobile (meta theme-color).",
     "default": "bora_cuiaba",
-    "selectable": false
+    "selectable": false,
+    "metaColor": "#fbf7f0"
   },
   "home": {
     "showHero": false,

@@ -5,6 +5,10 @@ import { usePathname } from 'next/navigation';
 import { useAppPreferences } from '@kizuna/core/client/providers/app-preferences-provider';
 import { Button } from '@kizuna/core/client/components/ui/button';
 import { GitBranchIcon, Moon, Sun } from 'lucide-react';
+import cfg from '@/../kizuna.config.json';
+
+// Marca do site — bloco "site" do kizuna.config.json (mesma logo do header).
+const siteLogo = cfg.site?.logo ?? undefined;
 
 export function Footer() {
   const pathname = usePathname();
@@ -26,6 +30,7 @@ export function Footer() {
   if (isPainelRoute) return null;
 
   const currentYear = new Date().getFullYear();
+  const siteName = cfg.site?.name ?? messages.nav.title;
 
   const navLinks = [
     { href: '/', label: messages.nav.home },
@@ -60,13 +65,20 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-3">
           {/* Col 1 — Brand + Preferences */}
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-3">
-              <span
-                className="inline-block h-2.5 w-2.5 rounded-full bg-primary"
-                aria-hidden="true"
-              />
-              <span className="text-sm font-semibold tracking-tight">{messages.nav.title}</span>
-            </div>
+            <Link href="/" className="flex items-center gap-3">
+              {siteLogo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={siteLogo} alt={siteName} className="h-16 w-auto" />
+              ) : (
+                <>
+                  <span
+                    className="inline-block h-2.5 w-2.5 rounded-full bg-primary"
+                    aria-hidden="true"
+                  />
+                  <span className="text-sm font-semibold tracking-tight">{siteName}</span>
+                </>
+              )}
+            </Link>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Gerencie seus anúncios com facilidade.
             </p>
@@ -154,7 +166,7 @@ export function Footer() {
         {/* Divider + copyright */}
         <div className="mt-8 flex flex-col items-center justify-between gap-2 border-t border-border/70 pt-6 sm:flex-row">
           <p className="text-xs text-muted-foreground">
-            © {currentYear} {messages.nav.title}. Todos os direitos reservados.
+            © {currentYear} {siteName}. Todos os direitos reservados.
           </p>
           <p className="text-xs text-muted-foreground">Feito com ♥</p>
         </div>

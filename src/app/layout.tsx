@@ -62,13 +62,29 @@ const inter = Inter({
   display: 'swap',
 });
 
+const site = cfg.site;
+const siteName = site?.name ?? 'Kizuna';
+
+// SEO — vem do bloco "site" do kizuna.config.json.
 export const metadata: Metadata = {
-  title: 'Kizuna',
-  description: 'Projeto sobre kizuna-core',
+  metadataBase: new URL(site?.url ?? 'http://localhost:3000'),
+  title: { default: siteName, template: `%s | ${siteName}` },
+  description: site?.description,
+  applicationName: siteName,
+  appleWebApp: { capable: true, title: site?.shortName ?? siteName, statusBarStyle: 'default' },
+  openGraph: {
+    type: 'website',
+    siteName,
+    title: siteName,
+    description: site?.description,
+    locale: (site?.lang ?? 'pt-BR').replace('-', '_'),
+    url: '/',
+  },
+  twitter: { card: 'summary_large_image', title: siteName, description: site?.description },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#2563eb',
+  themeColor: cfg.theme?.metaColor ?? '#2563eb',
 };
 
 export default function RootLayout({
@@ -78,7 +94,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="pt-BR"
+      lang={site?.lang ?? 'pt-BR'}
       data-theme-color={defaultThemeColor}
       suppressHydrationWarning
       className={`${robotoSans.variable} ${geistMono.variable} ${bricolage.variable} ${playfairDisplay.variable} ${inter.variable} h-full antialiased`}
@@ -97,7 +113,8 @@ export default function RootLayout({
             <KizunaHeader
               showThemeToggle={false}
               authCta="single"
-              brandLabel="Kizuna"
+              brandLabel={siteName}
+              brandLogo={site?.logo ?? undefined}
               navLinks={[
                 { href: '/busca', label: 'Buscar', icon: <Search /> },
                 { href: '/painel', label: 'Anunciar', icon: <Megaphone /> },
