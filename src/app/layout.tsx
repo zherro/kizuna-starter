@@ -3,12 +3,21 @@ import { Roboto, Geist_Mono, Bricolage_Grotesque, Playfair_Display, Inter } from
 import { Megaphone, Search } from 'lucide-react';
 import { PwaRegister } from '@kizuna/core/client/components/pwa-register';
 import { PreferencesFab } from '@kizuna/core/client/components/preferences-fab';
-import { AppPreferencesProvider } from '@kizuna/core/client/providers/app-preferences-provider';
+import {
+  AppPreferencesProvider,
+  isThemeColor,
+} from '@kizuna/core/client/providers/app-preferences-provider';
 import { AuthProvider } from '@kizuna/core/client/providers/auth-provider';
 import { KizunaHeader } from '@kizuna/core/client/components/kizuna-header';
 import { Footer } from '@/components/footer';
 import { Toaster } from 'sonner';
+import cfg from '@/../kizuna.config.json';
 import './globals.css';
+
+// Tema padrão e se o usuário pode trocá-lo — chave "theme" do kizuna.config.json
+// (lista de temas disponíveis no _comment de lá).
+const defaultThemeColor = isThemeColor(cfg.theme?.default) ? cfg.theme.default : 'blue';
+const themeColorSelectable = cfg.theme?.selectable !== false;
 
 // EXEMPLO — reescreva as fontes/metadata/nav do seu app.
 //
@@ -72,6 +81,7 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
+      data-theme-color={defaultThemeColor}
       suppressHydrationWarning
       className={`${robotoSans.variable} ${geistMono.variable} ${bricolage.variable} ${playfairDisplay.variable} ${inter.variable} h-full antialiased`}
     >
@@ -79,7 +89,10 @@ export default function RootLayout({
         suppressHydrationWarning
         className="min-h-full flex flex-col bg-background text-foreground"
       >
-        <AppPreferencesProvider>
+        <AppPreferencesProvider
+          defaultThemeColor={defaultThemeColor}
+          themeColorSelectable={themeColorSelectable}
+        >
           <AuthProvider initialUser={null}>
             <PwaRegister swUrl="/sw.js?v=1" migrationKey="kizuna-sw-v1" />
             {/* Variante fixada por env KIZUNA_HEADER_VARIANT (classic|compact). */}

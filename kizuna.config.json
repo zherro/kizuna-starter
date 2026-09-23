@@ -1,5 +1,10 @@
 {
   "_comment": "Configuração do projeto (por cliente). Lida pelo app em runtime — ex.: createWizardFromJson(cfg.wizards.<nome>, registry). Passos são referenciados por chave do registry; componentes novos continuam sendo código. Ver kizuna-core/docs/WIZARD.md.",
+  "theme": {
+    "_comment": "Cor/tema visual padrão. \"default\" é aplicado enquanto o usuário não escolhe outro (ou sempre, se \"selectable\" for false — aí o seletor de cor some do botão de preferências). Temas disponíveis: blue, green, purple, teal, red, orange, coral, terracotta, bora_cuiaba, metro_orange, laranja_intenso, laranja_medio.",
+    "default": "bora_cuiaba",
+    "selectable": false
+  },
   "home": {
     "showHero": false,
     "categoriesVariant": "classic",
