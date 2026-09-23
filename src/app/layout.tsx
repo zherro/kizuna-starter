@@ -3,10 +3,8 @@ import { Roboto, Geist_Mono, Bricolage_Grotesque, Playfair_Display, Inter } from
 import { Megaphone, Search } from 'lucide-react';
 import { PwaRegister } from '@kizuna/core/client/components/pwa-register';
 import { PreferencesFab } from '@kizuna/core/client/components/preferences-fab';
-import {
-  AppPreferencesProvider,
-  isThemeColor,
-} from '@kizuna/core/client/providers/app-preferences-provider';
+import { AppPreferencesProvider } from '@kizuna/core/client/providers/app-preferences-provider';
+import { isThemeColor } from '@kizuna/core/shared/theme-colors';
 import { AuthProvider } from '@kizuna/core/client/providers/auth-provider';
 import { KizunaHeader } from '@kizuna/core/client/components/kizuna-header';
 import { Footer } from '@/components/footer';
