@@ -81,6 +81,12 @@
     },
     "core": {
       "migrations": 25
+    },
+    "weather": {
+      "shellFiles": {
+        "src/app/api/weather/route.ts": "sha256:b2d4d230e4a21974d710e0b3697c46dd00f48908db18e962a8f5fb69b648a6ef"
+      },
+      "migrations": 1
     }
   },
   "packageJson": {
@@ -133,7 +139,6 @@
   },
   "materialized": [
     ".gitignore",
-    "env.example",
     "next.config.ts",
     "postcss.config.mjs",
     "src/app/api/agenda/cities/route.ts",

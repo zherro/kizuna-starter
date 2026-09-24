@@ -23,6 +23,7 @@ export function Footer() {
     setTheme,
     themeColor,
     setThemeColor,
+    themeColorSelectable,
     messages,
   } = useAppPreferences();
 
@@ -34,11 +35,11 @@ export function Footer() {
 
   const navLinks = [
     { href: '/', label: messages.nav.home },
-    { href: '/painel', label: 'Painel' },
-    { href: '/painel/taxonomia/categorias', label: 'Categorias' },
+    { href: '/painel', label: messages.default.dashboard },
+    { href: '/painel/taxonomia/categorias', label: messages.footer.categories },
     { href: '#', label: messages.nav.contact },
-    { href: '/login', label: 'Login' },
-    { href: '/registre-se', label: 'Registre-se' },
+    { href: '/login', label: messages.nav.login },
+    { href: '/registre-se', label: messages.nav.signUp },
   ];
 
   const themeColors = [
@@ -80,22 +81,24 @@ export function Footer() {
               )}
             </Link>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Gerencie seus anúncios com facilidade.
+              {messages.footer.tagline}
             </p>
 
             <div className="flex flex-wrap items-center gap-2 pt-1">
-              <select
-                value={themeColor}
-                onChange={(e) => setThemeColor(e.target.value as typeof themeColor)}
-                aria-label={messages.nav.color}
-                className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-              >
-                {themeColors.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
+              {themeColorSelectable && (
+                <select
+                  value={themeColor}
+                  onChange={(e) => setThemeColor(e.target.value as typeof themeColor)}
+                  aria-label={messages.nav.color}
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {themeColors.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              )}
 
               <select
                 value={language}
@@ -128,7 +131,7 @@ export function Footer() {
           {/* Col 2 — Navigation */}
           <nav className="flex flex-col gap-2">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Navegação
+              {messages.footer.navigation}
             </p>
             {navLinks.map((link) => (
               <Link
@@ -144,7 +147,7 @@ export function Footer() {
           {/* Col 3 — Social */}
           <div className="flex flex-col gap-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Redes sociais
+              {messages.footer.social}
             </p>
             <div className="flex flex-wrap gap-2">
               {socialLinks.map(({ href, label, icon: Icon }) => (
@@ -166,9 +169,25 @@ export function Footer() {
         {/* Divider + copyright */}
         <div className="mt-8 flex flex-col items-center justify-between gap-2 border-t border-border/70 pt-6 sm:flex-row">
           <p className="text-xs text-muted-foreground">
-            © {currentYear} {siteName}. Todos os direitos reservados.
+            © {currentYear} {siteName}. {messages.footer.rights}
           </p>
-          <p className="text-xs text-muted-foreground">Feito com ♥</p>
+          <p className="text-xs text-muted-foreground">
+            {'weather' in cfg && (
+              <>
+                {messages.footer.weatherCredit}:{' '}
+                <a
+                  href="https://open-meteo.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-foreground"
+                >
+                  Open-Meteo
+                </a>
+                {' · '}
+              </>
+            )}
+            {messages.footer.madeWith}
+          </p>
         </div>
       </div>
     </footer>

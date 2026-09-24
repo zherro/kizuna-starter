@@ -93,7 +93,7 @@ function ProCard({ pro }: { pro: HomePro }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-muted font-display text-sm font-bold text-foreground">
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-muted font-display text-sm font-bold text-foreground-display">
             {initials(pro.name)}
           </span>
           <div>
@@ -125,7 +125,7 @@ function ProCard({ pro }: { pro: HomePro }) {
 export function NearbyGrid({ t }: { t: HomeMessages }) {
   return (
     <section className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6">
-      <h2 className="font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-[-0.02em] text-foreground">
+      <h2 className="font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-[-0.02em] text-foreground-display">
         {t.nearbyTitle}
       </h2>
       <p className="mt-2 max-w-[52ch] text-muted-foreground">{t.nearbySub}</p>

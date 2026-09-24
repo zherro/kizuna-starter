@@ -15,10 +15,31 @@
     "selectable": false,
     "metaColor": "#fbf7f0"
   },
+  "header": {
+    "_comment": "\"variant\": classic (padrão) | compact — layout do cabeçalho do site.",
+    "variant": "compact"
+  },
+  "weather": {
+    "_comment": "Plugin weather (widget de clima no header, depois da busca). Integração: Open-Meteo — grátis, sem chave de API. apiUrl = endpoint do provedor; timezone = fuso das datas (IANA); cacheSeconds = quanto tempo o servidor guarda a resposta; rotateSeconds = intervalo da troca de cidade no botão; pastDays/forecastDays = dias antes/depois de hoje no modal. cities = lista exibida (a 1ª aparece primeiro). Remova o bloco para esconder o widget.",
+    "apiUrl": "https://api.open-meteo.com/v1/forecast",
+    "timezone": "America/Cuiaba",
+    "cacheSeconds": 900,
+    "rotateSeconds": 5,
+    "pastDays": 1,
+    "forecastDays": 7,
+    "cities": [
+      { "name": "Cuiabá", "latitude": -15.6014, "longitude": -56.0979 },
+      { "name": "Várzea Grande", "latitude": -15.6467, "longitude": -56.1325 },
+      { "name": "Chapada dos Guimarães", "latitude": -15.4606, "longitude": -55.7497 }
+    ]
+  },
   "home": {
     "showHero": false,
     "categoriesVariant": "classic",
-    "showDiscover": true
+    "showDiscover": true,
+    "_comment": "\"inkPicker\": mostra o seletor de intensidade do fundo escuro dos cards (false esconde). \"inkLevel\": intensidade padrão (1-7); com o seletor ativo, a escolha salva do usuário prevalece.",
+    "inkPicker": false,
+    "inkLevel": 6
   },
   "wizards": {
     "servicos": {

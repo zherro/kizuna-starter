@@ -3,6 +3,12 @@
 // para cada toggle novo.
 import { HomeContent } from '@/components/home-content';
 import cfg from '@/../kizuna.config.json';
+import { HOME_INK_LEVELS, type HomeInkLevel } from '@/components/home/home-ink-config';
+
+const home = cfg.home as typeof cfg.home & { inkPicker?: boolean; inkLevel?: number };
+const inkLevel = HOME_INK_LEVELS.includes(home?.inkLevel as HomeInkLevel)
+  ? (home.inkLevel as HomeInkLevel)
+  : undefined;
 
 export default function Home() {
   return (
@@ -10,6 +16,8 @@ export default function Home() {
       showHero={cfg.home?.showHero !== false}
       categoriesVariant={cfg.home?.categoriesVariant === 'compact' ? 'compact' : 'classic'}
       showDiscover={cfg.home?.showDiscover === true}
+      inkPicker={home?.inkPicker !== false}
+      inkLevel={inkLevel}
     />
   );
 }

@@ -19,26 +19,32 @@ import {
 import { HomeInkTonePicker } from './home/home-ink-tone-picker';
 
 type HomeContentProps = {
-  /** mostra a seção hero (default true) — vem de KIZUNA_HOME_HERO */
+  /** mostra a seção hero (default true) — vem de home.showHero no kizuna.config.json */
   showHero?: boolean;
-  /** layout do carrossel de categorias — vem de KIZUNA_HOME_CATEGORIES */
+  /** layout do carrossel de categorias — vem de home.categoriesVariant */
   categoriesVariant?: 'classic' | 'compact';
-  /** mostra o banner "Descobrir no swipe" — vem de KIZUNA_HOME_DISCOVER */
+  /** mostra o banner "Descobrir no swipe" — vem de home.showDiscover */
   showDiscover?: boolean;
+  /** mostra o seletor de intensidade do fundo "ink" — vem de home.inkPicker */
+  inkPicker?: boolean;
+  /** nível padrão do fundo "ink" (1-7) — vem de home.inkLevel */
+  inkLevel?: HomeInkLevel;
 };
 
 export function HomeContent({
   showHero = true,
   categoriesVariant = 'classic',
   showDiscover = false,
+  inkPicker = HOME_INK_TONE_PICKER_ENABLED,
+  inkLevel: defaultInkLevel = HOME_INK_FIXED_LEVEL,
 }: HomeContentProps = {}) {
   const { messages } = useAppPreferences();
   const t = messages.home;
 
-  const [inkLevel, setInkLevel] = useState<HomeInkLevel>(HOME_INK_FIXED_LEVEL);
+  const [inkLevel, setInkLevel] = useState<HomeInkLevel>(defaultInkLevel);
 
   useEffect(() => {
-    if (!HOME_INK_TONE_PICKER_ENABLED) return;
+    if (!inkPicker) return;
     try {
       const saved = Number(localStorage.getItem(HOME_INK_STORAGE_KEY));
       if (HOME_INK_LEVELS.includes(saved as HomeInkLevel)) {
@@ -47,7 +53,7 @@ export function HomeContent({
     } catch {
       // localStorage unavailable — keep the fixed default.
     }
-  }, []);
+  }, [inkPicker]);
 
   function handleInkLevelChange(level: HomeInkLevel) {
     setInkLevel(level);
@@ -74,7 +80,7 @@ export function HomeContent({
       <NearbyGrid t={t} />
       <HowItWorks t={t} />
       <JoinCta t={t} />
-      {HOME_INK_TONE_PICKER_ENABLED ? (
+      {inkPicker ? (
         <HomeInkTonePicker level={inkLevel} onChange={handleInkLevelChange} />
       ) : null}
     </main>

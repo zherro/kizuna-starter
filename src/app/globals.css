@@ -4,45 +4,6 @@
 @source "../app/**/*.{ts,tsx}";
 @source "../components/**/*.{ts,tsx}";
 
-/* safelist das classes dinâmicas do Typography */
-@utility text-responsive {
-  &.text-xs {
-    font-size: var(--text-xs);
-    line-height: var(--leading-xs);
-  }
-  &.text-sm {
-    font-size: var(--text-sm);
-    line-height: var(--leading-sm);
-  }
-  &.text-base {
-    font-size: var(--text-base);
-    line-height: var(--leading-base);
-  }
-  &.text-lg {
-    font-size: var(--text-lg);
-    line-height: var(--leading-lg);
-  }
-  &.text-xl {
-    font-size: var(--text-xl);
-    line-height: var(--leading-xl);
-  }
-  &.text-2xl {
-    font-size: var(--text-2xl);
-  }
-  &.text-3xl {
-    font-size: var(--text-3xl);
-  }
-  &.text-4xl {
-    font-size: var(--text-4xl);
-  }
-  &.text-5xl {
-    font-size: var(--text-5xl);
-  }
-  &.text-6xl {
-    font-size: var(--text-6xl);
-  }
-}
-
 /* Usam --terracotta/--amber (definidos por tema — hoje: terracotta, bora_cuiaba),
    então se adaptam sozinhos à cor do tema ativo. Fora desses temas, essas vars não
    existem e os utilitários abaixo não têm efeito visível. */
@@ -123,6 +84,10 @@
   --background-white: hsl(0, 0%, 98%);
   --background: oklch(0.996 0.006 250);
   --foreground: oklch(0.22 0.02 260);
+  /* Cor dos títulos com Typography font="display" (Eczar). Por padrão = --foreground; um tema
+     pode sobrescrever com um tom mais quente/mais claro que o near-black do corpo, porque um
+     serifado grande em peso 600 "pesa" mais na tela que o texto corrido na mesma cor. */
+  --foreground-display: var(--foreground);
 
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.22 0.02 260);
@@ -343,10 +308,11 @@
   --amber-foreground: oklch(0.24 0.04 53);
   --sand: oklch(0.94 0.015 78);
 
-  /* fontes: só têm efeito se o layout usar var(--font-display)/var(--font-body)
-     em vez das classes do next/font — carregadas em layout.tsx (Playfair Display/Inter). */
-  --font-display: var(--font-playfair-display), Georgia, serif;
-  --font-body: var(--font-inter), system-ui, sans-serif;
+  /* --foreground (0.2 0.035 53) é quase preto — correto para texto corrido, mas em Eczar
+     (serifado, mais "tinta" por glifo que o Bricolage Grotesque em peso 600) os títulos
+     ficavam mais pesados/escuros do que o resto do tema. Mais claro e puxado para o hue do
+     terracotta/primary (33.4), em vez do hue mais neutro do foreground (53). */
+  --foreground-display: oklch(0.32 0.06 35);
 }
 
 :root[data-theme-color='bora_cuiaba'].dark {
@@ -496,10 +462,6 @@
   --amber-foreground: oklch(0.24 0.04 55);
   --sand: oklch(0.94 0.015 80);
 
-  /* fontes: só têm efeito se o layout usar var(--font-display)/var(--font-body)
-     em vez das classes do next/font — ver docs. */
-  --font-display: 'Playfair Display', Georgia, serif;
-  --font-body: 'Inter', system-ui, sans-serif;
 }
 
 /* ================= DARK MODE ================= */
@@ -548,6 +510,7 @@
   --color-background: var(--background-white);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-foreground-display: var(--foreground-display);
 
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -582,7 +545,10 @@
 
   --font-sans: var(--font-roboto), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-bricolage), var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+  /* fonte de títulos (Typography font="display") — Quicksand, carregada em layout.tsx. Fica
+     dentro de @theme inline, então é fixa: --font-display não pode ser sobrescrita por tema
+     (Tailwind v4 resolve @theme inline em build-time, não segue o cascade do CSS). */
+  --font-display: var(--font-quicksand), var(--font-bricolage), var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
 }
 
 body {

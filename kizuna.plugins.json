@@ -1,7 +1,6 @@
 {
   "_comment": "Plugins do kizuna-core a ativar neste projeto. Cada um aplica suas migrations (kizuna-core/plugins/<nome>/NNNN_*.sql) e, quando tem, seu fragmento de casca (kizuna-core/plugins/<nome>/shell/). Edite antes de rodar `node kizuna-core/cli install`. Ver kizuna-core/docs/PLUGINS.md.",
-  "_comment_taxonomy": "NÃO adicione 'taxonomy' aqui — ele faz ALTER em public.categories/categories_sub, que só existem depois de uma migration do app criar essas tabelas. Se for usar taxonomia: crie as tabelas numa migration do app e aplique o plugin taxonomy manualmente entre as migrations e os extras.",
-  "_comment_messaging": "'messaging' (chat) e 'reviews' existem no core mas ainda não têm fragmento de casca genérico — adicione quando precisar e traga as rotas /api/chat|/api/resources correspondentes.",
+  "_comment_ordem": "Todos os plugins do core, em ORDEM DE DEPENDÊNCIA (o install aplica na ordem da lista): taxonomy antes de services; services antes de reviews/demandas; user_data antes de messaging; system_config antes de ai_assistant; forms antes de demandas; notifications+services+messaging+demandas antes de pedidos. O taxonomy agora cria public.categories sozinho. Os scripts consolidados db/auth.sql e db/public.sql são gerados desta lista: node db/build.mjs.",
   "plugins": [
     "user_data",
     "system_config",
@@ -13,6 +12,14 @@
     "pages",
     "holidays",
     "agenda",
-    "services"
+    "weather",
+    "forms",
+    "taxonomy",
+    "services",
+    "reviews",
+    "messaging",
+    "ai_assistant",
+    "demandas",
+    "pedidos"
   ]
 }

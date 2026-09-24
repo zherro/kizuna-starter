@@ -35,8 +35,7 @@ export const WIZARD_PT_BR = {
 
   start: {
     title: 'Hora de criar o título da sua publicação',
-    subtitle:
-      'O que você oferece, ou descrição curta do assunto.',
+    subtitle: 'O que você oferece, ou descrição curta do assunto.',
     placeholder: '... digite o titulo aqui.',
     tooShort: 'Escreva um pouco mais (mínimo 5 caracteres).',
   },
@@ -47,7 +46,7 @@ export const WIZARD_PT_BR = {
     why: 'Começamos pelo tipo porque ele é mais amplo: a mesma categoria pode aparecer em tipos diferentes, e o tipo certo põe o seu anúncio na frente de quem procura.',
     emptyGroups: 'Nenhum tipo encontrado.',
     pickCategory: 'Escolher categoria',
-    changeGroupCategory: "Mudar tipo",
+    changeGroupCategory: 'Mudar tipo',
     change: 'Trocar',
     open: 'Abrir',
     pickerTitle: 'Qual a sua categoria?',
@@ -92,8 +91,7 @@ export const WIZARD_PT_BR = {
         hint: 'Publicações online aparecem para todo o país, sem filtro de região.',
       },
     } as Record<string, { title?: string; description?: string; hint?: string }>,
-    remoteHint:
-      'Publicações online aparecem para todo o país, sem filtro de região.',
+    remoteHint: 'Publicações online aparecem para todo o país, sem filtro de região.',
   },
 
   price: {
@@ -124,27 +122,30 @@ export const WIZARD_PT_BR = {
     // Textos por forma de cobrança (chave = `textKey` ou o `value` de `price_unit`):
     // `{ title, description }`. Sem entrada, valem os textos padrão do core.
     options: {
-      service: { title: 'Por evento', description: 'Valor do ingresso ou voucher' },
+      service: {
+        title: 'Por evento',
+        description: 'Valor do ingresso ou voucher',
+      },
       hour: { title: 'Por hora', description: 'Passe ou voucher específico.' },
-      quote: { title: 'Sob orçamento', description: 'Você combina o valor no chat' },
+      quote: {
+        title: 'Sob orçamento',
+        description: 'Você combina o valor no chat',
+      },
     } as Record<string, { title?: string; description?: string }>,
   },
 
   images: {
     title: 'Adicione fotos da sua publicação',
-    subtitle:
-      'Adicione ao menos 1 foto para continuar. A primeira vira a capa da publicação.',
+    subtitle: 'Adicione ao menos 1 foto para continuar. A primeira vira a capa da publicação.',
     why: 'Quem procura quer ver antes de entrar em contato. Publicações com foto recebem muito mais contato — mostre o local, o ambiente e o que está incluso.',
     saveError: 'Não foi possível salvar as imagens da publicação.',
-    saveFirst:
-      'Volte e salve a categoria antes de adicionar fotos.',
+    saveFirst: 'Volte e salve a categoria antes de adicionar fotos.',
     tip: 'Fotos suas valem mais que imagens da internet. Boa luz e enquadramento reto passam confiança.',
   },
 
   description: {
     title: 'Conte um pouco sobre a sua publicação',
-    subtitle:
-      'Escreva com suas palavras: o que é, o que tem de diferente e como funciona.',
+    subtitle: 'Escreva com suas palavras: o que é, o que tem de diferente e como funciona.',
     why: 'É aqui que o visitante decide entre entrar em contato ou passar para a próxima publicação. Responder as dúvidas comuns (o que está incluso, duração, regras, como chegar) evita idas e vindas no chat.',
     placeholder:
       'Ex.: Trilha de dificuldade moderada, 4 horas, com guia local e lanche incluso. Saídas aos sábados às 8h, grupos de até 10 pessoas.',
@@ -175,8 +176,7 @@ export const WIZARD_PT_BR = {
       other: 'Outro motivo',
     },
     noteLabel: 'Observação da revisão',
-    notePlaceholder:
-      'Detalhes da decisão — visível só para a equipe (opcional)',
+    notePlaceholder: 'Detalhes da decisão — visível só para a equipe (opcional)',
   },
 
   page: {
@@ -258,6 +258,15 @@ export type AppMessages = {
     ctaCreateAccount: string;
     haveAccount: string;
   };
+  footer: {
+    tagline: string;
+    navigation: string;
+    categories: string;
+    social: string;
+    rights: string;
+    weatherCredit: string;
+    madeWith: string;
+  };
   default: {
     dashboard: string;
   };
@@ -299,7 +308,7 @@ export const messages: Record<AppLanguage, AppMessages> = {
       heroSub: 'Profissionais avaliados por quem já contratou, aqui na sua região.',
       searchPlaceholder: 'buscar serviço ou profissional',
       searchButton: 'Buscar',
-      categoriesTitle: 'Seu guia de entretenimento começa aqui! Descubra o que fazer',
+      categoriesTitle: 'Seu guia de entretenimento começa aqui. Descubra o que fazer!',
       categoriesAll: 'Ver todas',
       nearbyTitle: 'Quem está por perto',
       nearbySub: 'Uma amostra de quem está oferecendo serviço agora.',
@@ -335,6 +344,15 @@ export const messages: Record<AppLanguage, AppMessages> = {
       benefit4: 'Fale direto com o cliente, sem comissão sobre o combinado',
       ctaCreateAccount: 'Criar conta grátis',
       haveAccount: 'Já tem conta? Use o formulário para entrar.',
+    },
+    footer: {
+      tagline: 'Entretenimento, eventos e dicas.',
+      navigation: 'Navegação',
+      categories: 'Categorias',
+      social: 'Redes sociais',
+      rights: 'Todos os direitos reservados.',
+      weatherCredit: 'Previsão do tempo',
+      madeWith: 'Feito com ♥',
     },
     default: {
       dashboard: 'Meu Painel',
@@ -412,6 +430,15 @@ export const messages: Record<AppLanguage, AppMessages> = {
       ctaCreateAccount: 'Create free account',
       haveAccount: 'Already have an account? Use the form to sign in.',
     },
+    footer: {
+      tagline: 'Entertainment, events and tips to enjoy Cuiabá.',
+      navigation: 'Navigation',
+      categories: 'Categories',
+      social: 'Social media',
+      rights: 'All rights reserved.',
+      weatherCredit: 'Weather forecast',
+      madeWith: 'Made with ♥',
+    },
     default: {
       dashboard: 'Dashboard',
     },
@@ -487,6 +514,15 @@ export const messages: Record<AppLanguage, AppMessages> = {
       benefit4: 'Habla directo con el cliente, sin comisión sobre lo acordado',
       ctaCreateAccount: 'Crear cuenta gratis',
       haveAccount: '¿Ya tienes cuenta? Usa el formulario para iniciar sesión.',
+    },
+    footer: {
+      tagline: 'Entretenimiento, eventos y consejos para disfrutar Cuiabá.',
+      navigation: 'Navegación',
+      categories: 'Categorías',
+      social: 'Redes sociales',
+      rights: 'Todos los derechos reservados.',
+      weatherCredit: 'Pronóstico del tiempo',
+      madeWith: 'Hecho con ♥',
     },
     default: {
       dashboard: 'Dashboard',

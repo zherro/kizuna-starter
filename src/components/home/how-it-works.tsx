@@ -14,7 +14,7 @@ export function HowItWorks({ t }: { t: HomeMessages }) {
 
   return (
     <section className="mx-auto w-full max-w-6xl px-4 pb-14 sm:px-6">
-      <h2 className="font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-[-0.02em] text-foreground">
+      <h2 className="font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-[-0.02em] text-foreground-display">
         {t.howTitle}
       </h2>
 
