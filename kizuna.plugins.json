@@ -1,6 +1,6 @@
 {
   "_comment": "Plugins do kizuna-core a ativar neste projeto. Cada um aplica suas migrations (kizuna-core/plugins/<nome>/NNNN_*.sql) e, quando tem, seu fragmento de casca (kizuna-core/plugins/<nome>/shell/). Edite antes de rodar `node kizuna-core/cli install`. Ver kizuna-core/docs/PLUGINS.md.",
-  "_comment_ordem": "Todos os plugins do core, em ORDEM DE DEPENDÊNCIA (o install aplica na ordem da lista): taxonomy antes de services; services antes de reviews/demandas; user_data antes de messaging; system_config antes de ai_assistant; forms antes de demandas; notifications+services+messaging+demandas antes de pedidos. O taxonomy agora cria public.categories sozinho. Os scripts consolidados db/auth.sql e db/public.sql são gerados desta lista: node db/build.mjs.",
+  "_comment_ordem": "Todos os plugins do core, em ORDEM DE DEPENDÊNCIA (o install aplica na ordem da lista): taxonomy antes de services; services antes de reviews/demandas; search depois de services+taxonomy+user_data+reviews; user_data antes de messaging; system_config antes de ai_assistant; forms antes de demandas; notifications+services+messaging+demandas antes de pedidos. O taxonomy agora cria public.categories sozinho. Os scripts consolidados db/auth.sql e db/public.sql são gerados desta lista: node db/build.mjs.",
   "plugins": [
     "user_data",
     "system_config",
@@ -17,6 +17,7 @@
     "taxonomy",
     "services",
     "reviews",
+    "search",
     "messaging",
     "ai_assistant",
     "demandas",

@@ -16,6 +16,7 @@ import { PAGES_RESOURCE } from '@kizuna/core/client/components/screen-engine/res
 import { resourceTaxonomy } from '@kizuna/core/client/components/screen-engine/resources/taxonomy';
 import { resourceReviews } from '@kizuna/core/client/components/screen-engine/resources/reviews';
 import { resourceServices } from '@kizuna/core/client/components/screen-engine/resources/services';
+import { rpcSearch } from '@kizuna/core/client/components/screen-engine/resources/search';
 import type { ResourceConfig, RpcConfig } from '@kizuna/core/types';
 
 export { parseActive, makeSlug } from '@kizuna/core/types';
@@ -52,6 +53,8 @@ export const postgrestRpcs: Record<string, RpcConfig> = {
   fn_review_moderate: { schema: 'public' },
   // services plugin — moderação do anúncio (insere service_moderations e deriva services.status).
   fn_service_moderate: { schema: 'public' },
+  // search plugin — busca pública de serviços (/busca). Só relevante com o plugin `search` ativo.
+  ...rpcSearch,
   // messaging plugin — o chat usa rotas bespoke `/api/chat/*` que chamam
   // `fn_msg_*` direto (cursor + delta sync não cabem na rota genérica). Se quiser
   // expô-las aqui: fn_msg_start_conversation / fn_msg_send_message / fn_msg_mark_read

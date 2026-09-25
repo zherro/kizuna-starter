@@ -87,6 +87,13 @@
         "src/app/api/weather/route.ts": "sha256:b2d4d230e4a21974d710e0b3697c46dd00f48908db18e962a8f5fb69b648a6ef"
       },
       "migrations": 1
+    },
+    "search": {
+      "shellFiles": {
+        "src/app/busca/page.tsx": "sha256:1963bd2e2636cbd5f841fb1c481d4ebfafe88b504966e3b6c919075aff108bb5",
+        "src/app/api/ai/search-chat/route.ts": "sha256:b7fd44bbb09e8f0c2412a3d74e2a0b909b11ba8741eac9d9e17f3e8689e8a1be"
+      },
+      "migrations": 1
     }
   },
   "packageJson": {
@@ -143,6 +150,7 @@
     "postcss.config.mjs",
     "src/app/api/agenda/cities/route.ts",
     "src/app/api/agenda/ufs/route.ts",
+    "src/app/api/ai/search-chat/route.ts",
     "src/app/api/auth/login/route.ts",
     "src/app/api/auth/logout/route.ts",
     "src/app/api/auth/me/route.ts",
@@ -163,6 +171,7 @@
     "src/app/api/storage/files/[id]/content/route.ts",
     "src/app/api/storage/files/[id]/route.ts",
     "src/app/api/storage/files/route.ts",
+    "src/app/busca/page.tsx",
     "src/app/globals.css",
     "src/app/layout.tsx",
     "src/app/login/page.tsx",
