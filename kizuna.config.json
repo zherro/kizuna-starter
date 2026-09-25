@@ -35,7 +35,9 @@
   },
   "home": {
     "showHero": false,
-    "categoriesVariant": "classic",
+    "categoriesVariant": "compact",
+    "_comment_categorias": "\"categoriesOnlyWithListings\": true lista no carrossel só categorias com ao menos um anúncio publicado (requer plugin services).",
+    "categoriesOnlyWithListings": true,
     "showDiscover": true,
     "_comment": "\"inkPicker\": mostra o seletor de intensidade do fundo escuro dos cards (false esconde). \"inkLevel\": intensidade padrão (1-7); com o seletor ativo, a escolha salva do usuário prevalece.",
     "inkPicker": false,

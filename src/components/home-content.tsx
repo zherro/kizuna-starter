@@ -23,6 +23,8 @@ type HomeContentProps = {
   showHero?: boolean;
   /** layout do carrossel de categorias — vem de home.categoriesVariant */
   categoriesVariant?: 'classic' | 'compact';
+  /** só categorias com anúncio publicado — vem de home.categoriesOnlyWithListings */
+  categoriesOnlyWithListings?: boolean;
   /** mostra o banner "Descobrir no swipe" — vem de home.showDiscover */
   showDiscover?: boolean;
   /** mostra o seletor de intensidade do fundo "ink" — vem de home.inkPicker */
@@ -34,6 +36,7 @@ type HomeContentProps = {
 export function HomeContent({
   showHero = true,
   categoriesVariant = 'classic',
+  categoriesOnlyWithListings = false,
   showDiscover = false,
   inkPicker = HOME_INK_TONE_PICKER_ENABLED,
   inkLevel: defaultInkLevel = HOME_INK_FIXED_LEVEL,
@@ -71,7 +74,11 @@ export function HomeContent({
       style={getHomeInkStyle(inkLevel)}
     >
       {showHero ? <HomeHero t={t} /> : null}
-      <CategoryRail t={t} variant={categoriesVariant} />
+      <CategoryRail
+        t={t}
+        variant={categoriesVariant}
+        onlyWithListings={categoriesOnlyWithListings}
+      />
       {showDiscover ? (
         <div className="pb-6">
           <DiscoverCta />

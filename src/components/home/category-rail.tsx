@@ -11,13 +11,16 @@ type HomeMessages = AppMessages['home'];
 export function CategoryRail({
   t,
   variant = 'classic',
+  onlyWithListings = false,
 }: {
   t: HomeMessages;
   variant?: 'classic' | 'compact';
+  onlyWithListings?: boolean;
 }) {
   return (
     <CategoryCarousel
       variant={variant}
+      onlyWithListings={onlyWithListings}
       title={t.categoriesTitle}
       allLabel={t.categoriesAll}
       allHref="/busca"

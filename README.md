@@ -11,7 +11,7 @@ por `node kizuna-core/cli install` a partir do `kizuna-core/template/` — e da�
 git clone --recurse-submodules <este-repo> meu-app && cd meu-app
 #   esqueceu --recurse-submodules? → git submodule update --init --recursive
 
-# editar kizuna.plugins.json (ver kizuna-core/docs/PLUGINS.md)
+# editar kizuna.plugins.json (ver kizuna-core/docs/plugins/README.md)
 
 node kizuna-core/cli install                    # materializa a casca + npm install
 cp .env.example .env                            # preencher PGRST_JWT_SECRET + POSTGREST_URL
@@ -52,6 +52,8 @@ node kizuna-core/cli lock                  # marca versão como "vista" sem apli
 
 ## Referência
 
-- `kizuna-core/docs/CLI.md` — comandos + formato do `kizuna.lock`
-- `kizuna-core/docs/PLUGINS.md` — plugins (`taxonomy` fica fora da lista de propósito)
-- `kizuna-core/docs/HARDENING.md` — performance/segurança + backlog
+Documentação completa: `kizuna-core/docs/README.md` (índice; publicada no GitBook).
+
+- `kizuna-core/docs/comecando/cli.md` — comandos + formato do `kizuna.lock`
+- `kizuna-core/docs/plugins/README.md` — plugins (`taxonomy` fica fora da lista de propósito)
+- `kizuna-core/docs/manutencao/hardening.md` — performance/segurança + backlog
