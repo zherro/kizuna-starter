@@ -94,6 +94,13 @@
         "src/app/api/ai/search-chat/route.ts": "sha256:b7fd44bbb09e8f0c2412a3d74e2a0b909b11ba8741eac9d9e17f3e8689e8a1be"
       },
       "migrations": 1
+    },
+    "swipe": {
+      "shellFiles": {
+        "src/app/descobrir/page.tsx": "sha256:e3af5089b974a6ebbcd62eda1c194788e8d40d1f5d661f31c4e663e20e1019a3",
+        "src/app/curtidos/page.tsx": "sha256:02224bd5a2b839b49d0a12ac400e46c6f663340de36ccf31e4df33c1faf39361"
+      },
+      "migrations": 1
     }
   },
   "packageJson": {
@@ -172,6 +179,8 @@
     "src/app/api/storage/files/[id]/route.ts",
     "src/app/api/storage/files/route.ts",
     "src/app/busca/page.tsx",
+    "src/app/curtidos/page.tsx",
+    "src/app/descobrir/page.tsx",
     "src/app/globals.css",
     "src/app/layout.tsx",
     "src/app/login/page.tsx",
