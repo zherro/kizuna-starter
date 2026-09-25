@@ -14,7 +14,15 @@ containers → Alloy (lê via docker.sock) → Loki (guarda 30 dias) → Grafana
    Loki e Alloy não recebem domínio.
 4. Deploy. A rede externa `kizuna_net` precisa existir, a mesma dos outros composes.
 
-A fonte de dados Loki já vem provisionada. Abra **Explore** e escolha **Loki**.
+A fonte de dados Loki já vem provisionada. Não é preciso expor mais nada: o Grafana fala com
+o Loki pela rede interna.
+
+* **Dashboards → Kizuna → "Kizuna — Visão geral"**: contadores de login, lockout, captcha e
+  e-mail, volume e erros por serviço, e painéis de log com filtro por serviço e texto.
+* **Explore → Loki**: consultas livres (exemplos abaixo).
+
+O dashboard vem de `grafana/dashboards/kizuna-overview.json`. Pode ser editado na interface, mas
+para manter a alteração exporte o JSON (Share → Export) e sobrescreva o arquivo.
 
 ## Consultas úteis (LogQL)
 

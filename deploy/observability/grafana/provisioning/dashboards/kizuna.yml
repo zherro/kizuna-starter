@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: kizuna
+    folder: Kizuna
+    type: file
+    disableDeletion: false
+    allowUiUpdates: true
+    updateIntervalSeconds: 60
+    options:
+      path: /etc/grafana/dashboards
