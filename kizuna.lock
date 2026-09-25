@@ -98,7 +98,7 @@
     "swipe": {
       "shellFiles": {
         "src/app/descobrir/page.tsx": "sha256:e3af5089b974a6ebbcd62eda1c194788e8d40d1f5d661f31c4e663e20e1019a3",
-        "src/app/curtidos/page.tsx": "sha256:02224bd5a2b839b49d0a12ac400e46c6f663340de36ccf31e4df33c1faf39361"
+        "src/app/curtidos/page.tsx": "sha256:e31226563533e928c2d0e9434812a1ef9026e038edc4e762c672b521710fa116"
       },
       "migrations": 1
     }
