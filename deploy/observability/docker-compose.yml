@@ -1,0 +1,60 @@
+# Observabilidade: Loki (guarda logs) + Alloy (coleta logs do Docker) + Grafana (tela).
+# Tudo open source (AGPLv3/Apache), self-hosted, sem custo de licença.
+#
+# No Dokploy: crie um Compose apontando para deploy/observability/docker-compose.yml.
+# Envs (aba Environment): GRAFANA_ADMIN_USER, GRAFANA_ADMIN_PASSWORD, GRAFANA_ROOT_URL.
+# Domínio (aba Domains): só o serviço "grafana", porta 3000. Loki e Alloy ficam internos.
+
+services:
+  loki:
+    image: grafana/loki:3.5.0
+    restart: unless-stopped
+    command: -config.file=/etc/loki/config.yml
+    volumes:
+      - ./loki-config.yml:/etc/loki/config.yml:ro
+      - loki_data:/loki
+    # sem ports: acessível só pela rede interna (http://loki:3100)
+
+  alloy:
+    image: grafana/alloy:v1.9.1
+    restart: unless-stopped
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./config.alloy:/etc/alloy/config.alloy:ro
+      # leitura dos containers e dos logs pela API do Docker (somente leitura)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy_data:/var/lib/alloy/data
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana-oss:12.0.2
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?defina GRAFANA_ADMIN_PASSWORD}
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - loki
+    # ports:
+    #   - "3000"
+
+volumes:
+  loki_data:
+  alloy_data:
+  grafana_data:
+
+networks:
+  default:
+    name: kizuna_net
+    external: true
