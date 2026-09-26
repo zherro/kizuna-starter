@@ -58,7 +58,8 @@
         "location": {
           "default": {
             "options": [
-              { "value": "no_estabelecimento", "model": "address", "icon": "MapPin" },
+              { "value": "no_estabelecimento", "model": "addresses", "maxAddresses": 5, "icon": "MapPin" },
+              { "value": "no_cliente", "model": "identifier", "icon": "Home" },
               { "value": "remoto", "model": "identifier", "icon": "Globe" }
             ]
           }

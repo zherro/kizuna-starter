@@ -1,6 +1,12 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { SearchPage } from '@kizuna/core/client/components/search/search-page';
+import cfg from '@/../kizuna.config.json';
+
+// O carrossel de categorias da busca segue EXATAMENTE a regra do da home: as mesmas chaves de
+// `home` no kizuna.config.json (variante e "só categorias com anúncio publicado").
+const home = (cfg as { home?: { categoriesVariant?: string; categoriesOnlyWithListings?: boolean } })
+  .home;
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -46,7 +52,12 @@ export default function BuscaPage() {
       }
     >
       {/* Para o modo "Pedir um serviço" (demandas), passe `requestMode` aqui — ver SearchPageProps. */}
-      <SearchPage />
+      <SearchPage
+        categoryCarousel={{
+          variant: home?.categoriesVariant === 'compact' ? 'compact' : 'classic',
+          onlyWithListings: home?.categoriesOnlyWithListings === true,
+        }}
+      />
     </Suspense>
   );
 }

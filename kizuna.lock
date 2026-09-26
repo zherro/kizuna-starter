@@ -2,7 +2,7 @@
   "lockVersion": 1,
   "kizunaCore": {
     "version": "0.9.10",
-    "sha": "b9cb1a82e6c06d2ef4c6d9fed7d23748a9f7cd4d",
+    "sha": "1f8609a7ebf54b8d982d067acc0ed94d66fe615d",
     "syncedAt": "2026-09-19T13:49:35.616Z"
   },
   "template": {
@@ -90,17 +90,17 @@
     },
     "search": {
       "shellFiles": {
-        "src/app/busca/page.tsx": "sha256:1963bd2e2636cbd5f841fb1c481d4ebfafe88b504966e3b6c919075aff108bb5",
+        "src/app/busca/page.tsx": "sha256:f725cc573a2d173d399f2fe4610e59fcfc63c8e080def077e30ed06fd1bb1a01",
         "src/app/api/ai/search-chat/route.ts": "sha256:b7fd44bbb09e8f0c2412a3d74e2a0b909b11ba8741eac9d9e17f3e8689e8a1be"
       },
-      "migrations": 1
+      "migrations": 2
     },
     "swipe": {
       "shellFiles": {
         "src/app/descobrir/page.tsx": "sha256:e3af5089b974a6ebbcd62eda1c194788e8d40d1f5d661f31c4e663e20e1019a3",
         "src/app/curtidos/page.tsx": "sha256:e31226563533e928c2d0e9434812a1ef9026e038edc4e762c672b521710fa116"
       },
-      "migrations": 1
+      "migrations": 2
     }
   },
   "packageJson": {

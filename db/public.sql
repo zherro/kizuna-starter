@@ -3,7 +3,7 @@
 -- Aplicar DEPOIS do db/auth.sql, em base limpa:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/public.sql
 -- Ordem = kizuna.plugins.json (ordem de dependência).
--- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (2), onboarding (1), storage (3), location (1), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (3), services (2), reviews (1), search (1), swipe (1), messaging (1), ai_assistant (1), demandas (4), pedidos (4)
+-- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (2), onboarding (1), storage (3), location (1), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (3), services (4), reviews (1), search (2), swipe (2), messaging (1), ai_assistant (1), demandas (4), pedidos (4)
 
 
 -- ===============================================================================================
@@ -2547,7 +2547,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: services  (2 arquivos)
+-- PLUGIN: services  (4 arquivos)
 -- ===============================================================================================
 
 
@@ -2785,6 +2785,152 @@ GRANT SELECT ON public.vw_category_service_stats TO anon, auth_user;
 
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('services', '1.1.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/services/0003_service_addresses.sql
+-- ===============================================================================================
+
+-- plugins/services/0003_service_addresses.sql
+-- Endereços do serviço (N por serviço): tabela filha `public.service_addresses`, no mesmo padrão
+-- de `service_categories_sub` (FK ON DELETE CASCADE, tenant_id/created_by com default de JWT,
+-- `active`, GRANTs, NOTIFY pgrst). Idempotente. Consumida por `search`/`swipe` (0002) via um único
+-- EXISTS por (state, city_ibge) — nunca expor rua/número em RPC pública.
+--
+-- Leitura pública SÓ de endereço de serviço ativo e `status = 'active'` (tem rua e número);
+-- o dono e quem tem `services:moderate` enxergam também os próprios/pendentes (espelha `services`).
+
+-- =========================================================================
+-- 1) Tabela + índices
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS public.service_addresses (
+  id            bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  service_id    bigint NOT NULL REFERENCES public.services(id) ON DELETE CASCADE,
+  label         text,
+  zip_code      varchar(10),
+  street        text,
+  number        text,
+  complement    text,
+  neighborhood  text,
+  city          text,
+  state         varchar(2),
+  city_ibge     text,
+  latitude      numeric(9,6),
+  longitude     numeric(9,6),
+  place_id      text,
+  is_primary    boolean NOT NULL DEFAULT false,
+  tenant_id     uuid NOT NULL DEFAULT auth.fun_auth_current_tenant_id(),
+  created_by    uuid NOT NULL DEFAULT auth.fun_auth_user_id(),
+  active        boolean NOT NULL DEFAULT true,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  updated_at    timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS service_addresses_service
+  ON public.service_addresses (service_id, is_primary DESC) WHERE active;
+CREATE INDEX IF NOT EXISTS service_addresses_state_city
+  ON public.service_addresses (state, city_ibge) WHERE active;
+CREATE INDEX IF NOT EXISTS service_addresses_city
+  ON public.service_addresses (city_ibge) WHERE active AND city_ibge IS NOT NULL;
+-- No máximo 1 endereço principal ativo por serviço.
+CREATE UNIQUE INDEX IF NOT EXISTS service_addresses_one_primary
+  ON public.service_addresses (service_id) WHERE is_primary AND active;
+
+-- =========================================================================
+-- 2) RLS + GRANTs
+-- =========================================================================
+ALTER TABLE public.service_addresses ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE ON TABLE public.service_addresses TO auth_user;
+GRANT DELETE ON TABLE public.service_addresses TO auth_user;
+GRANT SELECT ON TABLE public.service_addresses TO anon;
+REVOKE INSERT, UPDATE, DELETE ON TABLE public.service_addresses FROM anon;
+
+DROP POLICY IF EXISTS sa_public_read ON public.service_addresses;
+CREATE POLICY sa_public_read ON public.service_addresses FOR SELECT TO anon, auth_user
+  USING (active AND EXISTS (
+    SELECT 1 FROM public.services s
+     WHERE s.id = service_id AND s.active AND s.status = 'active'));
+
+DROP POLICY IF EXISTS sa_owner_write ON public.service_addresses;
+CREATE POLICY sa_owner_write ON public.service_addresses FOR ALL TO auth_user
+  USING (EXISTS (SELECT 1 FROM public.services s WHERE s.id = service_id AND s.created_by = auth.fun_auth_user_id()))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.services s WHERE s.id = service_id AND s.created_by = auth.fun_auth_user_id()));
+
+DROP POLICY IF EXISTS sa_moderator_read ON public.service_addresses;
+CREATE POLICY sa_moderator_read ON public.service_addresses FOR SELECT TO auth_user
+  USING (auth.fun_auth_has_perm('services','moderate'));
+
+-- =========================================================================
+-- 3) Backfill idempotente: 1 endereço principal por serviço ativo que ainda não tem nenhum,
+--    a partir do user_data do prestador. Só se houver cidade ou UF. lat/lng (varchar) só entram
+--    se forem numéricos e dentro da faixa válida.
+-- =========================================================================
+DO $$
+BEGIN
+  IF to_regclass('public.user_data') IS NULL THEN
+    RETURN;
+  END IF;
+
+  INSERT INTO public.service_addresses
+    (service_id, zip_code, city, state, city_ibge, latitude, longitude, is_primary, tenant_id, created_by)
+  SELECT
+    s.id,
+    NULLIF(btrim(prov.zip_code), ''),
+    NULLIF(btrim(prov.city), ''),
+    NULLIF(btrim(prov.state), ''),
+    NULLIF(btrim(prov.city_ibge), ''),
+    CASE WHEN btrim(prov.latitude)  ~ '^-?[0-9]{1,2}(\.[0-9]+)?$' AND abs(btrim(prov.latitude)::numeric)  <= 90
+         THEN round(btrim(prov.latitude)::numeric, 6) END,
+    CASE WHEN btrim(prov.longitude) ~ '^-?[0-9]{1,3}(\.[0-9]+)?$' AND abs(btrim(prov.longitude)::numeric) <= 180
+         THEN round(btrim(prov.longitude)::numeric, 6) END,
+    true,
+    s.tenant_id,
+    s.created_by
+  FROM public.services s
+  CROSS JOIN LATERAL (
+    SELECT ud.city, ud.state, ud.city_ibge, ud.zip_code, ud.latitude, ud.longitude
+      FROM public.user_data ud
+     WHERE ud.tenant_id = s.tenant_id AND ud.active = true
+     ORDER BY ud.created_at
+     LIMIT 1
+  ) prov
+  WHERE s.active = true
+    AND NOT EXISTS (SELECT 1 FROM public.service_addresses a WHERE a.service_id = s.id)
+    AND (NULLIF(btrim(prov.city), '') IS NOT NULL OR NULLIF(btrim(prov.state), '') IS NOT NULL);
+END $$;
+
+-- =========================================================================
+-- 4) Plugin registration
+-- =========================================================================
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('services', '1.2.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/services/0004_services_expires_at.sql
+-- ===============================================================================================
+
+-- plugins/services/0004_services_expires_at.sql
+-- Validade do anúncio: `services.expires_at` (NULL = sem validade). Passado o instante, o anúncio
+-- some da busca/swipe (filtro em fn_search_services, search 0002); `status` continua 'active'.
+-- Idempotente. GRANTs/policies de `services` são por tabela (0001) e cobrem a coluna nova.
+
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS expires_at timestamptz NULL;
+
+COMMENT ON COLUMN public.services.expires_at IS
+  'Fim da validade do anúncio (timestamptz). NULL = sem validade. Vencido: some da busca/swipe (status segue active).';
+
+CREATE INDEX IF NOT EXISTS services_expires_at
+  ON public.services (expires_at) WHERE active AND expires_at IS NOT NULL;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('services', '1.3.0')
 ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
 
 NOTIFY pgrst, 'reload schema';
@@ -3436,7 +3582,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: search  (1 arquivo)
+-- PLUGIN: search  (2 arquivos)
 -- ===============================================================================================
 
 
@@ -3645,7 +3791,247 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: swipe  (1 arquivo)
+-- kizuna-core/plugins/search/0002_search_addresses.sql
+-- ===============================================================================================
+
+-- plugins/search/0002_search_addresses.sql
+-- fn_search_services passa a filtrar por local via `service_addresses` (plugin services 0003):
+--  * sem p_state/p_city_ibge: nenhum custo de local;
+--  * serviço com service_location = 'remoto' sempre passa o filtro de local;
+--  * senão, UM ÚNICO EXISTS em service_addresses (state e city_ibge no MESMO endereço; usa os
+--    índices parciais); serviço SEM nenhum endereço ativo cai no fallback antigo (user_data);
+--  * continua 1 linha por serviço (semi-join, sem JOIN que duplique);
+--  * city / state / address_count só são calculados para as linhas da página final (LATERAL depois
+--    do LIMIT/OFFSET): endereço que casou com o filtro, depois o principal. Sem endereço: cidade/UF
+--    do prestador e address_count = 0. NUNCA devolve rua/número.
+-- Anúncio com `expires_at` no passado não entra (services 0004; NULL = sem validade).
+-- Depende de `services` >= 1.3.0 (0003_service_addresses.sql + 0004_services_expires_at.sql).
+
+DROP FUNCTION IF EXISTS public.fn_search_services(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, integer, text);
+
+CREATE OR REPLACE FUNCTION public.fn_search_services(
+  p_state character varying,
+  p_city_id integer,
+  p_group_category_slug character varying,
+  p_category_id bigint DEFAULT NULL::bigint,
+  p_subcategories jsonb DEFAULT NULL::jsonb,
+  p_query text DEFAULT NULL::text,
+  p_seed double precision DEFAULT NULL::double precision,
+  p_page integer DEFAULT 0,
+  p_page_size integer DEFAULT 20,
+  p_city_ibge text DEFAULT NULL::text
+)
+RETURNS TABLE(
+  uid uuid,
+  title character varying,
+  price numeric,
+  price_type character varying,
+  category character varying,
+  subcategory character varying,
+  sponsored boolean,
+  cover_file_id character varying,
+  provider_name character varying,
+  provider_avatar character varying,
+  rating numeric,
+  reviews integer,
+  city text,
+  state text,
+  address_count integer
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $function$
+DECLARE
+  v_query tsquery;
+  v_group_id bigint;
+  v_state text := NULLIF(btrim(p_state), '');
+  v_city  text := NULLIF(btrim(p_city_ibge), '');
+  v_has_loc boolean;
+BEGIN
+  PERFORM setseed(COALESCE(p_seed, random()));
+  v_has_loc := (v_state IS NOT NULL OR v_city IS NOT NULL);
+
+  IF p_query IS NOT NULL AND btrim(p_query) <> '' THEN
+    v_query := plainto_tsquery('portuguese', unaccent(p_query));
+  END IF;
+
+  IF p_group_category_slug IS NOT NULL AND btrim(p_group_category_slug) <> '' THEN
+    SELECT cg.id INTO v_group_id
+      FROM public.categories_group cg
+     WHERE cg.slug = p_group_category_slug
+       AND cg.active = true;
+
+    IF v_group_id IS NULL THEN
+      RETURN;
+    END IF;
+  END IF;
+
+  RETURN QUERY
+  WITH services_filtered AS MATERIALIZED (
+    SELECT
+      s.id                                 AS service_id,
+      s.uid,
+      s.title::character varying           AS title,
+      s.starting_price::numeric            AS price,
+      s.price_unit::character varying      AS price_type,
+      c.name::character varying            AS category,
+      sub.name::character varying          AS subcategory,
+      COALESCE(s.sponsored, false)         AS sponsored,
+      COALESCE(
+        NULLIF(s.extras->>'coverFileId', ''),
+        s.extras->'images'->>0
+      )::character varying                 AS cover_file_id,
+      COALESCE(prov.display_name, prov.full_name)::character varying AS provider_name,
+      prov.avatar_url::character varying   AS provider_avatar,
+      prov.prov_city                       AS provider_city,
+      prov.prov_state                      AS provider_state,
+      rs.average_rating::numeric           AS rating,
+      COALESCE(rs.total_reviews, 0)::integer AS reviews,
+      CASE
+        WHEN v_query IS NOT NULL
+        THEN ts_rank(
+          to_tsvector('portuguese', unaccent(s.title || ' ' || COALESCE(s.description, ''))),
+          v_query
+        )
+        ELSE 0::real
+      END AS text_rank
+    FROM public.services s
+    LEFT JOIN public.categories c ON c.id = s.category_id
+    LEFT JOIN LATERAL (
+      SELECT cs.name
+      FROM public.service_categories_sub scs
+      JOIN public.categories_sub cs ON cs.id = scs.category_sub_id
+      WHERE scs.service_id = s.id
+        AND scs.active = true
+        AND cs.active = true
+      ORDER BY scs.id
+      LIMIT 1
+    ) sub ON true
+    LEFT JOIN LATERAL (
+      SELECT ud.full_name, ud.display_name, ud.avatar_url,
+             ud.state AS prov_state, ud.city AS prov_city, ud.city_ibge AS prov_city_ibge
+      FROM public.user_data ud
+      WHERE ud.tenant_id = s.tenant_id
+        AND ud.active = true
+      ORDER BY ud.created_at
+      LIMIT 1
+    ) prov ON true
+    LEFT JOIN public.review_stats rs
+      ON rs.domain = 'service' AND rs.reference_id = s.id::text
+    WHERE s.active = true
+      AND s.status = 'active'
+      AND (s.expires_at IS NULL OR s.expires_at > now())
+      AND (p_category_id IS NULL OR s.category_id = p_category_id)
+      AND (
+        v_group_id IS NULL
+        OR s.category_group_id = v_group_id
+        OR EXISTS (
+          SELECT 1
+          FROM public.categories_group_link cgl
+          WHERE cgl.category_id = s.category_id
+            AND cgl.category_group_id = v_group_id
+        )
+      )
+      AND (
+        NOT v_has_loc
+        OR s.service_location = 'remoto'
+        OR EXISTS (
+          SELECT 1
+          FROM public.service_addresses a
+          WHERE a.service_id = s.id
+            AND a.active
+            AND (v_state IS NULL OR a.state = v_state)
+            AND (v_city  IS NULL OR a.city_ibge = v_city)
+        )
+        OR (
+          NOT EXISTS (
+            SELECT 1 FROM public.service_addresses a0
+            WHERE a0.service_id = s.id AND a0.active
+          )
+          AND (v_state IS NULL OR prov.prov_state = v_state)
+          AND (v_city  IS NULL OR prov.prov_city_ibge = v_city)
+        )
+      )
+      AND (
+        p_subcategories IS NULL
+        OR jsonb_array_length(p_subcategories) = 0
+        OR EXISTS (
+          SELECT 1
+          FROM public.service_categories_sub scs
+          WHERE scs.service_id = s.id
+            AND scs.active = true
+            AND scs.category_sub_id IN (
+              SELECT (value)::bigint FROM jsonb_array_elements_text(p_subcategories)
+            )
+        )
+      )
+      AND (
+        v_query IS NULL
+        OR to_tsvector('portuguese', unaccent(s.title || ' ' || COALESCE(s.description, ''))) @@ v_query
+        OR unaccent(s.title) ILIKE '%' || unaccent(p_query) || '%'
+      )
+  ),
+  page AS (
+    SELECT sf.*, row_number() OVER () AS rn
+    FROM (
+      SELECT f.*
+      FROM services_filtered f
+      ORDER BY
+        CASE WHEN v_query IS NOT NULL THEN f.text_rank END DESC NULLS LAST,
+        f.rating DESC NULLS LAST,
+        (f.provider_city IS NOT NULL) DESC,
+        random()
+      LIMIT p_page_size
+      OFFSET (p_page * p_page_size)
+    ) sf
+  )
+  SELECT
+    pg.uid,
+    pg.title::character varying,
+    pg.price::numeric,
+    pg.price_type::character varying,
+    pg.category::character varying,
+    pg.subcategory::character varying,
+    pg.sponsored,
+    pg.cover_file_id::character varying,
+    pg.provider_name::character varying,
+    pg.provider_avatar::character varying,
+    pg.rating::numeric,
+    pg.reviews::integer,
+    COALESCE(ad.a_city, pg.provider_city)::text,
+    COALESCE(ad.a_state, pg.provider_state)::text,
+    COALESCE(ad.cnt, 0)::integer
+  FROM page pg
+  LEFT JOIN LATERAL (
+    SELECT a.city AS a_city, a.state AS a_state, count(*) OVER () AS cnt
+    FROM public.service_addresses a
+    WHERE a.service_id = pg.service_id
+      AND a.active
+    ORDER BY
+      (v_has_loc
+       AND (v_state IS NULL OR a.state = v_state)
+       AND (v_city  IS NULL OR a.city_ibge = v_city)) DESC,
+      a.is_primary DESC,
+      a.id
+    LIMIT 1
+  ) ad ON true
+  ORDER BY pg.rn;
+END;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_search_services(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, integer, text)
+  TO anon, auth_user;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('search', '1.1.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- PLUGIN: swipe  (2 arquivos)
 -- ===============================================================================================
 
 
@@ -3663,7 +4049,7 @@ NOTIFY pgrst, 'reload schema';
 --    TTL). Um `skip` comum nunca rebaixa um `like`.
 --  * `fn_swipe_deck`: embrulha `fn_search_services` (mesmos filtros, página 0, até 1000
 --    candidatos) e tira: curtidos, passados há menos de `swipe.skip_ttl_days` e `p_exclude`
---    (cards que o cliente já tem no buffer / passados do anônimo). Sempre página 0: o que já foi
+--    (cards que o cliente já tem no buffer). Sempre página 0: o que já foi
 --    decidido sai pelo anti-join, então offset não é necessário (e daria pulos/repetições).
 --    `p_price_min/p_price_max` aplicam a faixa de preço que o /busca filtra no cliente.
 --  * Usuário vem da sessão (`auth.fun_auth_user_id()`, NULL para anon), nunca de parâmetro.
@@ -3780,7 +4166,7 @@ BEGIN
   END IF;
 
   -- 'unlike' (descurtir explícito) grava 'skip' e sempre sobrescreve; um 'skip' comum nunca
-  -- rebaixa um 'like' existente (ex.: passados do anônimo migrados no login).
+  -- rebaixa um 'like' existente (ex.: passar de novo um card já curtido).
   INSERT INTO public.service_swipes (user_id, service_uid, action, updated_at)
   SELECT v_user, s.uid, CASE WHEN p_action = 'unlike' THEN 'skip' ELSE p_action END, now()
   FROM public.services s
@@ -3847,6 +4233,154 @@ GRANT EXECUTE ON FUNCTION public.fn_swipe_liked(timestamptz, integer) TO auth_us
 
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('swipe', '1.0.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/swipe/0002_swipe_addresses.sql
+-- ===============================================================================================
+
+-- plugins/swipe/0002_swipe_addresses.sql
+-- Endereços do serviço no swipe: fn_swipe_deck herda de fn_search_services (search 0002) as colunas
+-- city / state / address_count; fn_swipe_liked devolve as mesmas (endereço principal + contagem,
+-- via LATERAL LIMIT 1, sem duplicar linhas). Nunca devolve rua/número.
+-- Depende de `search` >= 1.1.0 e `services` >= 1.2.0.
+
+DROP FUNCTION IF EXISTS public.fn_swipe_deck(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, text, uuid[], numeric, numeric);
+
+CREATE OR REPLACE FUNCTION public.fn_swipe_deck(
+  p_state character varying,
+  p_city_id integer,
+  p_group_category_slug character varying,
+  p_category_id bigint DEFAULT NULL::bigint,
+  p_subcategories jsonb DEFAULT NULL::jsonb,
+  p_query text DEFAULT NULL::text,
+  p_seed double precision DEFAULT NULL::double precision,
+  p_page_size integer DEFAULT 20,
+  p_city_ibge text DEFAULT NULL::text,
+  p_exclude uuid[] DEFAULT NULL::uuid[],
+  p_price_min numeric DEFAULT NULL::numeric,
+  p_price_max numeric DEFAULT NULL::numeric
+)
+RETURNS TABLE(
+  uid uuid,
+  title character varying,
+  price numeric,
+  price_type character varying,
+  category character varying,
+  subcategory character varying,
+  sponsored boolean,
+  cover_file_id character varying,
+  provider_name character varying,
+  provider_avatar character varying,
+  rating numeric,
+  reviews integer,
+  city text,
+  state text,
+  address_count integer
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $function$
+DECLARE
+  v_user uuid := auth.fun_auth_user_id();
+  v_ttl interval := make_interval(days => COALESCE(
+    NULLIF((SELECT value #>> '{}' FROM auth.system_config WHERE key = 'swipe.skip_ttl_days'), '')::integer,
+    7
+  ));
+BEGIN
+  RETURN QUERY
+  SELECT c.*
+  FROM public.fn_search_services(
+    p_state, p_city_id, p_group_category_slug, p_category_id, p_subcategories,
+    p_query, p_seed, 0, 1000, p_city_ibge
+  ) c
+  WHERE (p_exclude IS NULL OR NOT (c.uid = ANY(p_exclude)))
+    AND (p_price_min IS NULL OR c.price IS NULL OR c.price <= 0 OR c.price >= p_price_min)
+    AND (p_price_max IS NULL OR c.price IS NULL OR c.price <= 0 OR c.price <= p_price_max)
+    AND (
+      v_user IS NULL
+      OR NOT EXISTS (
+        SELECT 1 FROM public.service_swipes sw
+        WHERE sw.user_id = v_user
+          AND sw.service_uid = c.uid
+          AND (sw.action = 'like' OR sw.updated_at > now() - v_ttl)
+      )
+    )
+  LIMIT LEAST(GREATEST(p_page_size, 1), 50);
+END;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_swipe_deck(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, text, uuid[], numeric, numeric)
+  TO anon, auth_user;
+
+DROP FUNCTION IF EXISTS public.fn_swipe_liked(timestamptz, integer);
+
+CREATE OR REPLACE FUNCTION public.fn_swipe_liked(p_before timestamptz DEFAULT NULL, p_page_size integer DEFAULT 24)
+RETURNS TABLE(
+  uid uuid,
+  title character varying,
+  price numeric,
+  price_type character varying,
+  category character varying,
+  cover_file_id character varying,
+  liked_at timestamptz,
+  city text,
+  state text,
+  address_count integer
+)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $function$
+DECLARE
+  v_user uuid := auth.fun_auth_user_id();
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'login necessario' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    s.uid,
+    s.title::character varying,
+    s.starting_price::numeric,
+    s.price_unit::character varying,
+    c.name::character varying,
+    COALESCE(NULLIF(s.extras->>'coverFileId', ''), s.extras->'images'->>0)::character varying,
+    sw.updated_at,
+    ad.a_city::text,
+    ad.a_state::text,
+    COALESCE(ad.cnt, 0)::integer
+  FROM public.service_swipes sw
+  JOIN public.services s ON s.uid = sw.service_uid
+  LEFT JOIN public.categories c ON c.id = s.category_id
+  LEFT JOIN LATERAL (
+    SELECT a.city AS a_city, a.state AS a_state, count(*) OVER () AS cnt
+    FROM public.service_addresses a
+    WHERE a.service_id = s.id
+      AND a.active
+    ORDER BY a.is_primary DESC, a.id
+    LIMIT 1
+  ) ad ON true
+  WHERE sw.user_id = v_user
+    AND sw.action = 'like'
+    AND s.active = true
+    AND s.status = 'active'
+    AND (p_before IS NULL OR sw.updated_at < p_before)
+  ORDER BY sw.updated_at DESC
+  LIMIT LEAST(GREATEST(p_page_size, 1), 100);
+END;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_swipe_liked(timestamptz, integer) TO auth_user;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('swipe', '1.1.0')
 ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
 
 NOTIFY pgrst, 'reload schema';
