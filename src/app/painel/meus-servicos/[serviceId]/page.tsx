@@ -1,8 +1,9 @@
 import { redirect } from 'next/navigation';
-import { getSession, isOnboardingCompletedServer } from '@kizuna/core/server';
+import { canDoServer, getSession } from '@kizuna/core/server';
 import { ServicoWizardPage } from '@kizuna/core/client/components/services/servico-wizard-page';
 import type { WizardJsonConfig } from '@kizuna/core/client/components/wizard';
 import cfg from '@/../kizuna.config.json';
+import { accountLevelsSetup } from '@/lib/server/account-levels';
 
 type EditServicePageProps = {
   params: Promise<{ serviceId: string }>;
@@ -15,9 +16,10 @@ export default async function EditServicoPage({ params }: EditServicePageProps) 
   const { serviceId } = await params;
   const isCreating = serviceId === 'novo';
 
-  // O botão "Novo" é gateado, mas quem entra direto pela URL não passa por ele.
-  if (isCreating && !(await isOnboardingCompletedServer())) {
-    redirect('/painel/onboarding?motivo=novo-servico');
+  // O botão "Novo" é gateado, mas quem entra direto pela URL não passa por ele. Esta é a barreira
+  // real: nível de conta exigido por 'service.create' (src/lib/account-levels.ts). Fecha por padrão.
+  if (isCreating && !(await canDoServer(accountLevelsSetup, 'service.create')).allowed) {
+    redirect('/painel/onboarding?acao=service.create');
   }
 
   // key={serviceId}: sem ele, navegar entre dois ids reaproveita a instância do wizard e o

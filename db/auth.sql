@@ -2,7 +2,7 @@
 -- GERADO por db/build.mjs — NÃO edite à mão. Regenere: node db/build.mjs
 -- Aplicar PRIMEIRO, em base limpa:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/auth.sql
--- Arquivos: 26 (kizuna-core/sql)
+-- Arquivos: 29 (kizuna-core/sql)
 
 
 -- ===============================================================================================
@@ -2429,5 +2429,655 @@ REVOKE ALL ON FUNCTION auth.fun_auth__password_reset_confirm(text, text) FROM PU
 -- anon pode EXECUTAR, mas a função recusa sem o claim `purpose` (só o servidor assina esse JWT).
 GRANT EXECUTE ON FUNCTION auth.fun_auth__password_reset_request(text, text, integer) TO anon;
 GRANT EXECUTE ON FUNCTION auth.fun_auth__password_reset_confirm(text, text) TO anon;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/sql/0113_external_identities.sql
+-- ===============================================================================================
+
+-- 0113_external_identities.sql
+-- Login por provedor externo (Google agora; Apple/Facebook/etc. depois) sem senha.
+--
+-- Fluxo:
+--   1. O servidor Next faz o OAuth (Authorization Code + PKCE) com o provedor e recebe as claims
+--      do usuário direto do provedor (sub, email, email_verified, name).
+--   2. Chama auth.fun_auth__external_login com um JWT curto assinado por ele mesmo com o claim
+--      `purpose = "external_login"` — mesmo padrão do reset de senha (0112): anon pode EXECUTAR,
+--      mas a função recusa sem o claim, e só o servidor conhece PGRST_JWT_SECRET. Sem isso um
+--      cliente anônimo chamaria o PostgREST direto dizendo "sou o Google, email = da vítima".
+--   3. A função acha a identidade (provider, subject); senão acha a conta pelo email verificado e
+--      VINCULA (email é único); senão cria uma conta nova SEM senha.
+--
+-- Proteção contra pre-hijack ao vincular: se alguém cadastrou email+senha usando o email de outra
+-- pessoa (sem nunca verificar), quando o dono real entra pelo Google a conta é dele — a senha
+-- existente é ANULADA e sessions_revoked_at marcado. O dono legítimo que só esqueceu que tinha
+-- senha usa "esqueci a senha" normalmente.
+--
+-- Também corrige uma falha latente de fun_auth__login_verify: com password NULL,
+-- crypt(x, NULL) <> NULL dá NULL (não true) e o IF deixava passar — conta sem senha autenticaria
+-- com QUALQUER senha. Agora hash nulo nunca autentica por senha.
+--
+-- Aditivo + idempotente.
+
+-- ---------------------------------------------------------------------------------------------
+-- users: senha opcional + verificação/revogação
+-- ---------------------------------------------------------------------------------------------
+ALTER TABLE auth.users ALTER COLUMN password DROP NOT NULL;
+
+ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS email_verified_at   timestamptz;
+ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS phone               text;
+ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS phone_verified_at   timestamptz;
+ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS sessions_revoked_at timestamptz;
+
+CREATE UNIQUE INDEX IF NOT EXISTS users_phone_unique_idx
+  ON auth.users (phone) WHERE phone IS NOT NULL;
+
+-- ---------------------------------------------------------------------------------------------
+-- user_identities: uma linha por (provedor, id do usuário no provedor)
+-- ---------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS auth.user_identities (
+  id            bigserial PRIMARY KEY,
+  user_uid      uuid NOT NULL REFERENCES auth.users(uid) ON DELETE CASCADE,
+  provider      text NOT NULL CHECK (provider ~ '^[a-z][a-z0-9_]{1,31}$'),
+  subject       text NOT NULL,
+  email         text,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  last_login_at timestamptz,
+  CONSTRAINT user_identities_provider_subject_unique UNIQUE (provider, subject)
+);
+
+CREATE INDEX IF NOT EXISTS user_identities_user_idx ON auth.user_identities (user_uid);
+
+-- Leitura só das próprias identidades (tela "Métodos de acesso"); escrita só pelas funções
+-- SECURITY DEFINER abaixo.
+ALTER TABLE auth.user_identities ENABLE ROW LEVEL SECURITY;
+GRANT SELECT ON TABLE auth.user_identities TO auth_user;
+
+DROP POLICY IF EXISTS user_identities_select_own ON auth.user_identities;
+CREATE POLICY user_identities_select_own ON auth.user_identities FOR SELECT TO auth_user
+USING (user_uid = auth.fun_auth_user_id());
+
+-- ---------------------------------------------------------------------------------------------
+-- login_verify: hash nulo nunca autentica por senha
+-- ---------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION auth.fun_auth__login_verify(
+  p_login text,
+  p_password text
+)
+RETURNS TABLE (
+  user_uid uuid,
+  tenant_uid uuid,
+  tenant_type text
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = auth, public
+AS $$
+DECLARE
+  v_uid uuid;
+  v_hash text;
+  v_is_active boolean;
+  v_tenant uuid;
+  v_tenant_type text;
+BEGIN
+  SELECT u.uid, u.password, u.is_active
+    INTO v_uid, v_hash, v_is_active
+  FROM auth.users u
+  WHERE u.login = p_login;
+
+  IF v_uid IS NULL OR v_hash IS NULL OR p_password IS NULL THEN
+    RETURN;
+  END IF;
+
+  IF auth.crypt(p_password, v_hash) IS DISTINCT FROM v_hash THEN
+    RETURN;
+  END IF;
+
+  IF NOT COALESCE(v_is_active, false) THEN
+    RETURN;
+  END IF;
+
+  SELECT ur.tenant_id
+    INTO v_tenant
+  FROM auth.user_roles ur
+  WHERE ur.user_id = v_uid
+  LIMIT 1;
+
+  SELECT t.type
+    INTO v_tenant_type
+  FROM auth.tenants t
+  WHERE t.uid = v_tenant
+  LIMIT 1;
+
+  RETURN QUERY
+  SELECT v_uid, v_tenant, v_tenant_type;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION auth.fun_auth__login_verify(text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION auth.fun_auth__login_verify(text, text) TO anon, auth_user;
+
+-- ---------------------------------------------------------------------------------------------
+-- build_login_result: monta o mesmo jsonb de fun_auth__login_with_perms para um usuário já
+-- autenticado por outro meio (provedor externo, OTP). Interna — sem GRANT.
+-- ---------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION auth.fun_auth__build_login_result(p_user uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = auth, public
+AS $$
+DECLARE
+  v_tenant uuid;
+  v_tenant_type text;
+  v_is_root boolean;
+  v_login text;
+  v_perms jsonb;
+BEGIN
+  SELECT u.is_root, u.login INTO v_is_root, v_login FROM auth.users u WHERE u.uid = p_user;
+
+  SELECT ur.tenant_id INTO v_tenant
+  FROM auth.user_roles ur
+  WHERE ur.user_id = p_user
+  LIMIT 1;
+
+  SELECT t.type INTO v_tenant_type FROM auth.tenants t WHERE t.uid = v_tenant LIMIT 1;
+
+  PERFORM set_config(
+    'request.jwt.claims',
+    jsonb_build_object(
+      'user_id', p_user::text,
+      'tenant_id', v_tenant::text,
+      'tenant_type', v_tenant_type,
+      'is_root', COALESCE(v_is_root, false)
+    )::text,
+    true
+  );
+
+  SELECT auth.get_auth__effective_permissions() INTO v_perms;
+
+  RETURN jsonb_build_object(
+    'user_uid', p_user::text,
+    'tenant_uid', v_tenant::text,
+    'tenant_type', v_tenant_type,
+    'is_root', COALESCE(v_is_root, false),
+    'login', v_login,
+    'perms', COALESCE(v_perms, '{}'::jsonb)
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION auth.fun_auth__build_login_result(uuid) FROM PUBLIC;
+
+-- ---------------------------------------------------------------------------------------------
+-- create_passwordless_user: mesma bootstrap de fun_auth__signup_bootstrap (tenant USER + role 2,
+-- primeiro usuário do banco vira root), mas sem senha. Interna — sem GRANT.
+-- ---------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION auth.fun_auth__create_passwordless_user(
+  p_login text,
+  p_email_verified boolean DEFAULT false
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = auth, public
+AS $$
+DECLARE
+  v_user_uid   uuid := gen_random_uuid();
+  v_tenant_uid uuid := gen_random_uuid();
+  v_is_first   boolean;
+BEGIN
+  v_is_first := NOT EXISTS (SELECT 1 FROM auth.users);
+
+  INSERT INTO auth.users (uid, login, password, is_active, is_root, email_verified_at)
+  VALUES (
+    v_user_uid,
+    p_login,
+    NULL,
+    true,
+    v_is_first,
+    CASE WHEN p_email_verified THEN now() END
+  );
+
+  INSERT INTO auth.tenants (uid, owner_uid, name, type)
+  VALUES (v_tenant_uid, v_user_uid, p_login, 'USER');
+
+  INSERT INTO auth.user_roles (user_id, tenant_id, role_id)
+  VALUES (v_user_uid, v_tenant_uid, 2);
+
+  RETURN v_user_uid;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION auth.fun_auth__create_passwordless_user(text, boolean) FROM PUBLIC;
+
+-- ---------------------------------------------------------------------------------------------
+-- external_login
+-- ---------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION auth.fun_auth__external_login(
+  p_provider text,
+  p_subject text,
+  p_email text,
+  p_email_verified boolean
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = auth, public
+AS $$
+DECLARE
+  v_email text := NULLIF(lower(trim(COALESCE(p_email, ''))), '');
+  v_verified boolean := COALESCE(p_email_verified, false) AND v_email IS NOT NULL;
+  v_user uuid;
+  v_active boolean;
+  v_email_verified_at timestamptz;
+  v_profile_verified boolean := false;
+  v_created boolean := false;
+  v_linked boolean := false;
+  v_login text;
+BEGIN
+  IF COALESCE(
+       NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'purpose',
+       ''
+     ) <> 'external_login' THEN
+    RAISE EXCEPTION 'external_login_forbidden' USING ERRCODE = '42501';
+  END IF;
+
+  IF p_provider IS NULL OR p_provider !~ '^[a-z][a-z0-9_]{1,31}$' THEN
+    RAISE EXCEPTION 'invalid_provider' USING ERRCODE = '22023';
+  END IF;
+  IF p_subject IS NULL OR length(trim(p_subject)) = 0 THEN
+    RAISE EXCEPTION 'invalid_subject' USING ERRCODE = '22023';
+  END IF;
+
+  -- 1) Identidade já conhecida.
+  SELECT i.user_uid INTO v_user
+  FROM auth.user_identities i
+  WHERE i.provider = p_provider AND i.subject = p_subject;
+
+  IF v_user IS NOT NULL THEN
+    UPDATE auth.user_identities
+       SET last_login_at = now(), email = COALESCE(v_email, email)
+     WHERE provider = p_provider AND subject = p_subject;
+  ELSE
+    -- 2) Conta existente com o mesmo email → vincula (só com email verificado pelo provedor).
+    IF v_email IS NOT NULL THEN
+      SELECT u.uid, u.email_verified_at
+        INTO v_user, v_email_verified_at
+      FROM auth.users u
+      WHERE lower(u.login) = v_email
+        AND u.deleted_at IS NULL
+      LIMIT 1;
+    END IF;
+
+    IF v_user IS NOT NULL THEN
+      IF NOT v_verified THEN
+        -- Provedor não garante o email: vincular entregaria a conta a quem não prova ser dono.
+        RAISE EXCEPTION 'email_not_verified' USING ERRCODE = '42501';
+      END IF;
+
+      -- Verificação feita antes pelo fluxo de email do plugin user_data também conta.
+      IF v_email_verified_at IS NULL AND to_regclass('public.user_data') IS NOT NULL THEN
+        EXECUTE 'SELECT COALESCE(bool_or(email_verified), false) FROM public.user_data WHERE user_id = $1'
+          INTO v_profile_verified
+          USING v_user;
+      END IF;
+
+      IF v_email_verified_at IS NULL AND NOT v_profile_verified THEN
+        -- Pre-hijack: quem cadastrou este email sem prová-lo perde a senha e as sessões.
+        UPDATE auth.users
+           SET password = NULL,
+               sessions_revoked_at = now(),
+               email_verified_at = now()
+         WHERE uid = v_user;
+      ELSIF v_email_verified_at IS NULL THEN
+        UPDATE auth.users SET email_verified_at = now() WHERE uid = v_user;
+      END IF;
+
+      v_linked := true;
+    ELSE
+      -- 3) Conta nova sem senha. login = email quando há; senão um identificador do provedor.
+      v_login := COALESCE(v_email, p_provider || ':' || p_subject);
+      v_user := auth.fun_auth__create_passwordless_user(v_login, v_verified);
+      v_created := true;
+    END IF;
+
+    INSERT INTO auth.user_identities (user_uid, provider, subject, email, last_login_at)
+    VALUES (v_user, p_provider, p_subject, v_email, now());
+  END IF;
+
+  SELECT u.is_active INTO v_active FROM auth.users u WHERE u.uid = v_user AND u.deleted_at IS NULL;
+  IF NOT COALESCE(v_active, false) THEN
+    RETURN NULL;
+  END IF;
+
+  RETURN auth.fun_auth__build_login_result(v_user)
+    || jsonb_build_object('created', v_created, 'linked', v_linked);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION auth.fun_auth__external_login(text, text, text, boolean) FROM PUBLIC;
+-- anon pode EXECUTAR, mas a função recusa sem o claim `purpose` (só o servidor assina esse JWT).
+GRANT EXECUTE ON FUNCTION auth.fun_auth__external_login(text, text, text, boolean) TO anon;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/sql/0114_phone_otp.sql
+-- ===============================================================================================
+
+-- 0114_phone_otp.sql
+-- Login (e verificação) por telefone com código de uso único (OTP).
+--
+-- Fluxo:
+--   1. POST /api/auth/otp/request → o servidor gera o código, grava só o HMAC dele via
+--      auth.fun_auth__otp_create e entrega {telefone, código} à porta OtpProvider (o texto da
+--      mensagem mora no gateway do provedor, não aqui).
+--   2. POST /api/auth/otp/verify  → o servidor calcula o HMAC do código digitado e chama
+--      auth.fun_auth__otp_verify, que queima o desafio e, para `login`, acha/cria a conta pelo
+--      telefone; para `verify_phone`, vincula o telefone à conta logada.
+--
+-- Segurança (mesmo padrão de 0112/0113):
+--   * Funções exigem o claim `purpose = "otp"` — só o servidor Next assina esse JWT.
+--   * Banco guarda só HMAC(código) com segredo do servidor: vazar a tabela não revela códigos
+--     (hash simples de 6 dígitos seria quebrado por força bruta em milissegundos).
+--   * Uso único, expiração, no máx. 5 tentativas por desafio, cooldown de 60s e teto diário por
+--     telefone. Pedir um novo invalida os anteriores.
+--   * Telefone já usado por outra conta não é "roubado" no verify_phone (erro phone_in_use).
+--
+-- Tudo no schema auth. Aditivo + idempotente.
+
+CREATE TABLE IF NOT EXISTS auth.otp_challenges (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  phone       text NOT NULL,
+  purpose     text NOT NULL CHECK (purpose IN ('login', 'verify_phone')),
+  user_uid    uuid REFERENCES auth.users(uid) ON DELETE CASCADE,
+  code_hash   text NOT NULL,
+  expires_at  timestamptz NOT NULL,
+  attempts    integer NOT NULL DEFAULT 0,
+  consumed_at timestamptz,
+  ip          text,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS otp_challenges_phone_idx
+  ON auth.otp_challenges (phone, purpose, created_at DESC);
+
+-- Sem GRANT: só as funções SECURITY DEFINER abaixo tocam a tabela.
+ALTER TABLE auth.otp_challenges ENABLE ROW LEVEL SECURITY;
+
+CREATE OR REPLACE FUNCTION auth.fun_auth__otp_assert_purpose()
+RETURNS void
+LANGUAGE plpgsql
+STABLE
+SET search_path = auth, public
+AS $$
+BEGIN
+  IF COALESCE(
+       NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'purpose',
+       ''
+     ) <> 'otp' THEN
+    RAISE EXCEPTION 'otp_forbidden' USING ERRCODE = '42501';
+  END IF;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION auth.fun_auth__otp_assert_purpose() FROM PUBLIC;
+
+/*
+ * Registra um desafio. p_user_uid só em `verify_phone` (conta logada adicionando telefone).
+ * Erros: otp_cooldown (pediu há < p_cooldown_sec), otp_daily_limit.
+ */
+CREATE OR REPLACE FUNCTION auth.fun_auth__otp_create(
+  p_phone text,
+  p_purpose text,
+  p_code_hash text,
+  p_ttl_sec integer DEFAULT 300,
+  p_ip text DEFAULT NULL,
+  p_user_uid uuid DEFAULT NULL,
+  p_cooldown_sec integer DEFAULT 60,
+  p_daily_limit integer DEFAULT 10
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = auth, public
+AS $$
+DECLARE
+  v_last timestamptz;
+  v_today integer;
+  v_id uuid;
+BEGIN
+  PERFORM auth.fun_auth__otp_assert_purpose();
+
+  IF p_phone IS NULL OR p_phone !~ '^\+[1-9][0-9]{7,14}$' THEN
+    RAISE EXCEPTION 'invalid_phone' USING ERRCODE = '22023';
+  END IF;
+  IF p_code_hash IS NULL OR length(p_code_hash) < 32 THEN
+    RAISE EXCEPTION 'invalid_code_hash' USING ERRCODE = '22023';
+  END IF;
+  IF p_purpose = 'verify_phone' AND p_user_uid IS NULL THEN
+    RAISE EXCEPTION 'user_required' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT max(created_at), count(*) FILTER (WHERE created_at > now() - interval '24 hours')
+    INTO v_last, v_today
+  FROM auth.otp_challenges
+  WHERE phone = p_phone;
+
+  IF v_last IS NOT NULL AND v_last > now() - make_interval(secs => GREATEST(0, p_cooldown_sec)) THEN
+    RAISE EXCEPTION 'otp_cooldown' USING ERRCODE = 'P0001';
+  END IF;
+  IF COALESCE(v_today, 0) >= GREATEST(1, p_daily_limit) THEN
+    RAISE EXCEPTION 'otp_daily_limit' USING ERRCODE = 'P0001';
+  END IF;
+
+  UPDATE auth.otp_challenges
+     SET consumed_at = now()
+   WHERE phone = p_phone AND purpose = p_purpose AND consumed_at IS NULL;
+
+  INSERT INTO auth.otp_challenges (phone, purpose, user_uid, code_hash, expires_at, ip)
+  VALUES (
+    p_phone,
+    p_purpose,
+    p_user_uid,
+    p_code_hash,
+    now() + make_interval(secs => GREATEST(60, LEAST(COALESCE(p_ttl_sec, 300), 1800))),
+    p_ip
+  )
+  RETURNING id INTO v_id;
+
+  RETURN v_id;
+END;
+$$;
+
+/*
+ * Confere o código do desafio pendente mais recente.
+ * Retorno:
+ *   { ok: false, reason: 'invalid' | 'expired' | 'too_many_attempts' | 'phone_in_use' | 'blocked' }
+ *   login        → { ok: true, ...fun_auth__build_login_result, created }
+ *   verify_phone → { ok: true, user_uid }
+ * Nunca lança por código errado: o incremento de tentativas precisa ser gravado.
+ */
+CREATE OR REPLACE FUNCTION auth.fun_auth__otp_verify(
+  p_phone text,
+  p_purpose text,
+  p_code_hash text,
+  p_user_uid uuid DEFAULT NULL,
+  p_max_attempts integer DEFAULT 5
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = auth, public
+AS $$
+DECLARE
+  c auth.otp_challenges%ROWTYPE;
+  v_user uuid;
+  v_active boolean;
+  v_created boolean := false;
+BEGIN
+  PERFORM auth.fun_auth__otp_assert_purpose();
+
+  SELECT * INTO c
+  FROM auth.otp_challenges
+  WHERE phone = p_phone
+    AND purpose = p_purpose
+    AND consumed_at IS NULL
+  ORDER BY created_at DESC
+  LIMIT 1
+  FOR UPDATE;
+
+  IF c.id IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'invalid');
+  END IF;
+
+  IF c.expires_at <= now() THEN
+    UPDATE auth.otp_challenges SET consumed_at = now() WHERE id = c.id;
+    RETURN jsonb_build_object('ok', false, 'reason', 'expired');
+  END IF;
+
+  IF p_purpose = 'verify_phone' AND c.user_uid IS DISTINCT FROM p_user_uid THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'invalid');
+  END IF;
+
+  IF c.code_hash IS DISTINCT FROM p_code_hash THEN
+    UPDATE auth.otp_challenges
+       SET attempts = attempts + 1,
+           consumed_at = CASE WHEN attempts + 1 >= GREATEST(1, p_max_attempts) THEN now() END
+     WHERE id = c.id;
+    IF c.attempts + 1 >= GREATEST(1, p_max_attempts) THEN
+      RETURN jsonb_build_object('ok', false, 'reason', 'too_many_attempts');
+    END IF;
+    RETURN jsonb_build_object('ok', false, 'reason', 'invalid');
+  END IF;
+
+  UPDATE auth.otp_challenges SET consumed_at = now() WHERE id = c.id;
+
+  IF p_purpose = 'verify_phone' THEN
+    IF EXISTS (SELECT 1 FROM auth.users WHERE phone = p_phone AND uid <> c.user_uid) THEN
+      RETURN jsonb_build_object('ok', false, 'reason', 'phone_in_use');
+    END IF;
+    UPDATE auth.users
+       SET phone = p_phone, phone_verified_at = now()
+     WHERE uid = c.user_uid;
+    RETURN jsonb_build_object('ok', true, 'user_uid', c.user_uid::text);
+  END IF;
+
+  -- login: conta pelo telefone; senão conta nova sem email/senha (login = telefone).
+  SELECT u.uid INTO v_user
+  FROM auth.users u
+  WHERE u.phone = p_phone AND u.deleted_at IS NULL
+  LIMIT 1;
+
+  IF v_user IS NULL THEN
+    v_user := auth.fun_auth__create_passwordless_user(p_phone, false);
+    v_created := true;
+  END IF;
+
+  UPDATE auth.users
+     SET phone = p_phone, phone_verified_at = COALESCE(phone_verified_at, now())
+   WHERE uid = v_user;
+
+  SELECT u.is_active INTO v_active FROM auth.users u WHERE u.uid = v_user;
+  IF NOT COALESCE(v_active, false) THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'blocked');
+  END IF;
+
+  RETURN jsonb_build_object('ok', true, 'created', v_created)
+    || auth.fun_auth__build_login_result(v_user);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION auth.fun_auth__otp_create(text, text, text, integer, text, uuid, integer, integer) FROM PUBLIC;
+REVOKE ALL ON FUNCTION auth.fun_auth__otp_verify(text, text, text, uuid, integer) FROM PUBLIC;
+-- anon pode EXECUTAR, mas as funções recusam sem o claim `purpose` (só o servidor assina esse JWT).
+GRANT EXECUTE ON FUNCTION auth.fun_auth__otp_create(text, text, text, integer, text, uuid, integer, integer) TO anon;
+GRANT EXECUTE ON FUNCTION auth.fun_auth__otp_verify(text, text, text, uuid, integer) TO anon;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/sql/0115_account_facts.sql
+-- ===============================================================================================
+
+-- 0115_account_facts.sql
+-- Fatos sobre a conta do usuário logado, para os níveis de conta progressivos
+-- (src/shared/account-levels). A REGRA de cada nível mora em código; aqui só se lê o estado:
+-- verificações (auth.users) + campos do perfil (public.user_data, se o plugin estiver instalado).
+--
+-- Email verificado conta por qualquer um dos caminhos: auth.users.email_verified_at (login social,
+-- 0113) ou public.user_data.email_verified (fluxo de código por email do plugin user_data).
+-- Telefone só conta por auth.users.phone_verified_at (OTP, 0114) — user_data.phone_verified é um
+-- campo que nenhum fluxo verificado preenche.
+--
+-- Sem sessão (fun_auth_user_id() nulo) → {authenticated: false}. Tudo no schema auth.
+-- Aditivo + idempotente.
+
+CREATE OR REPLACE FUNCTION auth.fun_auth__account_facts()
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = auth, public
+AS $$
+DECLARE
+  v_uid uuid := auth.fun_auth_user_id();
+  v_email_verified boolean := false;
+  v_phone_verified boolean := false;
+  v_profile jsonb := '{}'::jsonb;
+BEGIN
+  IF v_uid IS NULL THEN
+    RETURN jsonb_build_object('authenticated', false);
+  END IF;
+
+  SELECT u.email_verified_at IS NOT NULL, u.phone_verified_at IS NOT NULL
+    INTO v_email_verified, v_phone_verified
+  FROM auth.users u
+  WHERE u.uid = v_uid AND u.deleted_at IS NULL;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('authenticated', false);
+  END IF;
+
+  IF to_regclass('public.user_data') IS NOT NULL THEN
+    EXECUTE $q$
+      SELECT jsonb_build_object(
+               'full_name', d.full_name,
+               'avatar_url', d.avatar_url,
+               'document_type', d.document_type,
+               'document_number', d.document_number,
+               'state', d.state,
+               'city', d.city,
+               'zip_code', d.zip_code,
+               'email_verified', d.email_verified
+             )
+      FROM public.user_data d
+      WHERE d.user_id = $1
+      LIMIT 1
+    $q$
+    INTO v_profile
+    USING v_uid;
+  END IF;
+
+  v_profile := COALESCE(v_profile, '{}'::jsonb);
+
+  RETURN jsonb_build_object(
+    'authenticated', true,
+    'email_verified', v_email_verified OR COALESCE((v_profile ->> 'email_verified')::boolean, false),
+    'phone_verified', v_phone_verified,
+    -- Porta para a verificação de identidade (documento + selfie com IA). Sem fonte na v1.
+    'identity_verified', false,
+    'profile', v_profile - 'email_verified'
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION auth.fun_auth__account_facts() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION auth.fun_auth__account_facts() TO auth_user;
 
 NOTIFY pgrst, 'reload schema';

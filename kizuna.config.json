@@ -33,6 +33,59 @@
       { "name": "Chapada dos Guimarães", "latitude": -15.4606, "longitude": -55.7497 }
     ]
   },
+  "accountLevels": {
+    "_comment": "Níveis de conta progressivos (entra fácil, evolui para fazer mais). Aqui só rótulo e ordem: key (usada no mapa de capacidades em src/lib/account-levels.ts), level (1..N, sequencial; 0 = visitante, implícito), title, description, onboardingOrder (ordem na tela /painel/onboarding), profileOrder (ordem no resumo da conta), requirement (regra em código: authenticated | contact_verified | profile_complete | identity_verified), enabled (false = 'em breve'), href (para onde o botão 'completar' leva). O que cada nível LIBERA fica em src/lib/account-levels.ts. Ver kizuna-core/docs/arquitetura/niveis-de-conta.md.",
+    "levels": [
+      {
+        "key": "conta",
+        "level": 1,
+        "title": "Conta criada",
+        "description": "Curta, salve e acompanhe o que rola na cidade.",
+        "onboardingOrder": 1,
+        "profileOrder": 1,
+        "requirement": "authenticated"
+      },
+      {
+        "key": "contato",
+        "level": 2,
+        "title": "Contato verificado",
+        "description": "Confirme seu email ou celular para avaliar e comentar.",
+        "onboardingOrder": 2,
+        "profileOrder": 3,
+        "requirement": "contact_verified",
+        "href": "/painel/onboarding#contato"
+      },
+      {
+        "key": "perfil",
+        "level": 3,
+        "title": "Perfil completo",
+        "description": "Nome, foto, documento e endereço para anunciar eventos e serviços.",
+        "onboardingOrder": 3,
+        "profileOrder": 2,
+        "requirement": "profile_complete",
+        "href": "/painel/minha-conta"
+      },
+      {
+        "key": "identidade",
+        "level": 4,
+        "title": "Identidade verificada",
+        "description": "Documento + selfie para ganhar o selo de verificado e vender.",
+        "onboardingOrder": 4,
+        "profileOrder": 4,
+        "requirement": "identity_verified",
+        "enabled": false
+      }
+    ]
+  },
+  "otp": {
+    "_comment": "Login por telefone (código de uso único). providers = cadeia de envio em ordem (fallback). \"log\" só imprime o JSON no log do servidor e NÃO habilita em produção — sem um provedor real o botão 'Entrar com telefone' some. Provedor real = registerOtpProvider() no core. Ver kizuna-core/docs/comecando/login-social-telefone.md.",
+    "providers": ["log"],
+    "codeLength": 6,
+    "ttlSec": 300,
+    "cooldownSec": 60,
+    "dailyLimit": 10,
+    "maxAttempts": 5
+  },
   "home": {
     "showHero": false,
     "categoriesVariant": "compact",
