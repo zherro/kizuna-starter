@@ -1,7 +1,14 @@
 {
   "extends": "./tsconfig.kizuna.json",
   "compilerOptions": {
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@kizuna/core/*": ["./kizuna-core/src/*"],
+      "@kizuna/core": ["./kizuna-core/src"],
+      "react": ["./node_modules/@types/react"],
+      "react/*": ["./node_modules/@types/react/*"]
+    }
   },
   "include": ["next-env.d.ts", ".next/types/**/*.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules", "kizuna-core"]
