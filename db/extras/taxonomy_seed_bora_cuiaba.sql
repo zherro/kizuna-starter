@@ -3,14 +3,25 @@
 -- Seed da taxonomia do Bora Cuiabá (plugin taxonomy): grupo -> categoria -> subcategoria -> tag.
 -- Conteúdo específico deste projeto — por isso fica em db/extras/ e não no plugin do core.
 --
---   15 grupos · 56 categorias · 206 subcategorias · 840 tags · 21 vínculos extras
+--   16 grupos · 56 categorias · 208 subcategorias · 867 tags · 21 vínculos extras
 --
 -- Pré-requisitos: schema do core + plugin taxonomy aplicados, e um usuário root já cadastrado
 -- (tenant_id/created_by vêm do primeiro root e do tenant dele, igual ao seed de páginas; sem root,
--- cada INSERT vira no-op silencioso).
+-- o bloco 0 não apaga nada e cada INSERT vira no-op silencioso).
 --
--- Idempotente: pode rodar de novo. Grupos, categorias e subcategorias são casados pelo slug e
--- têm nome/descrição/ícone atualizados; tags são casadas por (subcategoria, slug). Nada é apagado.
+-- DESTRUTIVO (reseed): o bloco 0 apaga TODA a taxonomia do tenant do root (tags, subcategorias,
+-- vínculos de grupo, categorias e grupos; também linhas sem tenant) e a recria do zero, para que a
+-- árvore fique exatamente como neste arquivo (slugs antigos somem). Só é permitido enquanto NÃO
+-- existir nenhum serviço: se houver qualquer linha em public.services, public.service_categories_sub
+-- ou public.demandas (mesmo inativa), o script ABORTA com RAISE EXCEPTION antes de apagar qualquer
+-- coisa (tudo roda numa transação). O clear-all roda a cada execução.
+--
+-- Ordem de execução: 1) este seed de taxonomia -> 2) kizuna-core/db/extras/forms_seed_cinema.sql.
+-- O clear-all recria as categorias, então categories.form_key volta a NULL; o seed do formulário
+-- (que faz UPDATE categories SET form_key='cinema') precisa rodar DEPOIS, sempre que este rodar.
+--
+-- Idempotente: rodar 2x dá o mesmo resultado (apaga e recria). Depois de reseedar, reaplique o
+-- seed do formulário.
 --
 -- Aplicar:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/extras/taxonomy_seed_bora_cuiaba.sql
@@ -18,12 +29,49 @@
 
 BEGIN;
 
+-- 0) Clear-all (reseed destrutivo) — com guarda: só se não houver serviços/demandas -------------
+DO $clear$
+DECLARE
+  v_tenant uuid;
+  v_n bigint;
+  v_tbl text;
+BEGIN
+  -- Guarda: qualquer linha que referencie a taxonomia aborta (nunca apagar dado real).
+  FOREACH v_tbl IN ARRAY ARRAY['public.services', 'public.service_categories_sub', 'public.demandas'] LOOP
+    IF to_regclass(v_tbl) IS NOT NULL THEN
+      EXECUTE format('SELECT count(*) FROM %s', v_tbl) INTO v_n;
+      IF v_n > 0 THEN
+        RAISE EXCEPTION 'reseed da taxonomia abortado: % tem % linha(s). O clear-all so e permitido sem servicos/demandas.', v_tbl, v_n;
+      END IF;
+    END IF;
+  END LOOP;
+
+  SELECT tn.uid INTO v_tenant
+  FROM auth.tenants tn
+  JOIN (SELECT uid FROM auth.users WHERE is_root = true ORDER BY created_at ASC LIMIT 1) u ON tn.owner_uid = u.uid
+  ORDER BY tn.created_at ASC LIMIT 1;
+
+  IF v_tenant IS NULL THEN
+    RAISE NOTICE 'sem root/tenant: clear-all ignorado (os INSERTs abaixo tambem serao no-op).';
+    RETURN;
+  END IF;
+
+  -- Ordem por FK: filhos antes dos pais.
+  DELETE FROM public.categories_sub_tags  WHERE tenant_id = v_tenant OR tenant_id IS NULL;
+  DELETE FROM public.categories_sub       WHERE tenant_id = v_tenant OR tenant_id IS NULL;
+  DELETE FROM public.categories_group_link WHERE tenant_id = v_tenant OR tenant_id IS NULL;
+  DELETE FROM public.categories           WHERE tenant_id = v_tenant OR tenant_id IS NULL;
+  DELETE FROM public.categories_group     WHERE tenant_id = v_tenant OR tenant_id IS NULL;
+END
+$clear$;
+
 -- 1) Grupos ------------------------------------------------------------------------------------
 INSERT INTO public.categories_group (name, slug, description, tags, icon, sort_order, active, tenant_id, created_by)
 SELECT v.name, v.slug, v.description, v.tags, v.icon, v.sort_order, true, t.uid, u.uid
 FROM (VALUES
     ('Eventos', 'eventos', 'Agenda do que rola em Cuiabá e região: shows, festas, festivais e encontros.', 'agenda, programação, hoje, fim de semana, ingresso', 'CalendarDays', 10),
-    ('Cinema & Teatro', 'cinema-e-teatro', 'Filmes em cartaz, peças, stand-up e espetáculos de palco.', 'filme, sessão, peça, espetáculo, stand-up', 'Clapperboard', 20),
+    ('Cinema', 'cinema', 'Filmes em cartaz, pré-venda, reexibições, cinema nacional e sessões especiais.', 'filme, sessão, cinema, ingresso, estreia', 'Clapperboard', 20),
+    ('Teatro & Espetáculos', 'teatro-e-espetaculos', 'Peças, stand-up, dança e espetáculos de palco.', 'peça, espetáculo, stand-up, teatro, dança', 'Drama', 25),
     ('Trilhas & Aventura', 'trilhas-e-aventura', 'Trilhas, esportes de aventura e mirantes na Chapada, no Pantanal e arredores.', 'trilha, aventura, ecoturismo, chapada, natureza', 'Mountain', 30),
     ('Camping & Natureza', 'camping-e-natureza', 'Camping, cachoeiras, rios, parques e a vida selvagem do cerrado e do Pantanal.', 'camping, natureza, cachoeira, rio, pantanal', 'Tent', 40),
     ('Bares & Vida Noturna', 'bares-e-vida-noturna', 'Botecos, choperias, drinks e baladas para a noite cuiabana.', 'bar, boteco, chope, drinks, noite, balada', 'Beer', 50),
@@ -57,9 +105,9 @@ FROM (VALUES
     ('eventos', 'Festas Tradicionais & Religiosas', 'festas-tradicionais-e-religiosas', 'Festas populares, de santo e datas que fazem parte da identidade cuiabana.', 'Church'),
     ('eventos', 'Festivais & Exposições', 'festivais-e-exposicoes', 'Festivais, exposições agropecuárias e grandes eventos com vários dias de programação.', 'Ticket'),
     ('eventos', 'Palestras & Encontros', 'palestras-e-encontros', 'Eventos de conhecimento, networking e comunidade.', 'Presentation'),
-    ('cinema-e-teatro', 'Cinema', 'cinema', 'Estreias, mostras e sessões especiais nas telas da cidade.', 'Film'),
-    ('cinema-e-teatro', 'Teatro', 'teatro', 'Peças, musicais e teatro para todas as idades.', 'Drama'),
-    ('cinema-e-teatro', 'Humor & Espetáculos', 'humor-e-espetaculos', 'Stand-up, circo, dança e espetáculos de palco.', 'Laugh'),
+    ('cinema', 'Cinema', 'cinema', 'Estreias, mostras e sessões especiais nas telas da cidade.', 'Film'),
+    ('teatro-e-espetaculos', 'Teatro', 'teatro', 'Peças, musicais e teatro para todas as idades.', 'Drama'),
+    ('teatro-e-espetaculos', 'Humor & Espetáculos', 'humor-e-espetaculos', 'Stand-up, circo, dança e espetáculos de palco.', 'Laugh'),
     ('trilhas-e-aventura', 'Trilhas', 'trilhas', 'Trilhas por nível de dificuldade, com e sem cachoeira.', 'Footprints'),
     ('trilhas-e-aventura', 'Esportes de Aventura', 'esportes-de-aventura', 'Adrenalina com rapel, flutuação, tirolesa e pedal.', 'Zap'),
     ('trilhas-e-aventura', 'Mirantes & Formações', 'mirantes-e-formacoes', 'Mirantes, cavernas e formações rochosas para ver de perto.', 'Binoculars'),
@@ -144,10 +192,12 @@ FROM (VALUES
     ('palestras-e-encontros', 'Palestras & workshops', 'palestras-e-workshops', 'Conteúdo presencial com especialistas.', 'palestra, workshop, mão na massa, certificado'),
     ('palestras-e-encontros', 'Congressos & simpósios', 'congressos-e-simposios', 'Eventos acadêmicos e profissionais de maior porte.', 'congresso, simpósio, inscrição, credenciamento'),
     ('palestras-e-encontros', 'Meetups & networking', 'meetups-e-networking', 'Encontros de comunidades, tecnologia e empreendedorismo.', 'meetup, networking, startup, tecnologia'),
-    ('cinema', 'Lançamentos', 'lancamentos', 'Estreias e filmes em cartaz na semana.', 'estreia, pré-estreia, 3d, legendado, dublado'),
-    ('cinema', 'Cinema nacional & regional', 'cinema-nacional-e-regional', 'Produções brasileiras e mato-grossenses.', 'cinema brasileiro, documentário, produção mato-grossense, curta-metragem'),
+    ('cinema', 'Em cartaz', 'em-cartaz', 'Filmes em cartaz nesta semana nos cinemas da região (padrão de todo filme com sessão).', 'em cartaz, sessão, dublado, legendado, 3d, imax'),
+    ('cinema', 'Pré-venda & estreias', 'pre-venda-e-estreias', 'Filmes com ingresso em pré-venda e estreias que ainda vão chegar às telas.', 'pré-venda, estreia, pré-estreia, em breve'),
+    ('cinema', 'Reexibições', 'reexibicoes', 'Clássicos e sucessos que voltaram ao cinema.', 'reexibição, clássico, relançamento, volta às telas'),
+    ('cinema', 'Cinema nacional & regional', 'cinema-nacional-e-regional', 'Filmes nacionais em cartaz e produções mato-grossenses.', 'nacional, cinema brasileiro, documentário, produção mato-grossense, curta-metragem'),
     ('cinema', 'Mostras & cineclubes', 'mostras-e-cineclubes', 'Mostras temáticas, festivais de cinema e cineclubes.', 'mostra, cineclube, festival de cinema, debate'),
-    ('cinema', 'Sessões especiais', 'sessoes-especiais', 'Sessões ao ar livre, maratonas e sessões infantis.', 'cinema ao ar livre, maratona, sessão infantil, sessão acessível'),
+    ('cinema', 'Sessões especiais', 'sessoes-especiais', 'Sessões ao ar livre, maratonas, sessões infantis e acessíveis.', 'cinema ao ar livre, maratona, sessão infantil, sessão acessível'),
     ('teatro', 'Peças adultas', 'pecas-adultas', 'Dramas, comédias e montagens para o público adulto.', 'drama, comédia, monólogo, musical'),
     ('teatro', 'Teatro infantil', 'teatro-infantil', 'Peças e espetáculos pensados para crianças.', 'infantil, fantoches, contação de histórias, musical infantil'),
     ('teatro', 'Teatro de rua', 'teatro-de-rua', 'Apresentações gratuitas em praças e espaços públicos.', 'ao ar livre, gratuito, intervenção, praça'),
@@ -435,11 +485,38 @@ FROM (VALUES
     ('meetups-e-networking', 'Networking', 'networking'),
     ('meetups-e-networking', 'Startup', 'startup'),
     ('meetups-e-networking', 'Tecnologia', 'tecnologia'),
-    ('lancamentos', 'Estreia', 'estreia'),
-    ('lancamentos', 'Pré-estreia', 'pre-estreia'),
-    ('lancamentos', '3D', '3d'),
-    ('lancamentos', 'Legendado', 'legendado'),
-    ('lancamentos', 'Dublado', 'dublado'),
+    ('em-cartaz', 'Dublado', 'dublado'),
+    ('em-cartaz', 'Legendado', 'legendado'),
+    ('em-cartaz', '2D', '2d'),
+    ('em-cartaz', '3D', '3d'),
+    ('em-cartaz', 'IMAX', 'imax'),
+    ('em-cartaz', 'D-Box', 'd-box'),
+    ('em-cartaz', '4DX', '4dx'),
+    ('em-cartaz', 'XD', 'xd'),
+    ('em-cartaz', 'MACRO XE', 'macro-xe'),
+    ('em-cartaz', 'Prime', 'prime'),
+    ('em-cartaz', 'VIP', 'vip'),
+    ('em-cartaz', 'Cinépolis Junior', 'cinepolis-junior'),
+    ('em-cartaz', 'Ação', 'acao'),
+    ('em-cartaz', 'Animação', 'animacao'),
+    ('em-cartaz', 'Aventura', 'aventura'),
+    ('em-cartaz', 'Comédia', 'comedia'),
+    ('em-cartaz', 'Documentário', 'documentario'),
+    ('em-cartaz', 'Drama', 'drama'),
+    ('em-cartaz', 'Fantasia', 'fantasia'),
+    ('em-cartaz', 'Ficção científica', 'ficcao-cientifica'),
+    ('em-cartaz', 'Romance', 'romance'),
+    ('em-cartaz', 'Suspense', 'suspense'),
+    ('em-cartaz', 'Terror', 'terror'),
+    ('em-cartaz', 'Musical', 'musical'),
+    ('em-cartaz', 'Família', 'familia'),
+    ('pre-venda-e-estreias', 'Pré-venda', 'pre-venda'),
+    ('pre-venda-e-estreias', 'Estreia', 'estreia'),
+    ('pre-venda-e-estreias', 'Pré-estreia', 'pre-estreia'),
+    ('reexibicoes', 'Reexibição', 'reexibicao'),
+    ('reexibicoes', 'Clássico', 'classico'),
+    ('reexibicoes', 'Relançamento', 'relancamento'),
+    ('cinema-nacional-e-regional', 'Nacional', 'nacional'),
     ('cinema-nacional-e-regional', 'Cinema brasileiro', 'cinema-brasileiro'),
     ('cinema-nacional-e-regional', 'Documentário', 'documentario'),
     ('cinema-nacional-e-regional', 'Produção mato-grossense', 'producao-mato-grossense'),
@@ -1207,7 +1284,6 @@ FROM (VALUES
     ('teatro', 'eventos'),
     ('teatro', 'cultura-e-arte'),
     ('humor-e-espetaculos', 'eventos'),
-    ('cinema', 'eventos'),
     ('cachoeiras-e-rios', 'trilhas-e-aventura'),
     ('cachoeiras-e-rios', 'turismo'),
     ('pantanal-e-vida-selvagem', 'turismo'),
