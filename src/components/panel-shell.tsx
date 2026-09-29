@@ -195,6 +195,7 @@ export function PanelShell({ children }: Readonly<{ children: React.ReactNode }>
         fullLabel: siteName,
         // Mesma logo do header do site (site.logo); sem ela, o selo com as iniciais.
         logo: site?.logo || undefined,
+        caption: 'Painel de controle',
       }}
     >
       {children}
