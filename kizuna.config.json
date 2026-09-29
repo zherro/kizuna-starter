@@ -17,7 +17,7 @@
   },
   "header": {
     "_comment": "\"variant\": classic (padrão) | compact — layout do cabeçalho do site.",
-    "variant": "compact"
+    "variant": "classic"
   },
   "weather": {
     "_comment": "Plugin weather (widget de clima no header, depois da busca). Integração: Open-Meteo — grátis, sem chave de API. apiUrl = endpoint do provedor; timezone = fuso das datas (IANA); cacheSeconds = quanto tempo o servidor guarda a resposta; rotateSeconds = intervalo da troca de cidade no botão; pastDays/forecastDays = dias antes/depois de hoje no modal. cities = lista exibida (a 1ª aparece primeiro). Remova o bloco para esconder o widget.",
@@ -78,7 +78,8 @@
     ]
   },
   "otp": {
-    "_comment": "Login por telefone (código de uso único). providers = cadeia de envio em ordem (fallback). \"log\" só imprime o JSON no log do servidor e NÃO habilita em produção — sem um provedor real o botão 'Entrar com telefone' some. Provedor real = registerOtpProvider() no core. Ver kizuna-core/docs/comecando/login-social-telefone.md.",
+    "_comment": "Login por telefone (código de uso único). \"enabled\": false desliga (padrão true) — o botão some e /api/auth/otp/* responde 404. providers = cadeia de envio em ordem (fallback). \"log\" só imprime o JSON no log do servidor e NÃO habilita em produção — sem um provedor real o botão 'Entrar com telefone' some. Provedor real = registerOtpProvider() no core. Ver kizuna-core/docs/comecando/login-social-telefone.md.",
+    "enabled": false,
     "providers": ["log"],
     "codeLength": 6,
     "ttlSec": 300,
@@ -95,6 +96,18 @@
     "_comment": "\"inkPicker\": mostra o seletor de intensidade do fundo escuro dos cards (false esconde). \"inkLevel\": intensidade padrão (1-7); com o seletor ativo, a escolha salva do usuário prevalece.",
     "inkPicker": false,
     "inkLevel": 6
+  },
+  "serviceDetail": {
+    "_comment": "Layout/cor da tela de detalhe do anúncio (/anuncios/[uid]) por categoria. \"variantByCategorySlug\": slug da categoria -> variant (\"service\" é o default, sempre disponível; \"cinema\" mostra sessões/gêneros/duração em vez da faixa de facts genérica, e some com o preço no card de resumo). Categoria sem entrada aqui cai em \"defaultVariant\". \"colors\": hue OKLCH (0-360) do acento (marcador de seção, faixa do hero); \"default\" vale pra categoria sem entrada própria. \"excludeFromMixedCategorySlugs\": slugs fora da busca/home quando não há filtro de categoria — a categoria continua acessível sozinha (ex. pelo carrossel). Vazio = nada escondido (comportamento atual).",
+    "defaultVariant": "service",
+    "variantByCategorySlug": {
+      "cinema": "cinema"
+    },
+    "colors": {
+      "default": { "hue": 230 },
+      "cinema": { "hue": 268 }
+    },
+    "excludeFromMixedCategorySlugs": []
   },
   "wizards": {
     "servicos": {
