@@ -25,11 +25,15 @@ import {
   UserCog,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import cfg from '@/../kizuna.config.json';
 import {
   PanelShellBase,
   type PanelNavGroup,
   type PanelTopAction,
 } from '@kizuna/core/client/components/panel-shell';
+
+const site = (cfg as { site?: { name?: string; logo?: string } }).site;
+const siteName = site?.name ?? 'Kizuna';
 
 const navigationGroups: PanelNavGroup[] = [
   {
@@ -186,9 +190,11 @@ export function PanelShell({ children }: Readonly<{ children: React.ReactNode }>
       topActions={topActions}
       topActionsIconOnly
       branding={{
-        kicker: 'Kizuna',
-        shortLabel: 'KZ',
-        fullLabel: 'Kizuna',
+        kicker: siteName,
+        shortLabel: siteName.slice(0, 2).toUpperCase(),
+        fullLabel: siteName,
+        // Mesma logo do header do site (site.logo); sem ela, o selo com as iniciais.
+        logo: site?.logo || undefined,
       }}
     >
       {children}
