@@ -4,7 +4,7 @@ import {
   type UserDataBirthDateFieldConfig,
   type UserDataDocumentFieldConfig,
   type UserDataFieldsConfig,
-} from '@kizuna/core/client/components/onboarding/user-data-form';
+} from '@kizuna/core/client/components/onboarding/user-data-fields-config';
 
 type SystemConfigRow = { key: string; value: Record<string, unknown> };
 
