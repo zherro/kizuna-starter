@@ -19,6 +19,12 @@
     "_comment": "\"variant\": classic (padrão) | compact — layout do cabeçalho do site.",
     "variant": "classic"
   },
+  "location": {
+    "_comment": "Seletor de local do header (plugin location). \"source\": ibge (padrão — Brasil inteiro, API do IBGE) | db (só as cidades em location_state/location_city; seed em db/extras/location_seed_bora_cuiaba.sql). \"outsideList\" (modo db): cidade detectada por GPS/IP fora da lista → prompt (abre o seletor) | default (seleciona \"defaultCityIbge\", código IBGE de 7 dígitos, que precisa estar no seed). Ver kizuna-core/docs/plugins/location.md.",
+    "source": "db",
+    "outsideList": "default",
+    "defaultCityIbge": "5103403"
+  },
   "weather": {
     "_comment": "Plugin weather (widget de clima no header, depois da busca). Integração: Open-Meteo — grátis, sem chave de API. apiUrl = endpoint do provedor; timezone = fuso das datas (IANA); cacheSeconds = quanto tempo o servidor guarda a resposta; rotateSeconds = intervalo da troca de cidade no botão; pastDays/forecastDays = dias antes/depois de hoje no modal. cities = lista exibida (a 1ª aparece primeiro). Remova o bloco para esconder o widget.",
     "apiUrl": "https://api.open-meteo.com/v1/forecast",
