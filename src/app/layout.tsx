@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from 'next';
-import { Roboto, Geist_Mono, Bricolage_Grotesque, Quicksand } from 'next/font/google';
+import { Roboto, Geist_Mono, Bricolage_Grotesque, Quicksand, Baloo_2 } from 'next/font/google';
 import { Megaphone, Search } from 'lucide-react';
 import { PwaRegister } from '@kizuna/core/client/components/pwa-register';
 import { PreferencesFab } from '@kizuna/core/client/components/preferences-fab';
 import { AppPreferencesProvider } from '@kizuna/core/client/providers/app-preferences-provider';
+import { ACTIVE_UI_STYLE } from '@kizuna/core/client/lib/ui-theme';
 import { isThemeColor } from '@kizuna/core/shared/theme-colors';
+import { isDisplayFont } from '@kizuna/core/shared/display-fonts';
 import { AuthProvider } from '@kizuna/core/client/providers/auth-provider';
 import { KizunaHeader } from '@kizuna/core/client/components/kizuna-header';
 import { Footer } from '@/components/footer';
@@ -20,6 +22,11 @@ const headerVariant = headerCfg?.variant === 'compact' ? 'compact' : 'classic';
 // (lista de temas disponíveis no _comment de lá).
 const defaultThemeColor = isThemeColor(cfg.theme?.default) ? cfg.theme.default : 'blue';
 const themeColorSelectable = cfg.theme?.selectable !== false;
+
+// Fonte de títulos — chave "theme.displayFont" (lista em DISPLAY_FONTS). Sem ela, vale o default do
+// estilo (soft = Baloo 2, classic = Quicksand), definido em globals.css.
+const displayFontCfg = (cfg as { theme?: { displayFont?: string } }).theme?.displayFont;
+const displayFont = isDisplayFont(displayFontCfg) ? displayFontCfg : undefined;
 
 // EXEMPLO — reescreva as fontes/metadata/nav do seu app.
 //
@@ -53,6 +60,14 @@ const bricolage = Bricolage_Grotesque({
 // Geométrica/arredondada como a Roboto do corpo, então título e texto combinam sem "brigar".
 const quicksand = Quicksand({
   variable: '--font-quicksand',
+  subsets: ['latin'],
+  weight: ['500', '600', '700'],
+  display: 'swap',
+});
+
+// Fonte de títulos do estilo soft (default da lista curada em DISPLAY_FONTS) — ver --ui-font-display-active.
+const baloo = Baloo_2({
+  variable: '--font-baloo',
   subsets: ['latin'],
   weight: ['500', '600', '700'],
   display: 'swap',
@@ -92,8 +107,12 @@ export default function RootLayout({
     <html
       lang={site?.lang ?? 'pt-BR'}
       data-theme-color={defaultThemeColor}
+      // `data-ui-style` (NEXT_PUBLIC_UI_STYLE) é fixo por deploy: resolvido no servidor, sem flash —
+      // ao contrário de `data-theme-color`, que o provider do cliente pode trocar.
+      data-ui-style={ACTIVE_UI_STYLE}
+      data-display-font={displayFont}
       suppressHydrationWarning
-      className={`${robotoSans.variable} ${geistMono.variable} ${bricolage.variable} ${quicksand.variable} h-full antialiased`}
+      className={`${robotoSans.variable} ${geistMono.variable} ${bricolage.variable} ${quicksand.variable} ${baloo.variable} h-full antialiased`}
     >
       <body
         suppressHydrationWarning

@@ -1,9 +1,8 @@
 -- db/extras/location_seed_bora_cuiaba.sql
 --
--- Cidades atendidas pelo Bora Cuiabá (plugin location). Com `location.source: "db"` no
--- kizuna.config.json, o seletor de local do header lista SÓ o que está em location_state /
--- location_city — estas tabelas SÃO a lista de cidades. Conteúdo específico deste projeto, por
--- isso fica em db/extras/ e não no plugin do core.
+-- Cidades atendidas pelo Bora Cuiabá (plugin location). O seletor de local do header lista SÓ
+-- as cidades com location_city.search_city = true (plugin location 1.1.0). Conteúdo específico
+-- deste projeto, por isso fica em db/extras/ e não no plugin do core.
 --
 --   Brasil -> Centro-Oeste -> MT (6 cidades) + MS (1 cidade)
 --
@@ -11,14 +10,15 @@
 -- `p_city_ibge` na busca e casa com service_addresses.city_ibge / user_data.city_ibge.
 --
 -- Liberar cidade nova: acrescente uma linha no INSERT de location_city (código em
--- https://servicodados.ibge.gov.br/api/v1/localidades/estados/{UF}/municipios) e rode de novo.
--- Estado novo: acrescente também em location_state. Tirar cidade: DELETE FROM
--- public.location_city WHERE id = <código>; — este seed só insere/atualiza, não apaga.
+-- https://servicodados.ibge.gov.br/api/v1/localidades/estados/{UF}/municipios) com
+-- search_city = true e rode de novo. Estado novo: acrescente também em location_state. Tirar
+-- cidade do seletor: UPDATE public.location_city SET search_city = false WHERE id = <código>;
+-- — este seed só insere/atualiza, não apaga.
 --
 -- A cidade padrão (location.defaultCityIbge no kizuna.config.json, hoje Cuiabá 5103403) PRECISA
--- estar aqui; sem ela, cidade detectada fora da lista cai no seletor manual.
+-- estar aqui com search_city = true; sem ela, cidade detectada fora da lista cai no seletor.
 --
--- Pré-requisito: plugin location aplicado. Idempotente.
+-- Pré-requisito: plugin location 1.1.0 aplicado (0002_location_search_city.sql). Idempotente.
 
 BEGIN;
 
@@ -45,16 +45,17 @@ ON CONFLICT (id) DO UPDATE
   SET country_id = EXCLUDED.country_id, region_id = EXCLUDED.region_id, code = EXCLUDED.code,
       name = EXCLUDED.name, updated_at = now();
 
-INSERT INTO public.location_city (id, state_id, name)
+INSERT INTO public.location_city (id, state_id, name, search_city)
 VALUES
-  (5103403, 51, 'Cuiabá'),
-  (5108402, 51, 'Várzea Grande'),
-  (5103007, 51, 'Chapada dos Guimarães'),
-  (5107602, 51, 'Rondonópolis'),
-  (5107909, 51, 'Sinop'),
-  (5107925, 51, 'Sorriso'),
-  (5002704, 50, 'Campo Grande')
+  (5103403, 51, 'Cuiabá', true),
+  (5108402, 51, 'Várzea Grande', true),
+  (5103007, 51, 'Chapada dos Guimarães', true),
+  (5107602, 51, 'Rondonópolis', true),
+  (5107909, 51, 'Sinop', true),
+  (5107925, 51, 'Sorriso', true),
+  (5002704, 50, 'Campo Grande', true)
 ON CONFLICT (id) DO UPDATE
-  SET state_id = EXCLUDED.state_id, name = EXCLUDED.name, updated_at = now();
+  SET state_id = EXCLUDED.state_id, name = EXCLUDED.name, search_city = EXCLUDED.search_city,
+      updated_at = now();
 
 COMMIT;

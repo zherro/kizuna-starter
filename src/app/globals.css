@@ -272,8 +272,8 @@
 /* ================= BORA CUIABÁ (tema completo — terracota/vermelho vivo, city-guide) ================= */
 
 :root[data-theme-color='bora_cuiaba'] {
-  --background: oklch(0.978 0.01 80);
-  --background-white: oklch(0.978 0.01 80);
+  --background: oklch(0.99 0.005 80);
+  --background-white: oklch(0.99 0.005 80);
   --foreground: oklch(0.2 0.035 53);
 
   --card: oklch(1 0 0);
@@ -506,6 +506,80 @@
   --scrollbar-track: color-mix(in oklch, var(--background) 85%, white 8%);
 }
 
+/* ================= FORMA (data-ui-style) ================= */
+
+/* Raio/borda/sombra dos componentes do kizuna-core por estilo — mesmo mecanismo do data-theme-color,
+   mas o atributo vem do root layout (NEXT_PUBLIC_UI_STYLE, fixo por deploy). :root = classic, com os
+   mesmos valores das classes Tailwind de antes; cada componente também traz o valor classic como
+   fallback do var(), então projeto sem este bloco continua classic. */
+:root {
+  --ui-radius-card: 1rem;
+  --ui-radius-card-compact: 0.75rem;
+  --ui-radius-pill: 0.375rem;
+  --ui-radius-card-lg: 1.5rem;
+  --ui-radius-control: 0.5rem;
+  --ui-radius-sheet-top: 1rem;
+  --ui-radius-field: 0.375rem;
+  --ui-radius-popover: 0.375rem;
+  --ui-radius-select: 0.5rem;
+  --ui-border-w-card: 1px;
+  --ui-border-w-chip: 1px;
+  /* = utilitários shadow-sm / shadow-md / shadow-lg do Tailwind v4 (a var --shadow-sm da página tem outro valor) */
+  --ui-shadow-card: 0 1px 3px 0 #0000001a, 0 1px 2px -1px #0000001a;
+  --ui-shadow-card-compact: 0 1px 3px 0 #0000001a, 0 1px 2px -1px #0000001a;
+  --ui-shadow-card-flat: 0 1px 3px 0 #0000001a, 0 1px 2px -1px #0000001a;
+  --ui-shadow-item: 0 0 #0000;
+  --ui-shadow-fab: 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a;
+  --ui-shadow-sheet: 0 10px 15px -3px #0000001a, 0 4px 6px -4px #0000001a;
+  --ui-fab-size: 3rem;
+  --ui-progress-h: 0.5rem;
+  --ui-font-display-active: var(--font-quicksand), var(--font-bricolage), var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* soft: visual "app" — pill, cards sem borda, separados do fundo por uma sombra difusa e leve. */
+:root[data-ui-style='soft'] {
+  /* Sombra de 3 níveis, maior conforme a superfície ganha presença: item de lista < card com
+     cabeçalho < wrapper grande. Os componentes de ui-better-soft já leem --shadow-soft-N; só no
+     soft, porque há componente que usa a var sem condição e no classic ela tem que ficar indefinida. */
+  --shadow-soft-1: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 2px 8px -2px rgb(0 0 0 / 0.06);
+  --shadow-soft-2: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 8px 24px -8px rgb(0 0 0 / 0.1);
+  --shadow-soft-3: 0 2px 4px 0 rgb(0 0 0 / 0.04), 0 16px 40px -12px rgb(0 0 0 / 0.14);
+  --ui-radius-card: 1.75rem;
+  --ui-radius-card-compact: 1rem;
+  --ui-radius-pill: 9999px;
+  --ui-radius-card-lg: 2rem;
+  --ui-radius-control: 9999px;
+  --ui-radius-sheet-top: 1.75rem;
+  --ui-radius-field: 1rem;
+  --ui-radius-popover: 1rem;
+  --ui-radius-select: 1rem;
+  --ui-border-w-card: 0px;
+  --ui-border-w-chip: 1px;
+  --ui-shadow-card: var(--shadow-soft-2);
+  --ui-shadow-card-compact: var(--shadow-soft-1);
+  --ui-shadow-card-flat: var(--shadow-soft-3);
+  --ui-shadow-item: var(--shadow-soft-1);
+  --ui-shadow-fab: 0 10px 15px -3px #0000001a, 0 4px 6px -4px #0000001a;
+  --ui-fab-size: 3.5rem;
+  /* só no soft: o classic usa o fallback do componente (bg-background) */
+  --ui-card-bg: var(--card);
+  --ui-progress-h: 0.375rem;
+  /* só no soft: o classic usa o fallback do componente, que resolve --primary no próprio elemento */
+  --ui-progress-track: var(--muted);
+  --ui-font-display-active: var(--font-baloo), var(--font-quicksand), var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* theme.displayFont do kizuna.config.json — vence o default do estilo (vem depois, mesma especificidade) */
+:root[data-display-font='quicksand'] {
+  --ui-font-display-active: var(--font-quicksand), var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+}
+:root[data-display-font='baloo'] {
+  --ui-font-display-active: var(--font-baloo), var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+}
+:root[data-display-font='bricolage'] {
+  --ui-font-display-active: var(--font-bricolage), var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+}
+
 @theme inline {
   --color-background: var(--background-white);
   --color-background: var(--background);
@@ -545,10 +619,10 @@
 
   --font-sans: var(--font-roboto), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: var(--font-geist-mono);
-  /* fonte de títulos (Typography font="display") — Quicksand, carregada em layout.tsx. Fica
-     dentro de @theme inline, então é fixa: --font-display não pode ser sobrescrita por tema
-     (Tailwind v4 resolve @theme inline em build-time, não segue o cascade do CSS). */
-  --font-display: var(--font-quicksand), var(--font-bricolage), var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+  /* fonte de títulos (Typography font="display"). O @theme inline continua build-time, mas agora
+     aponta pra uma var normal (--ui-font-display-active, no bloco FORMA acima) que segue o cascade:
+     estilo (data-ui-style) e theme.displayFont (data-display-font) trocam a fonte sem rebuild do CSS. */
+  --font-display: var(--ui-font-display-active);
 }
 
 body {

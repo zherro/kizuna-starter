@@ -10,7 +10,7 @@
     "logo": "/brand/logo.png"
   },
   "theme": {
-    "_comment": "Cor/tema visual padrão. \"default\" é aplicado enquanto o usuário não escolhe outro (ou sempre, se \"selectable\" for false — aí o seletor de cor some do botão de preferências). Temas disponíveis: blue, green, purple, teal, red, orange, coral, terracotta, bora_cuiaba, metro_orange, laranja_intenso, laranja_medio. \"metaColor\" é a cor da barra do navegador no mobile (meta theme-color).",
+    "_comment": "Cor/tema visual padrão. \"default\" é aplicado enquanto o usuário não escolhe outro (ou sempre, se \"selectable\" for false — aí o seletor de cor some do botão de preferências). Temas disponíveis: blue, green, purple, teal, red, orange, coral, terracotta, bora_cuiaba, metro_orange, laranja_intenso, laranja_medio. \"metaColor\" é a cor da barra do navegador no mobile (meta theme-color). \"displayFont\": fonte dos títulos, uma de quicksand | baloo | bricolage; sem ela vale o padrão do estilo (NEXT_PUBLIC_UI_STYLE: classic = quicksand, soft = baloo).",
     "default": "bora_cuiaba",
     "selectable": false,
     "metaColor": "#fbf7f0"
@@ -20,8 +20,7 @@
     "variant": "classic"
   },
   "location": {
-    "_comment": "Seletor de local do header (plugin location). \"source\": ibge (padrão — Brasil inteiro, API do IBGE) | db (só as cidades em location_state/location_city; seed em db/extras/location_seed_bora_cuiaba.sql). \"outsideList\" (modo db): cidade detectada por GPS/IP fora da lista → prompt (abre o seletor) | default (seleciona \"defaultCityIbge\", código IBGE de 7 dígitos, que precisa estar no seed). Ver kizuna-core/docs/plugins/location.md.",
-    "source": "db",
+    "_comment": "Seletor de local do header (plugin location). Lista só as cidades com location_city.search_city = true (seed em db/extras/location_seed_bora_cuiaba.sql). \"outsideList\": cidade detectada por GPS/IP fora da lista → prompt (abre o seletor) | default (seleciona \"defaultCityIbge\", código IBGE de 7 dígitos, que precisa estar marcada). Ver kizuna-core/docs/plugins/location.md.",
     "outsideList": "default",
     "defaultCityIbge": "5103403"
   },
