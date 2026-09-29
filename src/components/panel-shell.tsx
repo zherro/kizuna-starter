@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 // EXEMPLO — este é o menu do painel. Edite `navigationGroups` e `branding`
 // conforme o seu app. Os links abaixo apontam só para telas que o kizuna-core
@@ -23,148 +23,143 @@ import {
   Star,
   UserCircle,
   UserCog,
-} from "lucide-react";
+} from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import {
   PanelShellBase,
   type PanelNavGroup,
-} from "@kizuna/core/client/components/panel-shell";
+  type PanelTopAction,
+} from '@kizuna/core/client/components/panel-shell';
 
 const navigationGroups: PanelNavGroup[] = [
   {
-    title: "Meu conteúdo",
+    title: 'Meu conteúdo',
     items: [
       {
-        title: "Novo",
-        href: "/painel/meus-servicos/novo",
+        title: 'Novo',
+        href: '/painel/meus-servicos/novo',
         icon: PlusCircle,
-        permResource: "default",
+        permResource: 'default',
       },
       {
-        title: "Ver todos",
-        href: "/painel/meus-servicos",
+        title: 'Ver todos',
+        href: '/painel/meus-servicos',
         icon: Briefcase,
-        permResource: "default",
+        permResource: 'default',
       },
       {
-        title: "Avaliação",
-        href: "/painel/administracao/avaliacoes",
+        title: 'Avaliação',
+        href: '/painel/administracao/avaliacoes',
         icon: Star,
-        permResource: "default",
+        permResource: 'default',
       },
     ],
   },
   {
-    title: "Navegação",
+    // Fora da lista: "Tela inicial" e "Painel" viram ícones no topo (topActions). Os itens ficam
+    // aqui só para o gate de página — "/painel" é o item que libera as telas sem item próprio.
+    title: 'Navegação',
     items: [
-      { title: "Tela inicial", href: "/", icon: Home, permResource: "default" },
       {
-        title: "Painel",
-        href: "/painel",
+        title: 'Tela inicial',
+        href: '/',
+        icon: Home,
+        permResource: 'default',
+        sidebarHidden: true,
+      },
+      {
+        title: 'Painel',
+        href: '/painel',
         icon: LayoutGrid,
-        permResource: "default",
-      },
-      {
-        title: "Minha conta",
-        href: "/painel/minha-conta",
-        icon: UserCircle,
-        permResource: "default",
+        permResource: 'default',
+        sidebarHidden: true,
       },
     ],
   },
   {
-    title: "Catálogo",
+    title: 'Catálogo',
     items: [
       {
-        title: "Categorias",
-        href: "/painel/taxonomia/categorias",
+        title: 'Categorias',
+        href: '/painel/taxonomia/categorias',
         icon: FolderTree,
-        permResource: "categories",
+        permResource: 'categories',
       },
       {
-        title: "Subcategorias",
-        href: "/painel/taxonomia/subcategorias",
+        title: 'Subcategorias',
+        href: '/painel/taxonomia/subcategorias',
         icon: GitFork,
-        permResource: "categories",
+        permResource: 'categories',
       },
       {
-        title: "Árvore",
-        href: "/painel/taxonomia/arvore",
+        title: 'Árvore',
+        href: '/painel/taxonomia/arvore',
         icon: Network,
-        permResource: "categories",
+        permResource: 'categories',
       },
     ],
   },
   {
-    title: "Conteúdo",
+    title: 'Conteúdo',
     items: [
       {
-        title: "Formulários",
-        href: "/painel/administracao/formularios",
+        title: 'Formulários',
+        href: '/painel/administracao/formularios',
         icon: NotebookPen,
-        permResource: "forms",
+        permResource: 'forms',
       },
       {
-        title: "Páginas",
-        href: "/painel/administracao/paginas",
+        title: 'Páginas',
+        href: '/painel/administracao/paginas',
         icon: FileText,
-        permResource: "pages",
+        permResource: 'pages',
       },
+      { title: 'Agenda', href: '/painel/agenda', icon: CalendarDays, permResource: 'agenda' },
+    ],
+  },
+  {
+    title: 'Configuração',
+    items: [
       {
-        title: "Agenda",
-        href: "/painel/agenda",
-        icon: CalendarDays,
-        permResource: "agenda",
+        title: 'Minha conta',
+        href: '/painel/minha-conta',
+        icon: UserCircle,
+        permResource: 'default',
       },
     ],
   },
   {
-    title: "Administração",
+    title: 'Administração',
     items: [
       {
-        title: "Acessos dos usuários",
-        href: "/painel/administracao/acessos",
+        title: 'Acessos dos usuários',
+        href: '/painel/administracao/acessos',
         icon: UserCog,
         rootOnly: true,
       },
       {
-        title: "Aprovações",
-        href: "/painel/administracao/aprovacoes",
+        title: 'Aprovações',
+        href: '/painel/administracao/aprovacoes',
         icon: ClipboardCheck,
         rootOnly: true,
       },
-      {
-        title: "Teste de funções",
-        href: "/painel/funcoes",
-        icon: FlaskConical,
-        devOnly: true,
-        rootOnly: true,
-      },
+      { title: 'Teste de funções', href: '/painel/funcoes', icon: FlaskConical, devOnly: true, rootOnly: true },
     ],
   },
   {
-    title: "Root",
+    title: 'Root',
     items: [
+      { title: 'Plugins instalados', href: '/painel/root/plugins', icon: Blocks, rootOnly: true },
+      { title: 'Papéis e permissões', href: '/painel/root/papeis', icon: KeyRound, rootOnly: true },
       {
-        title: "Plugins instalados",
-        href: "/painel/root/plugins",
-        icon: Blocks,
-        rootOnly: true,
-      },
-      {
-        title: "Papéis e permissões",
-        href: "/painel/root/papeis",
-        icon: KeyRound,
-        rootOnly: true,
-      },
-      {
-        title: "Configurações",
-        href: "/painel/root/configuracoes",
+        title: 'Configurações',
+        href: '/painel/root/configuracoes',
         icon: Settings,
         rootOnly: true,
       },
       {
-        title: "Log de acesso root",
-        href: "/painel/security/root-access-log",
+        title: 'Log de acesso root',
+        href: '/painel/security/root-access-log',
         icon: LockKeyhole,
         rootOnly: true,
       },
@@ -172,16 +167,28 @@ const navigationGroups: PanelNavGroup[] = [
   },
 ];
 
-export function PanelShell({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export function PanelShell({ children }: Readonly<{ children: React.ReactNode }>) {
+  const pathname = usePathname() ?? '';
+  const topActions: PanelTopAction[] = [
+    { title: 'Tela inicial', href: '/', icon: Home },
+    { title: 'Painel', href: '/painel', icon: LayoutGrid, isActive: pathname === '/painel' },
+    {
+      title: 'Minha conta',
+      href: '/painel/minha-conta',
+      icon: UserCircle,
+      isActive: pathname.startsWith('/painel/minha-conta'),
+    },
+  ];
+
   return (
     <PanelShellBase
       navGroups={navigationGroups}
+      topActions={topActions}
+      topActionsIconOnly
       branding={{
-        kicker: "Kizuna",
-        shortLabel: "KZ",
-        fullLabel: "Kizuna",
+        kicker: 'Kizuna',
+        shortLabel: 'KZ',
+        fullLabel: 'Kizuna',
       }}
     >
       {children}
