@@ -3,7 +3,7 @@
 > **Para quem executar:** superpowers:subagent-driven-development, um despacho por lote. **Git:** nada de commit/push —
 > cada lote aprovado vai pro stage (`git add` só dos arquivos do lote). Commit só quando o usuário pedir.
 
-Status: em execução (usuário pediu "faça a fase 2, com subagents").
+Status: concluída (Tasks 1–10).
 
 **Objetivo:** levar os tokens `--ui-*` da fase 1 para todo componente com raio/borda/sombra fixos fora de `ui/`:
 os 32 arquivos de `ui-better-soft/`, os componentes de domínio do core e os do starter; remover `UI_THEME`/`activeTheme`.

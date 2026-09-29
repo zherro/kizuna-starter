@@ -111,7 +111,7 @@ diferente por estilo.
 
 1. **Fase 1 (este plano)**: infraestrutura — tokens CSS, atributo `data-ui-style` no layout, mecanismo de
    fonte configurável, migração de `ui/` inteiro + ajuste do `bora_cuiaba`.
-2. **Fase 2**: migrar os 21 componentes pendentes de `ui-better-soft/` pros tokens novos.
+2. **Fase 2** (feita): migrar os 21 componentes pendentes de `ui-better-soft/` pros tokens novos.
 3. **Fase 3**: passe fino tela a tela contra as referências reais do app (`/painel`, `/anuncios`, wizard
    de serviço) — candidato a um prompt separado pra rodar em sessão(ões) do Opus, uma vez que a fase 1/2
    estejam no ar. Esse prompt é produzido depois, não faz parte deste spec.

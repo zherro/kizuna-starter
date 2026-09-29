@@ -69,7 +69,7 @@ export default async function PainelPage() {
         <PainelWrapper userId={session.user_id} role="advertiser" />
       )}
 
-      <section className="rounded-3xl border border-border bg-card px-6 py-8 shadow-sm">
+      <section className="rounded-[var(--ui-radius-card-lg,1.5rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-card px-6 py-8 shadow-[shadow:var(--ui-shadow-card-flat,0_1px_3px_0_#0000001a,_0_1px_2px_-1px_#0000001a)]">
         <p className="text-sm font-medium uppercase tracking-[0.22em] text-primary">Meu painel</p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight">
           Bem-vindo ao painel da operacao

@@ -89,7 +89,7 @@ function ProCard({ pro }: { pro: HomePro }) {
   return (
     <Link
       href={`/busca?q=${encodeURIComponent(pro.trade)}`}
-      className="flex h-full flex-col rounded-2xl border border-border/70 bg-card p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors hover:border-primary/40"
+      className="flex h-full flex-col rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border/70 bg-card p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-colors hover:border-primary/40"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">

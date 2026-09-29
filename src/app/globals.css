@@ -517,6 +517,7 @@
   --ui-radius-card-compact: 0.75rem;
   --ui-radius-pill: 0.375rem;
   --ui-radius-card-lg: 1.5rem;
+  --ui-radius-card-sm: 0.5rem;
   --ui-radius-control: 0.5rem;
   --ui-radius-sheet-top: 1rem;
   --ui-radius-field: 0.375rem;
@@ -548,6 +549,7 @@
   --ui-radius-card-compact: 1rem;
   --ui-radius-pill: 9999px;
   --ui-radius-card-lg: 2rem;
+  --ui-radius-card-sm: 1rem;
   --ui-radius-control: 9999px;
   --ui-radius-sheet-top: 1.75rem;
   --ui-radius-field: 1rem;

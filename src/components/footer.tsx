@@ -90,7 +90,7 @@ export function Footer() {
                   value={themeColor}
                   onChange={(e) => setThemeColor(e.target.value as typeof themeColor)}
                   aria-label={messages.nav.color}
-                  className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                  className="h-9 rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
                 >
                   {themeColors.map((c) => (
                     <option key={c.value} value={c.value}>
@@ -104,7 +104,7 @@ export function Footer() {
                 value={language}
                 onChange={(e) => setLanguage(e.target.value as typeof language)}
                 aria-label={messages.nav.language}
-                className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                className="h-9 rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
               >
                 {languages.map((item) => (
                   <option key={item} value={item}>
@@ -157,7 +157,7 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--ui-radius-pill,0.375rem)] border border-input bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                 >
                   <Icon className="h-4 w-4" />
                 </a>
