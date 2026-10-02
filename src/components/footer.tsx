@@ -1,18 +1,26 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useAppPreferences } from '@kizuna/core/client/providers/app-preferences-provider';
-import { Button } from '@kizuna/core/client/components/ui/button';
-import { GitBranchIcon, Moon, Sun } from 'lucide-react';
-import cfg from '@/../kizuna.config.json';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useAppPreferences } from "@kizuna/core/client/providers/app-preferences-provider";
+import { Button } from "@kizuna/core/client/components/ui/button";
+import { GitBranchIcon, Moon, Sun } from "lucide-react";
+import cfg from "@/../kizuna.config.json";
+
+// Versão do app (env APP_VERSION, incrementada por push) + versão do core — ver next.config.ts.
+const appVersion = [
+  process.env.APP_VERSION,
+  process.env.KIZUNA_CORE_VERSION && `core ${process.env.KIZUNA_CORE_VERSION}`,
+]
+  .filter(Boolean)
+  .join(" · ");
 
 // Marca do site — bloco "site" do kizuna.config.json (mesma logo do header).
 const siteLogo = cfg.site?.logo ?? undefined;
 
 export function Footer() {
   const pathname = usePathname();
-  const isPainelRoute = pathname.startsWith('/painel');
+  const isPainelRoute = pathname.startsWith("/painel");
 
   const {
     language,
@@ -34,30 +42,30 @@ export function Footer() {
   const siteName = cfg.site?.name ?? messages.nav.title;
 
   const navLinks = [
-    { href: '/', label: messages.nav.home },
-    { href: '/painel', label: messages.default.dashboard },
-    { href: '/painel/taxonomia/categorias', label: messages.footer.categories },
-    { href: '/eleicao', label: messages.election.footerLink },
-    { href: '#', label: messages.nav.contact },
-    { href: '/login', label: messages.nav.login },
-    { href: '/registre-se', label: messages.nav.signUp },
+    { href: "/", label: messages.nav.home },
+    { href: "/painel", label: messages.default.dashboard },
+    { href: "/painel/taxonomia/categorias", label: messages.footer.categories },
+    { href: "/eleicao", label: messages.election.footerLink },
+    { href: "#", label: messages.nav.contact },
+    { href: "/login", label: messages.nav.login },
+    { href: "/registre-se", label: messages.nav.signUp },
   ];
 
   const themeColors = [
-    { value: 'blue', label: messages.nav.blue },
-    { value: 'green', label: messages.nav.green },
-    { value: 'purple', label: messages.nav.purple },
-    { value: 'teal', label: messages.nav.teal },
-    { value: 'red', label: messages.nav.red },
-    { value: 'orange', label: messages.nav.orange },
-    { value: 'coral', label: messages.nav.coral },
+    { value: "blue", label: messages.nav.blue },
+    { value: "green", label: messages.nav.green },
+    { value: "purple", label: messages.nav.purple },
+    { value: "teal", label: messages.nav.teal },
+    { value: "red", label: messages.nav.red },
+    { value: "orange", label: messages.nav.orange },
+    { value: "coral", label: messages.nav.coral },
   ];
 
   const socialLinks = [
-    { href: 'https://github.com', label: 'GitHub', icon: GitBranchIcon },
-    { href: 'https://twitter.com', label: 'Twitter', icon: GitBranchIcon },
-    { href: 'https://instagram.com', label: 'Instagram', icon: GitBranchIcon },
-    { href: 'https://linkedin.com', label: 'LinkedIn', icon: GitBranchIcon },
+    { href: "https://github.com", label: "GitHub", icon: GitBranchIcon },
+    { href: "https://twitter.com", label: "Twitter", icon: GitBranchIcon },
+    { href: "https://instagram.com", label: "Instagram", icon: GitBranchIcon },
+    { href: "https://linkedin.com", label: "LinkedIn", icon: GitBranchIcon },
   ];
 
   return (
@@ -77,7 +85,9 @@ export function Footer() {
                     className="inline-block h-2.5 w-2.5 rounded-full bg-primary"
                     aria-hidden="true"
                   />
-                  <span className="text-sm font-semibold tracking-tight">{siteName}</span>
+                  <span className="text-sm font-semibold tracking-tight">
+                    {siteName}
+                  </span>
                 </>
               )}
             </Link>
@@ -89,7 +99,9 @@ export function Footer() {
               {themeColorSelectable && (
                 <select
                   value={themeColor}
-                  onChange={(e) => setThemeColor(e.target.value as typeof themeColor)}
+                  onChange={(e) =>
+                    setThemeColor(e.target.value as typeof themeColor)
+                  }
                   aria-label={messages.nav.color}
                   className="h-9 rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
                 >
@@ -118,9 +130,11 @@ export function Footer() {
                 variant="outline"
                 size="icon"
                 aria-label={messages.nav.theme}
-                onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+                onClick={() =>
+                  setTheme(resolvedTheme === "dark" ? "light" : "dark")
+                }
               >
-                {resolvedTheme === 'dark' ? (
+                {resolvedTheme === "dark" ? (
                   <Sun className="h-4 w-4" />
                 ) : (
                   <Moon className="h-4 w-4" />
@@ -171,11 +185,14 @@ export function Footer() {
         <div className="mt-8 flex flex-col items-center justify-between gap-2 border-t border-border/70 pt-6 sm:flex-row">
           <p className="text-xs text-muted-foreground">
             © {currentYear} {siteName}. {messages.footer.rights}
+            {appVersion && (
+              <span className="ml-2 opacity-70">v{appVersion}</span>
+            )}
           </p>
           <p className="text-xs text-muted-foreground">
-            {'weather' in cfg && (
+            {"weather" in cfg && (
               <>
-                {messages.footer.weatherCredit}:{' '}
+                {messages.footer.weatherCredit}:{" "}
                 <a
                   href="https://open-meteo.com"
                   target="_blank"
@@ -184,7 +201,7 @@ export function Footer() {
                 >
                   Open-Meteo
                 </a>
-                {' · '}
+                {" · "}
               </>
             )}
             {messages.footer.madeWith}

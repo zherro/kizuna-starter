@@ -1,10 +1,20 @@
 import type { NextConfig } from 'next';
+import appPkg from './package.json';
+import corePkg from './kizuna-core/package.json';
 
 const nextConfig: NextConfig = {
   // EXEMPLO — ajuste conforme o projeto
 
   // Build standalone para produção em Docker (ver Dockerfile na raiz).
   output: 'standalone',
+
+  // Versões exibidas no rodapé (só pra conferir se o deploy subiu). Inlineadas no build:
+  // a env (--build-arg no Docker) sobrescreve; sem ela vale o "version" de cada package.json,
+  // que o scripts/publish.sh incrementa a cada push.
+  env: {
+    APP_VERSION: process.env.APP_VERSION || appPkg.version,
+    KIZUNA_CORE_VERSION: process.env.KIZUNA_CORE_VERSION || corePkg.version,
+  },
 
   // Headers de segurança padrão (ver kizuna-core/docs/HARDENING.md §Segurança).
   // CSP não entra aqui por default — exige rollout em Report-Only por projeto.
