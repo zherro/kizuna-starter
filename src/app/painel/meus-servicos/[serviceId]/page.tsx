@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { canDoServer, getSession } from '@kizuna/core/server';
+import { RequireLevel, getSession, isPhoneLoginEnabled, type OtpConfig } from '@kizuna/core/server';
 import { ServicoWizardPage } from '@kizuna/core/client/components/services/servico-wizard-page';
 import type { WizardJsonConfig } from '@kizuna/core/client/components/wizard';
 import cfg from '@/../kizuna.config.json';
@@ -10,26 +10,35 @@ type EditServicePageProps = {
 };
 
 export default async function EditServicoPage({ params }: EditServicePageProps) {
-  const session = await getSession();
-  if (!session) redirect('/login');
-
   const { serviceId } = await params;
-  const isCreating = serviceId === 'novo';
 
-  // O botão "Novo" é gateado, mas quem entra direto pela URL não passa por ele. Esta é a barreira
-  // real: nível de conta exigido por 'service.create' (src/lib/account-levels.ts). Fecha por padrão.
-  if (isCreating && !(await canDoServer(accountLevelsSetup, 'service.create')).allowed) {
-    redirect('/painel/onboarding?acao=service.create');
-  }
+  const session = await getSession();
+  if (!session) redirect(`/login?returnTo=${encodeURIComponent(`/painel/meus-servicos/${serviceId}`)}`);
+
+  const isCreating = serviceId === 'novo';
 
   // key={serviceId}: sem ele, navegar entre dois ids reaproveita a instância do wizard e o
   // estado antigo (resourceId etc.), fazendo um "novo" dar PATCH no serviço anterior.
-  return (
+  const wizard = (
     <ServicoWizardPage
       key={serviceId}
       mode={isCreating ? 'create' : 'edit'}
       serviceId={isCreating ? null : serviceId}
       wizardConfig={cfg.wizards.servicos as WizardJsonConfig}
     />
+  );
+
+  if (!isCreating) return wizard;
+
+  // Barreira real (quem entra direto pela URL): nível exigido por 'service.create'.
+  return (
+    <RequireLevel
+      setup={accountLevelsSetup}
+      action="service.create"
+      returnTo="/painel/meus-servicos/novo"
+      phoneEnabled={isPhoneLoginEnabled((cfg as { otp?: OtpConfig }).otp)}
+    >
+      {wizard}
+    </RequireLevel>
   );
 }

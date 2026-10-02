@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useAppPreferences } from '@kizuna/core/client/providers/app-preferences-provider';
 import { DiscoverCta } from '@kizuna/core/client/components/home/discover-cta';
 import { HomeHero } from './home/home-hero';
@@ -8,6 +8,7 @@ import { CategoryRail } from './home/category-rail';
 import { NearbyGrid } from './home/nearby-grid';
 import { HowItWorks } from './home/how-it-works';
 import { JoinCta } from './home/join-cta';
+import { SocialInstallCards } from './home/social-install-cards';
 import {
   getHomeInkStyle,
   HOME_INK_FIXED_LEVEL,
@@ -31,6 +32,10 @@ type HomeContentProps = {
   inkPicker?: boolean;
   /** nível padrão do fundo "ink" (1-7) — vem de home.inkLevel */
   inkLevel?: HomeInkLevel;
+  /** carrosséis por categoria (Server Components montados na page) — vem de home.categoryRails */
+  categoryRails?: ReactNode;
+  /** URL do perfil no Instagram — vem de home.instagramUrl (sem ela o card do Instagram não aparece) */
+  instagramUrl?: string;
 };
 
 export function HomeContent({
@@ -40,6 +45,8 @@ export function HomeContent({
   showDiscover = false,
   inkPicker = HOME_INK_TONE_PICKER_ENABLED,
   inkLevel: defaultInkLevel = HOME_INK_FIXED_LEVEL,
+  categoryRails,
+  instagramUrl,
 }: HomeContentProps = {}) {
   const { messages } = useAppPreferences();
   const t = messages.home;
@@ -84,9 +91,11 @@ export function HomeContent({
           <DiscoverCta />
         </div>
       ) : null}
+      {categoryRails}
       <NearbyGrid t={t} />
       <HowItWorks t={t} />
       <JoinCta t={t} />
+      <SocialInstallCards t={t} instagramUrl={instagramUrl} />
       {inkPicker ? (
         <HomeInkTonePicker level={inkLevel} onChange={handleInkLevelChange} />
       ) : null}

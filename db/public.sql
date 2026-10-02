@@ -3,7 +3,7 @@
 -- Aplicar DEPOIS do db/auth.sql, em base limpa:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/public.sql
 -- Ordem = kizuna.plugins.json (ordem de dependência).
--- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (2), onboarding (1), storage (3), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (3), services (5), reviews (1), search (3), swipe (2), messaging (1), ai_assistant (1), demandas (4), pedidos (4)
+-- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (1), onboarding (1), storage (3), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (3), services (8), reviews (1), analytics (1), search (3), swipe (2), messaging (1), ai_assistant (1), demandas (4), pedidos (4)
 
 
 -- ===============================================================================================
@@ -312,7 +312,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: notifications  (2 arquivos)
+-- PLUGIN: notifications  (3 arquivos)
 -- ===============================================================================================
 
 
@@ -416,6 +416,221 @@ $function$;
 GRANT EXECUTE ON FUNCTION public.fn_notifications_mark_all_read() TO auth_user;
 -- auth.fun_notify is called ONLY from other SECURITY DEFINER functions (never directly by
 -- auth_user) — no EXECUTE grant to auth_user, same reasoning as auth.fun_msg_is_participant.
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/notifications/0003_notifications_service_role.sql
+-- ===============================================================================================
+
+-- plugins/notifications/0003_notifications_service_role.sql
+-- O servidor (service_role — sql/0117) avisa usuários pela função que já existe, auth.fun_notify
+-- (resolve o tenant do destinatário). Só GRANT; sem o papel, não faz nada. Idempotente.
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    GRANT EXECUTE ON FUNCTION auth.fun_notify(uuid, text, text, text, text, text) TO service_role;
+  END IF;
+END
+$$;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- PLUGIN: tickets  (1 arquivo)
+-- ===============================================================================================
+
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/tickets/0001_tickets.sql
+-- ===============================================================================================
+
+-- plugins/tickets/0001_tickets.sql
+-- Chamados. O usuário abre (type 'support') e comenta os seus; a equipe (permissão tickets.manage
+-- — root sempre) vê todos, muda status e responde. O sistema (service_role, no servidor) abre
+-- tickets automáticos (ex.: 'account_recreated', created_by NULL — só a equipe vê).
+--
+-- Sem funções, views ou triggers: tudo é RLS + GRANT de coluna. Por isso são três tabelas:
+--   tickets          — o chamado;
+--   ticket_comments  — comentários do USUÁRIO;
+--   ticket_replies   — respostas da EQUIPE e registros de troca de status.
+-- A regra "o usuário edita/apaga (lógico, deleted_at) o próprio comentário enquanto a equipe não
+-- respondeu depois" consulta ticket_replies. Se as respostas ficassem em ticket_comments, a
+-- política consultaria a própria tabela — o Postgres recusa ("infinite recursion detected in
+-- policy") e só daria para contornar com função SECURITY DEFINER.
+-- Mudança de status = UPDATE em tickets + resposta kind 'status_change' (duas escritas, pela tela).
+-- Idempotente.
+
+CREATE TABLE IF NOT EXISTS public.tickets (
+  id               bigserial PRIMARY KEY,
+  uid              uuid NOT NULL DEFAULT gen_random_uuid(),
+  type             text NOT NULL DEFAULT 'support'
+                   CHECK (type IN ('support', 'account_recreated')),
+  title            text NOT NULL CHECK (length(btrim(title)) BETWEEN 3 AND 160),
+  description      text,
+  status           text NOT NULL DEFAULT 'open'
+                   CHECK (status IN ('open', 'in_progress', 'resolved')),
+  created_by       uuid DEFAULT auth.fun_auth_user_id()
+                   REFERENCES auth.users(uid) ON DELETE RESTRICT,
+  subject_user_id  uuid REFERENCES auth.users(uid) ON DELETE RESTRICT,
+  related_user_id  uuid REFERENCES auth.users(uid) ON DELETE RESTRICT,
+  payload          jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now(),
+  resolved_at      timestamptz,
+  CONSTRAINT tickets_uid_unique UNIQUE (uid)
+);
+
+CREATE INDEX IF NOT EXISTS tickets_created_by_idx ON public.tickets (created_by, created_at DESC);
+CREATE INDEX IF NOT EXISTS tickets_status_idx ON public.tickets (status, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS public.ticket_comments (
+  id          bigserial PRIMARY KEY,
+  uid         uuid NOT NULL DEFAULT gen_random_uuid(),
+  ticket_id   bigint NOT NULL REFERENCES public.tickets(id) ON DELETE CASCADE,
+  author_id   uuid NOT NULL DEFAULT auth.fun_auth_user_id()
+              REFERENCES auth.users(uid) ON DELETE RESTRICT,
+  body        text NOT NULL CHECK (length(btrim(body)) BETWEEN 1 AND 4000),
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now(),
+  deleted_at  timestamptz,
+  CONSTRAINT ticket_comments_uid_unique UNIQUE (uid)
+);
+
+CREATE INDEX IF NOT EXISTS ticket_comments_ticket_idx
+  ON public.ticket_comments (ticket_id, created_at);
+
+CREATE TABLE IF NOT EXISTS public.ticket_replies (
+  id          bigserial PRIMARY KEY,
+  uid         uuid NOT NULL DEFAULT gen_random_uuid(),
+  ticket_id   bigint NOT NULL REFERENCES public.tickets(id) ON DELETE CASCADE,
+  author_id   uuid NOT NULL DEFAULT auth.fun_auth_user_id()
+              REFERENCES auth.users(uid) ON DELETE RESTRICT,
+  kind        text NOT NULL DEFAULT 'reply' CHECK (kind IN ('reply', 'status_change')),
+  body        text NOT NULL CHECK (length(btrim(body)) BETWEEN 1 AND 4000),
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT ticket_replies_uid_unique UNIQUE (uid)
+);
+
+CREATE INDEX IF NOT EXISTS ticket_replies_ticket_idx
+  ON public.ticket_replies (ticket_id, created_at);
+
+-- tickets -------------------------------------------------------------------------------------
+ALTER TABLE public.tickets ENABLE ROW LEVEL SECURITY;
+GRANT SELECT ON TABLE public.tickets TO auth_user;
+GRANT INSERT (type, title, description) ON TABLE public.tickets TO auth_user;
+GRANT UPDATE (status, resolved_at, updated_at) ON TABLE public.tickets TO auth_user;
+GRANT USAGE, SELECT ON SEQUENCE public.tickets_id_seq TO auth_user;
+
+DROP POLICY IF EXISTS tickets_select ON public.tickets;
+CREATE POLICY tickets_select ON public.tickets FOR SELECT TO auth_user
+USING (created_by = auth.fun_auth_user_id() OR auth.fun_auth_has_perm('tickets', 'manage'));
+
+DROP POLICY IF EXISTS tickets_insert ON public.tickets;
+CREATE POLICY tickets_insert ON public.tickets FOR INSERT TO auth_user
+WITH CHECK (
+  created_by = auth.fun_auth_user_id()
+  AND status = 'open'
+  AND (type = 'support' OR auth.fun_auth_has_perm('tickets', 'manage'))
+);
+
+DROP POLICY IF EXISTS tickets_update ON public.tickets;
+CREATE POLICY tickets_update ON public.tickets FOR UPDATE TO auth_user
+USING (auth.fun_auth_has_perm('tickets', 'manage'))
+WITH CHECK (auth.fun_auth_has_perm('tickets', 'manage'));
+
+-- ticket_replies (equipe) ---------------------------------------------------------------------
+-- "Ticket visível" = passa na RLS de tickets para quem consulta.
+ALTER TABLE public.ticket_replies ENABLE ROW LEVEL SECURITY;
+GRANT SELECT ON TABLE public.ticket_replies TO auth_user;
+GRANT INSERT (ticket_id, kind, body) ON TABLE public.ticket_replies TO auth_user;
+GRANT UPDATE (body, updated_at) ON TABLE public.ticket_replies TO auth_user;
+GRANT USAGE, SELECT ON SEQUENCE public.ticket_replies_id_seq TO auth_user;
+
+DROP POLICY IF EXISTS ticket_replies_select ON public.ticket_replies;
+CREATE POLICY ticket_replies_select ON public.ticket_replies FOR SELECT TO auth_user
+USING (EXISTS (SELECT 1 FROM public.tickets t WHERE t.id = ticket_id));
+
+DROP POLICY IF EXISTS ticket_replies_insert ON public.ticket_replies;
+CREATE POLICY ticket_replies_insert ON public.ticket_replies FOR INSERT TO auth_user
+WITH CHECK (
+  auth.fun_auth_has_perm('tickets', 'manage')
+  AND author_id = auth.fun_auth_user_id()
+  AND EXISTS (SELECT 1 FROM public.tickets t WHERE t.id = ticket_id)
+);
+
+DROP POLICY IF EXISTS ticket_replies_update ON public.ticket_replies;
+CREATE POLICY ticket_replies_update ON public.ticket_replies FOR UPDATE TO auth_user
+USING (auth.fun_auth_has_perm('tickets', 'manage') AND author_id = auth.fun_auth_user_id())
+WITH CHECK (author_id = auth.fun_auth_user_id());
+
+-- ticket_comments (usuário) -------------------------------------------------------------------
+ALTER TABLE public.ticket_comments ENABLE ROW LEVEL SECURITY;
+GRANT SELECT ON TABLE public.ticket_comments TO auth_user;
+GRANT INSERT (ticket_id, body) ON TABLE public.ticket_comments TO auth_user;
+GRANT UPDATE (body, updated_at, deleted_at) ON TABLE public.ticket_comments TO auth_user;
+GRANT USAGE, SELECT ON SEQUENCE public.ticket_comments_id_seq TO auth_user;
+
+-- Apagados: a equipe vê (a tela marca "comentário excluído"); o autor ainda enxerga o PRÓPRIO
+-- pela API — o Postgres exige que a linha resultante do UPDATE (o soft delete) passe na política
+-- de SELECT — e a tela esconde. Ninguém mais vê.
+DROP POLICY IF EXISTS ticket_comments_select ON public.ticket_comments;
+CREATE POLICY ticket_comments_select ON public.ticket_comments FOR SELECT TO auth_user
+USING (
+  EXISTS (SELECT 1 FROM public.tickets t WHERE t.id = ticket_id)
+  AND (
+    deleted_at IS NULL
+    OR author_id = auth.fun_auth_user_id()
+    OR auth.fun_auth_has_perm('tickets', 'manage')
+  )
+);
+
+-- A equipe responde em ticket_replies — assim "a equipe respondeu" é sempre uma linha lá.
+DROP POLICY IF EXISTS ticket_comments_insert ON public.ticket_comments;
+CREATE POLICY ticket_comments_insert ON public.ticket_comments FOR INSERT TO auth_user
+WITH CHECK (
+  NOT auth.fun_auth_has_perm('tickets', 'manage')
+  AND author_id = auth.fun_auth_user_id()
+  AND EXISTS (SELECT 1 FROM public.tickets t WHERE t.id = ticket_id)
+);
+
+-- Edita/apaga (lógico) o próprio, não apagado, enquanto não houver resposta da equipe posterior.
+DROP POLICY IF EXISTS ticket_comments_update ON public.ticket_comments;
+CREATE POLICY ticket_comments_update ON public.ticket_comments FOR UPDATE TO auth_user
+USING (
+  author_id = auth.fun_auth_user_id()
+  AND deleted_at IS NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM public.ticket_replies r
+    WHERE r.ticket_id = ticket_comments.ticket_id
+      AND r.created_at > ticket_comments.created_at
+  )
+)
+WITH CHECK (author_id = auth.fun_auth_user_id());
+
+-- service_role (servidor): abre tickets do sistema. BYPASSRLS; só GRANTs.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    GRANT SELECT, INSERT ON TABLE public.tickets TO service_role;
+    GRANT USAGE, SELECT ON SEQUENCE public.tickets_id_seq TO service_role;
+  END IF;
+END
+$$;
+
+-- Catálogo de permissão (quem recebe é decisão do projeto; root sempre passa).
+INSERT INTO auth.permissions (resource, action, name)
+VALUES ('tickets', 'manage', 'Gerenciar chamados (ver todos, mudar status, responder)')
+ON CONFLICT (resource, action) DO NOTHING;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('tickets', '1.0.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
 
 NOTIFY pgrst, 'reload schema';
 
@@ -2580,7 +2795,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: services  (5 arquivos)
+-- PLUGIN: services  (8 arquivos)
 -- ===============================================================================================
 
 
@@ -3054,6 +3269,69 @@ AS $function$
 $function$;
 
 GRANT EXECUTE ON FUNCTION public.fn_get_public_service_form_answers(uuid) TO anon, auth_user;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/services/0006_services_account_facts.sql
+-- ===============================================================================================
+
+-- 0006_services_account_facts.sql
+-- Contagem de anúncios do usuário logado, para o nível de conta "Anunciante"
+-- (requisito listing_published em src/shared/account-levels). Publicado = active ou paused
+-- (passou pela aprovação); pendente = pending. SECURITY INVOKER: a RLS de services já limita
+-- ao dono. Aditivo + idempotente.
+
+CREATE OR REPLACE FUNCTION public.fun_services__my_listing_counts()
+RETURNS jsonb
+LANGUAGE sql
+STABLE
+SECURITY INVOKER
+SET search_path = public, auth
+AS $$
+  SELECT jsonb_build_object(
+    'published', count(*) FILTER (WHERE s.status IN ('active', 'paused')),
+    'pending',   count(*) FILTER (WHERE s.status = 'pending')
+  )
+  FROM public.services s
+  WHERE s.active AND s.created_by = auth.fun_auth_user_id();
+$$;
+
+REVOKE ALL ON FUNCTION public.fun_services__my_listing_counts() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.fun_services__my_listing_counts() TO auth_user;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/services/0007_services_service_role.sql
+-- ===============================================================================================
+
+-- plugins/services/0007_services_service_role.sql
+-- A exclusão de conta (core, TypeScript com service_role — sql/0117) desativa os anúncios do
+-- usuário. Só GRANT; sem o papel (core antigo), não faz nada. Idempotente.
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    GRANT SELECT, UPDATE ON TABLE public.services TO service_role;
+  END IF;
+END
+$$;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/services/0008_services_like_count.sql
+-- ===============================================================================================
+
+-- plugins/services/0008_services_like_count.sql
+-- Contador denormalizado de "gostei", mantido por trigger no plugin `swipe`
+-- (public.service_user_favorites). Sem o plugin swipe a coluna fica em 0. Idempotente.
+
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS like_count integer NOT NULL DEFAULT 0;
 
 NOTIFY pgrst, 'reload schema';
 
@@ -3698,6 +3976,141 @@ ON CONFLICT (resource, action) DO NOTHING;
 
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('reviews', '1.0.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- PLUGIN: analytics  (1 arquivo)
+-- ===============================================================================================
+
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/analytics/0001_analytics.sql
+-- ===============================================================================================
+
+-- plugins/analytics/0001_analytics.sql
+-- Plugin: analytics — métricas de negócio por entidade (hoje: anúncio/`service`), first-party,
+-- sem cookie e sem dado pessoal. UMA tabela (uma linha por visitante/entidade/evento/dia) e UMA
+-- função (escrita anônima: o CRUD genérico exige login). Sem views, sem rollup, sem trigger:
+-- a leitura é o resource `analytics_events` e a agregação roda no cliente.
+--
+-- Regras em constraints/RLS:
+--   * piso de tempo visível: view >= 500 ms, impression >= 200 ms (CHECK)
+--   * 1 linha por (entidade, evento, visitante, dia) (UNIQUE) — repetido é ignorado (ON CONFLICT DO NOTHING)
+--   * INSERT só para anúncio ativo que NÃO é do próprio usuário (policy)
+--   * SELECT só do dono (tenant do anúncio) (policy)
+-- Depende funcionalmente do plugin `services` (as policies referenciam public.services).
+-- Retenção: pg_cron inline (sem função) se a extensão existir; senão agendar por fora.
+-- Idempotente, from-zero-safe.
+
+CREATE TABLE IF NOT EXISTS public.analytics_events (
+  id            bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  entity_type   text        NOT NULL DEFAULT 'service',
+  entity_id     uuid        NOT NULL,
+  event_type    text        NOT NULL,
+  source        text        NOT NULL DEFAULT 'direct',
+  visitor_hash  text        NOT NULL,
+  visible_ms    integer     NOT NULL DEFAULT 0,
+  day           date        NOT NULL DEFAULT CURRENT_DATE,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT analytics_events_entity_chk  CHECK (entity_type IN ('service')),
+  CONSTRAINT analytics_events_event_chk   CHECK (event_type IN ('impression','view','contact_click','favorite','share')),
+  CONSTRAINT analytics_events_source_chk  CHECK (source IN ('search','home','category','direct','share','other')),
+  CONSTRAINT analytics_events_hash_chk    CHECK (visitor_hash ~ '^[0-9a-f]{16,64}$'),
+  CONSTRAINT analytics_events_ms_chk      CHECK (visible_ms BETWEEN 0 AND 3600000),
+  CONSTRAINT analytics_events_min_ms_chk  CHECK (
+    (event_type = 'view' AND visible_ms >= 500)
+    OR (event_type = 'impression' AND visible_ms >= 200)
+    OR event_type NOT IN ('view','impression')
+  ),
+  CONSTRAINT analytics_events_once_per_day UNIQUE (entity_type, entity_id, event_type, visitor_hash, day)
+);
+CREATE INDEX IF NOT EXISTS analytics_events_entity_day ON public.analytics_events (entity_id, day DESC);
+
+ALTER TABLE public.analytics_events ENABLE ROW LEVEL SECURITY;
+REVOKE INSERT ON TABLE public.analytics_events FROM anon, auth_user;
+GRANT INSERT (entity_type, entity_id, event_type, source, visitor_hash, visible_ms)
+  ON TABLE public.analytics_events TO anon, auth_user;  -- day/created_at só pelo DEFAULT
+GRANT SELECT ON TABLE public.analytics_events TO auth_user;
+REVOKE UPDATE, DELETE ON TABLE public.analytics_events FROM anon, auth_user;
+
+DO $$
+BEGIN
+  IF to_regclass('public.services') IS NULL THEN
+    RAISE NOTICE 'plugin services ausente — policies de analytics_events não criadas';
+    RETURN;
+  END IF;
+
+  DROP POLICY IF EXISTS analytics_events_insert ON public.analytics_events;
+  CREATE POLICY analytics_events_insert ON public.analytics_events FOR INSERT TO anon, auth_user
+  WITH CHECK (
+    entity_type = 'service'
+    AND EXISTS (
+      SELECT 1 FROM public.services s
+       WHERE s.uid = analytics_events.entity_id
+         AND s.active
+         AND s.created_by IS DISTINCT FROM auth.fun_auth_user_id()
+    )
+  );
+
+  DROP POLICY IF EXISTS analytics_events_select_owner ON public.analytics_events;
+  CREATE POLICY analytics_events_select_owner ON public.analytics_events FOR SELECT TO auth_user
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.services s
+       WHERE s.uid = analytics_events.entity_id
+         AND s.tenant_id = auth.fun_auth_current_tenant_id()
+    )
+  );
+END $$;
+
+-- Única função do plugin: escrita anônima via RPC (createResource exige login).
+-- INVOKER: a RLS acima vale. true = registrou; false = já existia hoje (UNIQUE).
+DROP FUNCTION IF EXISTS public.fn_analytics_track(text, uuid, text, text, text);
+CREATE OR REPLACE FUNCTION public.fn_analytics_track(
+  p_entity_type  text,
+  p_entity_id    uuid,
+  p_event_type   text,
+  p_visitor_hash text,
+  p_source       text DEFAULT 'direct',
+  p_visible_ms   integer DEFAULT 0
+)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SET search_path = public
+AS $$
+DECLARE
+  v_rows integer;
+BEGIN
+  -- ON CONFLICT sem alvo: com alvo explícito o Postgres exigiria SELECT nas colunas (anon não tem).
+  INSERT INTO public.analytics_events (entity_type, entity_id, event_type, source, visitor_hash, visible_ms)
+  VALUES (p_entity_type, p_entity_id, p_event_type, COALESCE(NULLIF(p_source, ''), 'direct'),
+          p_visitor_hash, COALESCE(p_visible_ms, 0))
+  ON CONFLICT DO NOTHING;
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+  RETURN v_rows = 1;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.fn_analytics_track(text, uuid, text, text, text, integer) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.fn_analytics_track(text, uuid, text, text, text, integer) TO anon, auth_user;
+
+-- Retenção: apaga eventos com mais de 400 dias (SQL inline, sem função). Só com pg_cron.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    PERFORM cron.unschedule(jobid) FROM cron.job WHERE jobname = 'analytics_retention';
+    PERFORM cron.schedule('analytics_retention', '15 3 * * *',
+      'DELETE FROM public.analytics_events WHERE day < CURRENT_DATE - 400');
+  ELSE
+    RAISE NOTICE 'pg_cron ausente — agendar por fora: DELETE FROM public.analytics_events WHERE day < CURRENT_DATE - 400;';
+  END IF;
+END $$;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('analytics', '2.0.0')
 ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
 
 NOTIFY pgrst, 'reload schema';
@@ -4417,7 +4830,7 @@ NOTIFY pgrst, 'reload schema';
 -- Optional. Swipe (curtir/passar) sobre os itens da busca, página /descobrir + /curtidos.
 -- Depende de (aplique DEPOIS): `search` (fn_search_services), `services`, `system_config`.
 --
---  * `service_swipes`: 1 linha por (usuário, item). Upsert a cada swipe; nunca DELETE físico —
+--  * `service_user_favorites`: 1 linha por (usuário, item). Upsert a cada swipe; nunca DELETE físico —
 --    "descurtir" (`fn_swipe_record(..., 'unlike')`) grava `skip` (o item volta ao deck depois do
 --    TTL). Um `skip` comum nunca rebaixa um `like`.
 --  * `fn_swipe_deck`: embrulha `fn_search_services` (mesmos filtros, página 0, até 1000
@@ -4427,22 +4840,44 @@ NOTIFY pgrst, 'reload schema';
 --    `p_price_min/p_price_max` aplicam a faixa de preço que o /busca filtra no cliente.
 --  * Usuário vem da sessão (`auth.fun_auth_user_id()`, NULL para anon), nunca de parâmetro.
 
-CREATE TABLE IF NOT EXISTS public.service_swipes (
+DO $$
+BEGIN
+  IF to_regclass('public.service_swipes') IS NOT NULL
+     AND to_regclass('public.service_user_favorites') IS NULL THEN
+    ALTER TABLE public.service_swipes RENAME TO service_user_favorites;
+    ALTER INDEX IF EXISTS public.service_swipes_liked_idx RENAME TO service_user_favorites_liked_idx;
+    ALTER TABLE public.service_user_favorites RENAME CONSTRAINT service_swipes_pkey TO service_user_favorites_pkey;
+    DROP POLICY IF EXISTS service_swipes_owner ON public.service_user_favorites;
+  END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.service_user_favorites (
     user_id      uuid NOT NULL REFERENCES auth.users(uid) ON DELETE RESTRICT,
     service_uid  uuid NOT NULL REFERENCES public.services(uid) ON DELETE RESTRICT,
     action       text NOT NULL CHECK (action IN ('like', 'skip')),
     updated_at   timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT service_swipes_pkey PRIMARY KEY (user_id, service_uid)
+    CONSTRAINT service_user_favorites_pkey PRIMARY KEY (user_id, service_uid)
 );
 
--- curtidos do usuário, mais recentes primeiro
-CREATE INDEX IF NOT EXISTS service_swipes_liked_idx
-  ON public.service_swipes (user_id, updated_at DESC) WHERE action = 'like';
+ALTER TABLE public.service_user_favorites
+  ADD COLUMN IF NOT EXISTS uid uuid NOT NULL DEFAULT gen_random_uuid(),
+  ADD COLUMN IF NOT EXISTS favorite boolean NOT NULL DEFAULT false;
+ALTER TABLE public.service_user_favorites ALTER COLUMN user_id SET DEFAULT auth.fun_auth_user_id();
+CREATE UNIQUE INDEX IF NOT EXISTS service_user_favorites_uid_key ON public.service_user_favorites (uid);
+ALTER TABLE public.service_user_favorites DROP CONSTRAINT IF EXISTS service_user_favorites_fav_implies_like;
+ALTER TABLE public.service_user_favorites
+  ADD CONSTRAINT service_user_favorites_fav_implies_like CHECK (NOT favorite OR action = 'like');
+CREATE INDEX IF NOT EXISTS service_user_favorites_fav_idx
+  ON public.service_user_favorites (user_id, updated_at DESC) WHERE favorite;
 
-ALTER TABLE public.service_swipes ENABLE ROW LEVEL SECURITY;
-GRANT SELECT, INSERT, UPDATE ON TABLE public.service_swipes TO auth_user;
-DROP POLICY IF EXISTS service_swipes_owner ON public.service_swipes;
-CREATE POLICY service_swipes_owner ON public.service_swipes FOR ALL TO auth_user
+-- curtidos do usuário, mais recentes primeiro
+CREATE INDEX IF NOT EXISTS service_user_favorites_liked_idx
+  ON public.service_user_favorites (user_id, updated_at DESC) WHERE action = 'like';
+
+ALTER TABLE public.service_user_favorites ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE ON TABLE public.service_user_favorites TO auth_user;
+DROP POLICY IF EXISTS service_user_favorites_owner ON public.service_user_favorites;
+CREATE POLICY service_user_favorites_owner ON public.service_user_favorites FOR ALL TO auth_user
 USING (user_id = auth.fun_auth_user_id())
 WITH CHECK (user_id = auth.fun_auth_user_id());
 
@@ -4506,7 +4941,7 @@ BEGIN
     AND (
       v_user IS NULL
       OR NOT EXISTS (
-        SELECT 1 FROM public.service_swipes sw
+        SELECT 1 FROM public.service_user_favorites sw
         WHERE sw.user_id = v_user
           AND sw.service_uid = c.uid
           AND (sw.action = 'like' OR sw.updated_at > now() - v_ttl)
@@ -4540,13 +4975,15 @@ BEGIN
 
   -- 'unlike' (descurtir explícito) grava 'skip' e sempre sobrescreve; um 'skip' comum nunca
   -- rebaixa um 'like' existente (ex.: passar de novo um card já curtido).
-  INSERT INTO public.service_swipes (user_id, service_uid, action, updated_at)
+  INSERT INTO public.service_user_favorites (user_id, service_uid, action, updated_at)
   SELECT v_user, s.uid, CASE WHEN p_action = 'unlike' THEN 'skip' ELSE p_action END, now()
   FROM public.services s
   WHERE s.uid = ANY(p_service_uids)
   ON CONFLICT (user_id, service_uid)
-  DO UPDATE SET action = EXCLUDED.action, updated_at = EXCLUDED.updated_at
-  WHERE NOT (public.service_swipes.action = 'like' AND p_action = 'skip');
+  DO UPDATE SET action = EXCLUDED.action,
+    favorite = (EXCLUDED.action = 'like' AND public.service_user_favorites.favorite),
+    updated_at = EXCLUDED.updated_at
+  WHERE NOT (public.service_user_favorites.action = 'like' AND p_action = 'skip');
 
   GET DIAGNOSTICS v_count = ROW_COUNT;
   RETURN v_count;
@@ -4589,7 +5026,7 @@ BEGIN
     c.name::character varying,
     COALESCE(NULLIF(s.extras->>'coverFileId', ''), s.extras->'images'->>0)::character varying,
     sw.updated_at
-  FROM public.service_swipes sw
+  FROM public.service_user_favorites sw
   JOIN public.services s ON s.uid = sw.service_uid
   LEFT JOIN public.categories c ON c.id = s.category_id
   WHERE sw.user_id = v_user
@@ -4603,6 +5040,35 @@ END;
 $function$;
 
 GRANT EXECUTE ON FUNCTION public.fn_swipe_liked(timestamptz, integer) TO auth_user;
+
+-- Contador denormalizado services.like_count (coluna vem de services/0008). SECURITY DEFINER:
+-- auth_user não pode dar UPDATE em services de terceiros; função de trigger, não exposta na API.
+CREATE OR REPLACE FUNCTION public.trg_service_like_count() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE d integer := 0; v_uid uuid;
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    v_uid := NEW.service_uid; d := CASE WHEN NEW.action = 'like' THEN 1 ELSE 0 END;
+  ELSIF TG_OP = 'DELETE' THEN
+    v_uid := OLD.service_uid; d := CASE WHEN OLD.action = 'like' THEN -1 ELSE 0 END;
+  ELSE
+    v_uid := NEW.service_uid;
+    d := (CASE WHEN NEW.action = 'like' THEN 1 ELSE 0 END) - (CASE WHEN OLD.action = 'like' THEN 1 ELSE 0 END);
+  END IF;
+  IF d <> 0 THEN
+    UPDATE public.services SET like_count = GREATEST(like_count + d, 0) WHERE uid = v_uid;
+  END IF;
+  RETURN NULL;
+END $$;
+
+DROP TRIGGER IF EXISTS service_user_favorites_like_count ON public.service_user_favorites;
+CREATE TRIGGER service_user_favorites_like_count
+  AFTER INSERT OR UPDATE OF action OR DELETE ON public.service_user_favorites
+  FOR EACH ROW EXECUTE FUNCTION public.trg_service_like_count();
+
+UPDATE public.services s SET like_count = c.n
+FROM (SELECT service_uid, count(*)::int AS n FROM public.service_user_favorites WHERE action = 'like' GROUP BY 1) c
+WHERE s.uid = c.service_uid AND s.like_count <> c.n;
 
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('swipe', '1.0.0')
@@ -4677,7 +5143,7 @@ BEGIN
     AND (
       v_user IS NULL
       OR NOT EXISTS (
-        SELECT 1 FROM public.service_swipes sw
+        SELECT 1 FROM public.service_user_favorites sw
         WHERE sw.user_id = v_user
           AND sw.service_uid = c.uid
           AND (sw.action = 'like' OR sw.updated_at > now() - v_ttl)
@@ -4729,7 +5195,7 @@ BEGIN
     ad.a_city::text,
     ad.a_state::text,
     COALESCE(ad.cnt, 0)::integer
-  FROM public.service_swipes sw
+  FROM public.service_user_favorites sw
   JOIN public.services s ON s.uid = sw.service_uid
   LEFT JOIN public.categories c ON c.id = s.category_id
   LEFT JOIN LATERAL (

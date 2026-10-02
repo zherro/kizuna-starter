@@ -1,0 +1,17 @@
+{
+  "status": "ok",
+  "atualizadoEm": "2026-10-01T22:00:16.624Z",
+  "tse": {
+    "dg": "04/10/2026",
+    "hg": "19:42:10"
+  },
+  "turno": 1,
+  "eleicao": "Eleições Gerais 2026 (fixture)",
+  "ambiente": "fixture",
+  "ufs": [
+    "AC",
+    "MT",
+    "RJ",
+    "SP"
+  ]
+}

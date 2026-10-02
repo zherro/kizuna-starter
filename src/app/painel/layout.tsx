@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@kizuna/core/server';
 import { AuthProvider } from '@kizuna/core/client/providers/auth-provider';
 import { PanelShell } from '@/components/panel-shell';
+// side effect: registra o vocabulário do projeto ("$vocab.*" nas telas do screen-engine)
+import '@/lib/vocabulary';
 
 // EXEMPLO — a área /painel É logada: aqui SIM lemos a sessão no servidor
 // (`getSession`) e passamos para o `AuthProvider` deste subtree. O layout raiz

@@ -15,6 +15,10 @@
     "selectable": false,
     "metaColor": "#fbf7f0"
   },
+  "vocabulary": {
+    "_comment": "Como o app chama o item que o usuário cria e gerencia (menu, telas do painel). Só texto: rotas e banco não mudam. \"context\": preset — publicacao (padrão: Publicação/Publicações, feminino) | servico (Serviço/Serviços, masculino). \"terms.item\": troca o termo — singular, plural e gender (\"m\" | \"f\"; obrigatório ao trocar o termo, as frases Novo/Nova, Nenhum/Nenhuma dependem dele). \"phrases\": sobrescreve uma frase pronta (singular, plural, new, manage, manageDescription, yours, mine, createFirst, noneRegistered, registerFirstHint, noneFound, reviewTitle, reviewDescription). Exemplo: { \"terms\": { \"item\": { \"singular\": \"Anúncio\", \"plural\": \"Anúncios\", \"gender\": \"m\" } }, \"phrases\": { \"new\": \"Anunciar\" } }. Ver kizuna-core/docs/interface/vocabulario.md.",
+    "context": "publicacao"
+  },
   "header": {
     "_comment": "\"variant\": classic (padrão) | compact — layout do cabeçalho do site.",
     "variant": "classic"
@@ -39,7 +43,7 @@
     ]
   },
   "accountLevels": {
-    "_comment": "Níveis de conta progressivos (entra fácil, evolui para fazer mais). Aqui só rótulo e ordem: key (usada no mapa de capacidades em src/lib/account-levels.ts), level (1..N, sequencial; 0 = visitante, implícito), title, description, onboardingOrder (ordem na tela /painel/onboarding), profileOrder (ordem no resumo da conta), requirement (regra em código: authenticated | contact_verified | profile_complete | identity_verified), enabled (false = 'em breve'), href (para onde o botão 'completar' leva). O que cada nível LIBERA fica em src/lib/account-levels.ts. Ver kizuna-core/docs/arquitetura/niveis-de-conta.md.",
+    "_comment": "Níveis de conta progressivos (entra fácil, evolui para fazer mais). Aqui só rótulo e ordem: key (usada no mapa de capacidades em src/lib/account-levels.ts), level (1..N, sequencial; 0 = visitante, implícito), title, description, onboardingOrder (ordem na tela /painel/onboarding), profileOrder (ordem no resumo da conta), requirement (regra em código: authenticated | contact_verified | profile_complete | listing_published | identity_verified), enabled (false = 'em breve'), href (para onde o botão 'completar' leva). O que cada nível LIBERA fica em src/lib/account-levels.ts. Ver kizuna-core/docs/arquitetura/niveis-de-conta.md.",
     "levels": [
       {
         "key": "conta",
@@ -54,7 +58,7 @@
         "key": "contato",
         "level": 2,
         "title": "Contato verificado",
-        "description": "Confirme seu email ou celular para avaliar e comentar.",
+        "description": "Confirme seu email e seu celular para avaliar, comentar e anunciar.",
         "onboardingOrder": 2,
         "profileOrder": 3,
         "requirement": "contact_verified",
@@ -71,12 +75,22 @@
         "href": "/painel/minha-conta"
       },
       {
-        "key": "identidade",
+        "key": "anunciante",
         "level": 4,
-        "title": "Identidade verificada",
-        "description": "Documento + selfie para ganhar o selo de verificado e vender.",
+        "title": "Anunciante",
+        "description": "Publique seu primeiro anuncio e ganhe o selo de anunciante.",
         "onboardingOrder": 4,
         "profileOrder": 4,
+        "requirement": "listing_published",
+        "href": "/painel/meus-servicos/novo"
+      },
+      {
+        "key": "identidade",
+        "level": 5,
+        "title": "Identidade verificada",
+        "description": "Documento + selfie para ganhar o selo de verificado e vender.",
+        "onboardingOrder": 5,
+        "profileOrder": 5,
         "requirement": "identity_verified",
         "enabled": false
       }
@@ -98,12 +112,18 @@
     "_comment_categorias": "\"categoriesOnlyWithListings\": true lista no carrossel só categorias com ao menos um anúncio publicado (requer plugin services).",
     "categoriesOnlyWithListings": true,
     "showDiscover": true,
+    "_comment_instagram": "URL do perfil do Instagram (ex.: https://instagram.com/seuperfil). Vazio = o card de Instagram nao aparece.",
+    "instagramUrl": "",
     "_comment": "\"inkPicker\": mostra o seletor de intensidade do fundo escuro dos cards (false esconde). \"inkLevel\": intensidade padrão (1-7); com o seletor ativo, a escolha salva do usuário prevalece.",
     "inkPicker": false,
-    "inkLevel": 6
+    "inkLevel": 6,
+    "_comment_categoryRails": "Carrosséis por categoria na home (um por item, na ordem). slug = categories.slug; title opcional (default = nome da categoria); limit opcional (default 10) — se vierem todos, a trilha termina com o card \"Ver mais\" (leva à busca da categoria). O estilo dos cards vem de serviceDetail. Categoria sem anúncios não aparece.",
+    "categoryRails": [
+      { "slug": "cinema", "title": "Em cartaz", "limit": 10 }
+    ]
   },
   "serviceDetail": {
-    "_comment": "Layout/cor da tela de detalhe do anúncio (/anuncios/[uid]) por categoria. \"variantByCategorySlug\": slug da categoria -> variant (\"service\" é o default, sempre disponível; \"cinema\" mostra sessões/gêneros/duração em vez da faixa de facts genérica, e some com o preço no card de resumo). Categoria sem entrada aqui cai em \"defaultVariant\". \"colors\": hue OKLCH (0-360) do acento (marcador de seção, faixa do hero); \"default\" vale pra categoria sem entrada própria. \"excludeFromMixedCategorySlugs\": slugs fora da busca/home quando não há filtro de categoria — a categoria continua acessível sozinha (ex. pelo carrossel). Vazio = nada escondido (comportamento atual).",
+    "_comment": "Layout/cor da tela de detalhe do anúncio (/anuncios/[uid]) por categoria. \"variantByCategorySlug\": slug da categoria -> variant (\"service\" é o default, sempre disponível; \"cinema\" mostra sessões/gêneros/duração em vez da faixa de facts genérica, e some com o preço no card de resumo). Categoria sem entrada aqui cai em \"defaultVariant\". \"colors\": hue OKLCH (0-360) do acento (marcador de seção, faixa do hero); \"default\" vale pra categoria sem entrada própria. \"excludeFromMixedCategorySlugs\": slugs fora da busca/home quando não há filtro de categoria — a categoria continua acessível sozinha (ex. pelo carrossel). Vazio = nada escondido (comportamento atual). \"reactions\": botões Gostei/Favoritar do detalhe (plugin swipe) — icon (nome lucide-react), label, labelActive; remova um bloco para esconder o botão.",
     "defaultVariant": "service",
     "variantByCategorySlug": {
       "cinema": "cinema"
@@ -112,7 +132,11 @@
       "default": { "hue": 230 },
       "cinema": { "hue": 268 }
     },
-    "excludeFromMixedCategorySlugs": []
+    "excludeFromMixedCategorySlugs": [],
+    "reactions": {
+      "like": { "icon": "ThumbsUp", "label": "Gostei", "labelActive": "Gostei" },
+      "favorite": { "icon": "Heart", "label": "Favoritar", "labelActive": "Favoritado" }
+    }
   },
   "wizards": {
     "servicos": {
@@ -153,5 +177,17 @@
         "review": "/painel/administracao/aprovacoes"
       }
     }
+  },
+  "analytics": {
+    "_comment": "Plugin analytics (métricas do anunciante). events = só os listados ligam. minVisibleMs = tempo contínuo em tela, em milissegundos, antes de contar (piso: view 500, impression 200; teto 60000). minVisibleRatio = fração do elemento visível (0..1). oncePerSession = conta no máximo 1x por sessão do navegador. 0 ms = conta na hora (cliques de ação). entities.<tipo>.events sobrescreve por tipo de entidade. enabled:false desliga; remova o bloco para usar os defaults.",
+    "enabled": true,
+    "events": {
+      "impression": { "minVisibleMs": 500, "minVisibleRatio": 0.6, "oncePerSession": true },
+      "view": { "minVisibleMs": 1500, "minVisibleRatio": 0.5, "oncePerSession": true },
+      "contact_click": { "minVisibleMs": 0 },
+      "favorite": { "minVisibleMs": 0 },
+      "share": { "minVisibleMs": 0 }
+    },
+    "entities": {}
   }
 }

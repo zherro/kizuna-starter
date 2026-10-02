@@ -31,7 +31,8 @@ export default async function OnboardingPage({ searchParams }: Props) {
 
       {blocked && !blocked.allowed && blocked.required ? (
         <p className="rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm">
-          Para continuar, chegue ao nivel <strong>{blocked.required.title}</strong>.
+          Para <strong>{(accountLevelsSetup.labels?.[acao!] ?? 'continuar').toLowerCase()}</strong>,
+          chegue ao nivel <strong>{blocked.required.title}</strong>.
         </p>
       ) : null}
 

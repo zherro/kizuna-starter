@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { SearchPage } from '@kizuna/core/client/components/search/search-page';
 import type { ServiceDetailConfig } from '@kizuna/core/client/components/services/detail';
+import { trackRule } from '@/lib/analytics';
 import cfg from '@/../kizuna.config.json';
 
 // O carrossel de categorias da busca segue EXATAMENTE a regra do da home: as mesmas chaves de
@@ -65,6 +66,7 @@ export default function BuscaPage() {
         }}
         excludeFromMixedCategorySlugs={excludeFromMixedCategorySlugs}
         serviceDetailConfig={serviceDetailConfig}
+        impressionRule={trackRule('service', 'impression')}
       />
     </Suspense>
   );

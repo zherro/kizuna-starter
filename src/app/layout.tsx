@@ -1,7 +1,20 @@
 import type { Metadata, Viewport } from 'next';
 import { Roboto, Geist_Mono, Bricolage_Grotesque, Quicksand, Baloo_2 } from 'next/font/google';
-import { Megaphone, Search } from 'lucide-react';
+import {
+  Briefcase,
+  Compass,
+  Home,
+  LogIn,
+  Megaphone,
+  PlusCircle,
+  Search,
+  UserCircle,
+} from 'lucide-react';
 import { PwaRegister } from '@kizuna/core/client/components/pwa-register';
+import {
+  MobileTabBar,
+  type MobileTabItem,
+} from '@kizuna/core/client/components/ui-better-soft/mobile-tab-bar';
 import { PreferencesFab } from '@kizuna/core/client/components/preferences-fab';
 import { AppPreferencesProvider } from '@kizuna/core/client/providers/app-preferences-provider';
 import { ACTIVE_UI_STYLE } from '@kizuna/core/client/lib/ui-theme';
@@ -10,6 +23,8 @@ import { isDisplayFont } from '@kizuna/core/shared/display-fonts';
 import { AuthProvider } from '@kizuna/core/client/providers/auth-provider';
 import { KizunaHeader } from '@kizuna/core/client/components/kizuna-header';
 import { Footer } from '@/components/footer';
+import { CityCookieSync } from '@/components/city-cookie-sync';
+import { ViewingCityProvider } from '@kizuna/core/client/components/viewing-city';
 import { WeatherWidget } from '@kizuna/core/client/components/weather/weather-widget';
 import { Toaster } from 'sonner';
 import cfg from '@/../kizuna.config.json';
@@ -98,6 +113,20 @@ export const viewport: Viewport = {
   themeColor: cfg.theme?.metaColor ?? '#2563eb',
 };
 
+// Primeiros 3 itens da barra inferior (mobile), iguais para logado e visitante. "Anunciar" é o CTA
+// central — o visitante vai ao login e volta (requiresAuth).
+const tabsCommon: MobileTabItem[] = [
+  { href: '/', label: 'Início', icon: <Home /> },
+  { href: '/busca', label: 'Buscar', icon: <Search /> },
+  {
+    href: '/painel/meus-servicos/novo',
+    label: 'Anunciar',
+    icon: <PlusCircle />,
+    featured: true,
+    requiresAuth: true,
+  },
+];
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -123,7 +152,9 @@ export default function RootLayout({
           themeColorSelectable={themeColorSelectable}
         >
           <AuthProvider initialUser={null}>
+            <ViewingCityProvider>
             <PwaRegister swUrl="/sw.js?v=1" migrationKey="kizuna-sw-v1" />
+            <CityCookieSync />
             {/* Variante vem de kizuna.config.json (header.variant: classic|compact). */}
             <KizunaHeader
               variant={headerVariant}
@@ -137,10 +168,37 @@ export default function RootLayout({
                 { href: '/painel', label: 'Anunciar', icon: <Megaphone /> },
               ]}
             />
-            <main className="flex-1">{children}</main>
+            {/* pb: reserva o espaço da barra inferior no mobile (--mobile-tab-h é publicado pelo MobileTabBar). */}
+            <main className="flex-1 pb-[var(--mobile-tab-h,0px)] md:pb-0">{children}</main>
             <Footer />
+            <MobileTabBar
+              // Wizard/onboarding têm rodapé próprio de navegação — a barra some neles.
+              hideOn={['/painel/meus-servicos/novo', '/painel/onboarding']}
+              items={[
+                ...tabsCommon,
+                {
+                  href: '/painel/meus-servicos',
+                  label: 'Meus anúncios',
+                  icon: <Briefcase />,
+                  exact: true,
+                },
+                { href: '/painel/minha-conta', label: 'Conta', icon: <UserCircle /> },
+              ]}
+              // Visitante: no lugar de "Meus anúncios"/"Conta" (que só levariam ao login), Descobrir e Entrar.
+              guestItems={[
+                ...tabsCommon,
+                { href: '/descobrir', label: 'Descobrir', icon: <Compass /> },
+                {
+                  href: '/login',
+                  label: 'Entrar',
+                  icon: <LogIn />,
+                  match: ['/login', '/registre-se'],
+                },
+              ]}
+            />
             <PreferencesFab />
             <Toaster richColors position="bottom-center" />
+            </ViewingCityProvider>
           </AuthProvider>
         </AppPreferencesProvider>
       </body>

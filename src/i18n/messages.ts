@@ -1,3 +1,10 @@
+import {
+  ELECTION_EN_US,
+  ELECTION_ES_ES,
+  ELECTION_PT_BR,
+  type ElectionMessages,
+} from './election-messages';
+
 export const languages = ['pt-BR', 'en-US', 'es-ES'] as const;
 export type AppLanguage = (typeof languages)[number];
 
@@ -237,6 +244,16 @@ export type AppMessages = {
     joinTitle: string;
     joinText: string;
     joinCta: string;
+    instagramTitle: string;
+    instagramText: string;
+    instagramCta: string;
+    installTitle: string;
+    installText: string;
+    installCta: string;
+    installHint: string;
+    installIosPre: string;
+    installIosMid: string;
+    installIosPost: string;
   };
   sejaPrestador: {
     metaTitle: string;
@@ -270,6 +287,7 @@ export type AppMessages = {
   default: {
     dashboard: string;
   };
+  election: ElectionMessages;
 };
 
 export const messages: Record<AppLanguage, AppMessages> = {
@@ -323,6 +341,16 @@ export const messages: Record<AppLanguage, AppMessages> = {
       joinTitle: 'Você também faz?',
       joinText: 'Publique seu serviço de graça e apareça para quem procura na sua região.',
       joinCta: 'Anunciar meu serviço',
+      instagramTitle: 'Siga a gente no Instagram',
+      instagramText: 'Estreias, programação e novidades da cidade direto no seu feed.',
+      instagramCta: 'Seguir no Instagram',
+      installTitle: 'Instale o app',
+      installText: 'Acesso rápido da tela inicial do celular, sem baixar nada na loja.',
+      installCta: 'Instalar app',
+      installHint: 'No menu do navegador, escolha “Instalar app”.',
+      installIosPre: 'Toque em',
+      installIosMid: 'e depois em',
+      installIosPost: 'Adicionar à Tela de Início',
     },
     sejaPrestador: {
       metaTitle: 'Seja um prestador',
@@ -357,6 +385,7 @@ export const messages: Record<AppLanguage, AppMessages> = {
     default: {
       dashboard: 'Meu Painel',
     },
+    election: ELECTION_PT_BR,
   },
   'en-US': {
     wizard: WIZARD_PT_BR,
@@ -408,6 +437,16 @@ export const messages: Record<AppLanguage, AppMessages> = {
       joinTitle: 'You do this too?',
       joinText: 'Post your service for free and show up for people searching in your area.',
       joinCta: 'List my service',
+      instagramTitle: 'Follow us on Instagram',
+      instagramText: 'Premieres, listings and city news right in your feed.',
+      instagramCta: 'Follow on Instagram',
+      installTitle: 'Install the app',
+      installText: 'Quick access from your phone home screen, no app store needed.',
+      installCta: 'Install app',
+      installHint: 'In your browser menu, choose “Install app”.',
+      installIosPre: 'Tap',
+      installIosMid: 'then',
+      installIosPost: 'Add to Home Screen',
     },
     sejaPrestador: {
       metaTitle: 'Become a provider',
@@ -442,6 +481,7 @@ export const messages: Record<AppLanguage, AppMessages> = {
     default: {
       dashboard: 'Dashboard',
     },
+    election: ELECTION_EN_US,
   },
   'es-ES': {
     wizard: WIZARD_PT_BR,
@@ -493,6 +533,16 @@ export const messages: Record<AppLanguage, AppMessages> = {
       joinTitle: '¿Tú también lo haces?',
       joinText: 'Publica tu servicio gratis y aparece para quienes buscan en tu zona.',
       joinCta: 'Publicar mi servicio',
+      instagramTitle: 'Síguenos en Instagram',
+      instagramText: 'Estrenos, cartelera y novedades de la ciudad en tu feed.',
+      instagramCta: 'Seguir en Instagram',
+      installTitle: 'Instala la app',
+      installText: 'Acceso rápido desde la pantalla de inicio, sin descargar de la tienda.',
+      installCta: 'Instalar app',
+      installHint: 'En el menú del navegador, elige “Instalar app”.',
+      installIosPre: 'Toca',
+      installIosMid: 'y luego',
+      installIosPost: 'Añadir a pantalla de inicio',
     },
     sejaPrestador: {
       metaTitle: 'Sé un profesional',
@@ -527,5 +577,6 @@ export const messages: Record<AppLanguage, AppMessages> = {
     default: {
       dashboard: 'Dashboard',
     },
+    election: ELECTION_ES_ES,
   },
 };

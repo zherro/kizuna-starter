@@ -14,7 +14,7 @@ export function JoinCta({ t }: { t: HomeMessages }) {
   const href = user ? '/painel/meus-servicos/novo' : '/seja-prestador';
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6">
+    <section className="mx-auto w-full max-w-[1600px] px-4 pb-16 sm:px-6">
       <div className="home-ink overflow-hidden rounded-3xl border border-white/10 px-6 py-12 sm:px-12 sm:py-16">
         <p className="text-sm font-medium text-white/60">{t.joinKicker}</p>
         <h2 className="mt-2 max-w-[18ch] font-display text-[clamp(1.9rem,4vw,3rem)] font-extrabold leading-[1] tracking-[-0.03em]">

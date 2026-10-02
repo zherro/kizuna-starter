@@ -62,7 +62,7 @@ export function HomeHero({ t }: { t: HomeMessages }) {
 
   return (
     <section className="home-ink border-b border-white/10">
-      <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:py-28">
+      <div className="mx-auto grid max-w-[1600px] gap-12 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:py-28">
         <div>
           <h1 className="home-rise font-display text-[clamp(2.75rem,8vw,5rem)] font-extrabold leading-[0.95] tracking-[-0.03em]">
             <span className="block">{t.heroLead}</span>
