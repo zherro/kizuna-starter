@@ -282,6 +282,9 @@ export type AppMessages = {
     social: string;
     rights: string;
     weatherCredit: string;
+    about: string;
+    privacy: string;
+    terms: string;
     madeWith: string;
   };
   default: {
@@ -380,6 +383,9 @@ export const messages: Record<AppLanguage, AppMessages> = {
       social: 'Redes sociais',
       rights: 'Todos os direitos reservados.',
       weatherCredit: 'Previsão do tempo',
+      about: 'Sobre',
+      privacy: 'Privacidade',
+      terms: 'Termos de uso',
       madeWith: 'Feito com ♥',
     },
     default: {
@@ -476,6 +482,9 @@ export const messages: Record<AppLanguage, AppMessages> = {
       social: 'Social media',
       rights: 'All rights reserved.',
       weatherCredit: 'Weather forecast',
+      about: 'About',
+      privacy: 'Privacy',
+      terms: 'Terms of use',
       madeWith: 'Made with ♥',
     },
     default: {
@@ -572,6 +581,9 @@ export const messages: Record<AppLanguage, AppMessages> = {
       social: 'Redes sociales',
       rights: 'Todos los derechos reservados.',
       weatherCredit: 'Pronóstico del tiempo',
+      about: 'Acerca de',
+      privacy: 'Privacidad',
+      terms: 'Términos de uso',
       madeWith: 'Hecho con ♥',
     },
     default: {

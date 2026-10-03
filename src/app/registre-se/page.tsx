@@ -1,9 +1,15 @@
 import { RegisterPageContent } from '@kizuna/core/client/components/register-page';
+import { AuthSplit } from '@/components/auth-split';
+import { RegisterAside } from '@/components/register-aside';
 
 export default function RegisterPage() {
   return (
-    <div className="mx-auto flex w-full max-w-[1600px] flex-1 items-center justify-center px-4 py-10 md:px-6">
-      <RegisterPageContent />
-    </div>
+    <AuthSplit aside={<RegisterAside />}>
+      <RegisterPageContent
+        title="Como prefere se cadastrar?"
+        description="Cadastre-se com sua conta do gmail"
+        soft
+      />
+    </AuthSplit>
   );
 }

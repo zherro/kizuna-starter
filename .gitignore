@@ -6,3 +6,7 @@ scrawler/
 next-env.d.ts
 .repowise/
 .superpowers/
+
+# Marketing (skills, contexto e planos locais)
+marketing/
+.agents/

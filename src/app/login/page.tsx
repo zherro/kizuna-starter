@@ -1,9 +1,16 @@
 import { LoginPageContent } from '@kizuna/core/client/components/login-page';
+import { AuthSplit } from '@/components/auth-split';
+import { LoginAside } from '@/components/login-aside';
 
 export default function LoginPage() {
   return (
-    <div className="mx-auto flex w-full max-w-[1600px] flex-1 items-center justify-center px-4 py-10 md:px-6">
-      <LoginPageContent />
-    </div>
+    <AuthSplit aside={<LoginAside />}>
+      <LoginPageContent
+        title="Como prefere continuar?"
+        description="Faça login com sua conta do gmail"
+        registerAs="button"
+        soft
+      />
+    </AuthSplit>
   );
 }

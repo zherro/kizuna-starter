@@ -169,7 +169,10 @@ export default function RootLayout({
               ]}
             />
             {/* pb: reserva o espaço da barra inferior no mobile (--mobile-tab-h é publicado pelo MobileTabBar). */}
-            <main className="flex-1 pb-[var(--mobile-tab-h,0px)] md:pb-0">{children}</main>
+            {/* A página que tiver um filho direto `data-fill` ocupa toda a altura útil (ex.: /login). */}
+            <main className="flex-1 pb-[var(--mobile-tab-h,0px)] md:pb-0 [&:has(>[data-fill])]:flex [&:has(>[data-fill])]:flex-col">
+              {children}
+            </main>
             <Footer />
             <MobileTabBar
               // Wizard/onboarding têm rodapé próprio de navegação — a barra some neles.

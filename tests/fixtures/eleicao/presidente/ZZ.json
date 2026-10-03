@@ -1,0 +1,87 @@
+{
+  "cargo": "presidente",
+  "escopo": "ZZ",
+  "turno": 1,
+  "tse": {
+    "dg": "04/10/2026",
+    "hg": "19:42:10"
+  },
+  "totalizacao": {
+    "pctSecoes": 64,
+    "votosValidos": 90000,
+    "brancos": 1800,
+    "nulos": 3600,
+    "secoesTotal": 106,
+    "secoesTotalizadas": 68,
+    "secoesNaoTotalizadas": 38,
+    "eleitorado": 183027,
+    "eleitoradoApurado": 117137,
+    "pEleitoradoApurado": 64,
+    "comparecimento": 95400,
+    "pComparecimento": 81.44,
+    "abstencoes": 21737,
+    "pAbstencao": 18.56,
+    "votosTotais": 95400,
+    "pValidos": 94.34,
+    "pBrancos": 1.89,
+    "pNulos": 3.77
+  },
+  "vagas": null,
+  "candidatos": [
+    {
+      "seq": 1,
+      "numero": "13",
+      "sqcand": "1000001",
+      "nome": "Helena Prado Vasques",
+      "partido": "PXA",
+      "votos": 39600,
+      "percentual": 44,
+      "situacao": "Segundo turno",
+      "eleito": false
+    },
+    {
+      "seq": 2,
+      "numero": "22",
+      "sqcand": "1000002",
+      "nome": "Otávio Brandão",
+      "partido": "PXB",
+      "votos": 18000,
+      "percentual": 20,
+      "situacao": "Segundo turno",
+      "eleito": false
+    },
+    {
+      "seq": 3,
+      "numero": "15",
+      "sqcand": "1000003",
+      "nome": "Ana Beatriz Linhares da Rocha",
+      "partido": "PXC",
+      "votos": 15300,
+      "percentual": 17,
+      "situacao": "Não eleito",
+      "eleito": false
+    },
+    {
+      "seq": 4,
+      "numero": "45",
+      "sqcand": "1000004",
+      "nome": "Caio Fontes",
+      "partido": "PXD",
+      "votos": 10800,
+      "percentual": 12,
+      "situacao": "Não eleito",
+      "eleito": false
+    },
+    {
+      "seq": 5,
+      "numero": "50",
+      "sqcand": "1000005",
+      "nome": "Dandara Meireles",
+      "partido": "PXE",
+      "votos": 6300,
+      "percentual": 7,
+      "situacao": "Não eleito",
+      "eleito": false
+    }
+  ]
+}

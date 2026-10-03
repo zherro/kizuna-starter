@@ -1,39 +1,13 @@
--- db/extras/pages_seed_termos_bora_cuiaba.sql
---
--- Seed da página pública /termos (plugin pages) do Bora Cuiabá. O formulário de cadastro
--- (register-form) aponta para `/termos`, e o seed neutro do plugin só traz `termos-de-uso`,
--- então este arquivo publica o slug `termos` com texto específico do projeto.
---
--- Pré-requisitos: schema do core + plugin pages aplicados e um usuário root já cadastrado
--- (tenant_id/created_by vêm do primeiro root e do tenant dele, igual ao seed neutro de páginas;
--- sem root o INSERT vira no-op silencioso).
---
--- Idempotente: se o slug já existir, não sobrescreve (edições feitas no painel em
--- /painel/administracao/paginas são preservadas). Para forçar o texto deste arquivo, troque
--- DO NOTHING por DO UPDATE ou apague a página antes.
---
--- Aplicar:
---   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/extras/pages_seed_termos_bora_cuiaba.sql
---   (Docker: docker exec -i <container> psql -U <user> -d <db> -v ON_ERROR_STOP=1 < db/extras/pages_seed_termos_bora_cuiaba.sql)
+import type { Metadata } from 'next';
+import { StaticPage } from '@/components/static-page';
 
-INSERT INTO public.pages (slug, title, description, content, status, active, tenant_id, created_by)
-SELECT
-    v.slug,
-    v.title,
-    v.description,
-    v.content,
-    'published',
-    true,
-    t.uid,
-    u.uid
-FROM (VALUES
-    (
-        'termos',
-        'Termos de uso',
-        'As regras para usar o Bora Cuiabá e as responsabilidades de cada parte.',
-        $md$# Termos de uso
+// Página ESTÁTICA (texto no código, sem banco). O formulário de cadastro aponta para /termos; esta
+// pasta existe para a rota estática vencer o `[cidade]`, senão "termos" seria lido como slug de
+// cidade e daria 404. Para editar o texto, mude TERMOS abaixo.
+const TITLE = 'Termos de uso';
+const DESCRIPTION = 'As regras para usar o Bora Cuiabá e as responsabilidades de cada parte.';
 
-Estes termos regulam o uso do **Bora Cuiabá**. Ao acessar o site, criar uma conta ou
+const TERMOS = `Estes termos regulam o uso do **Bora Cuiabá**. Ao acessar o site, criar uma conta ou
 publicar um anúncio, você concorda com as condições abaixo. Leia com atenção.
 
 ## 1. O que é o Bora Cuiabá
@@ -124,26 +98,15 @@ Estes termos podem ser atualizados a qualquer momento para refletir mudanças no
 serviço ou na legislação. A versão vigente estará sempre nesta página, e o uso
 continuado da plataforma após a alteração representa concordância com o novo texto.
 
-## 12. Lei aplicável e foro
-
-Estes termos são regidos pelas leis da República Federativa do Brasil. Fica eleito
-o foro da comarca de Cuiabá, Mato Grosso, para resolver qualquer controvérsia,
-ressalvado o direito do consumidor de ajuizar ação em seu domicílio.
-
-## 13. Contato
+## 12. Contato
 
 Dúvidas, denúncias de anúncios ou solicitações sobre seus dados podem ser enviadas
 pelos canais de atendimento divulgados na plataforma, incluindo os chamados abertos
-pelo painel.
-$md$
-    )
-) AS v(slug, title, description, content)
-JOIN LATERAL (
-    SELECT uid FROM auth.users WHERE is_root = true ORDER BY created_at ASC LIMIT 1
-) AS u(uid) ON true
-JOIN LATERAL (
-    SELECT tn.uid FROM auth.tenants tn WHERE tn.owner_uid = u.uid ORDER BY tn.created_at ASC LIMIT 1
-) AS t(uid) ON true
-ON CONFLICT ON CONSTRAINT pages_tenant_slug_unique DO NOTHING;
+pela página de [Entrar em Contato](/contato).
+`;
 
-NOTIFY pgrst, 'reload schema';
+export const metadata: Metadata = { title: TITLE, description: DESCRIPTION };
+
+export default function TermosPage() {
+  return <StaticPage slug="termos" title={TITLE} description={DESCRIPTION} content={TERMOS} />;
+}

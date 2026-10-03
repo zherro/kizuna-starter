@@ -12,6 +12,12 @@ services:
       - eleicao-data:/data
       # Para o Next ler direto do host, troque a linha acima por um bind mount:
       # - ./data:/data
+    healthcheck:
+      test: ["CMD", "python", "healthcheck.py"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
 volumes:
   # `name` fixo: o stack do front declara o mesmo volume e monta como somente leitura.

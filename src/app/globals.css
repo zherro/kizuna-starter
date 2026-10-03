@@ -1206,3 +1206,464 @@ html {
     animation-delay: 0ms;
   }
 }
+
+/* ================= /eleicao =================
+   Página pensada para pessoas idosas: texto base 18px, alvos >= 48px, contraste >= 7:1 no texto,
+   foco visível. Visual sóbrio, igual ao resto do site: usa os tokens do tema (--card, --background,
+   --muted, --foreground, raios --ui-radius-*), SEM bordas — a separação vem de sombras suaves em
+   camadas e de um fundo levemente mais escuro que o card. Amarelo é o único acento (selecionado,
+   líder/eleitos, Atualizar, barra de apuração, foco). Laranja só no ponto AO VIVO. */
+.eleicao-root {
+  --el-scale: 1;
+  --el-max: 1400px;
+  --el-line: color-mix(in oklch, var(--foreground) 45%, var(--card));
+  --el-track: var(--muted);
+  --el-bar: color-mix(in oklch, var(--foreground) 38%, var(--card));
+  --el-accent: oklch(0.89 0.17 97);
+  --el-accent-strong: oklch(0.84 0.16 93);
+  --el-accent-fg: oklch(0.22 0.03 85);
+  --el-live: oklch(0.65 0.2 45);
+  --el-up: oklch(0.4 0.11 150);
+  --el-down: oklch(0.45 0.16 25);
+  --el-focus: color-mix(in oklch, var(--foreground) 85%, var(--card));
+  --muted-foreground: color-mix(in oklch, var(--foreground) 74%, var(--card));
+  --el-shadow: 0 1px 2px oklch(0.2 0.02 260 / 0.06), 0 4px 14px -2px oklch(0.2 0.02 260 / 0.1);
+  --el-shadow-sm: 0 1px 2px oklch(0.2 0.02 260 / 0.07), 0 2px 6px -1px oklch(0.2 0.02 260 / 0.07);
+  --el-r-card: var(--ui-radius-card-compact, 0.75rem);
+  --el-r-ctl: var(--ui-radius-card-sm, 0.5rem);
+
+  /* Escala tipográfica local (Tailwind v4 lê estas variáveis): secundário >= 16px, base 18px. */
+  --text-xs: calc(1rem * var(--el-scale));
+  --text-sm: calc(1.0625rem * var(--el-scale));
+  --text-base: calc(1.125rem * var(--el-scale));
+  --text-lg: calc(1.25rem * var(--el-scale));
+  --text-xl: calc(1.5rem * var(--el-scale));
+  --text-2xl: calc(1.75rem * var(--el-scale));
+  --text-3xl: calc(2rem * var(--el-scale));
+  --text-4xl: calc(2.5rem * var(--el-scale));
+  --text-5xl: calc(3rem * var(--el-scale));
+  font-size: calc(1.125rem * var(--el-scale));
+  line-height: 1.5;
+}
+/* Fundo levemente cinza para o card branco "subir"; no escuro, card um tom acima do fundo. */
+.eleicao-root {
+  --el-page: color-mix(in oklch, var(--background) 93%, var(--foreground));
+}
+.dark .eleicao-root {
+  color-scheme: dark;
+  --el-page: var(--background);
+  --muted-foreground: color-mix(in oklch, var(--foreground) 84%, var(--card));
+  --el-line: color-mix(in oklch, var(--foreground) 50%, var(--card));
+  --el-bar: color-mix(in oklch, var(--foreground) 45%, var(--card));
+  --el-accent: oklch(0.87 0.16 95);
+  --el-accent-strong: oklch(0.83 0.16 92);
+  --el-up: oklch(0.85 0.15 150);
+  --el-down: oklch(0.82 0.12 25);
+  --el-live: oklch(0.74 0.18 48);
+  --el-shadow: 0 1px 2px oklch(0 0 0 / 0.5), 0 6px 16px -4px oklch(0 0 0 / 0.55);
+  --el-shadow-sm: 0 1px 2px oklch(0 0 0 / 0.45), 0 3px 8px -2px oklch(0 0 0 / 0.45);
+}
+.eleicao-root {
+  background: var(--el-page);
+  box-shadow: 0 0 0 100vmax var(--el-page);
+  clip-path: inset(0 -100vmax);
+}
+
+/* Foco visível só no teclado (2px). */
+.eleicao-root :focus-visible {
+  outline: 2px solid var(--el-focus);
+  outline-offset: 3px;
+}
+
+.el-skip {
+  position: absolute;
+  left: 1rem;
+  top: 0.5rem;
+  z-index: 60;
+  transform: translateY(-300%);
+  background: var(--el-accent);
+  color: var(--el-accent-fg);
+  border-radius: var(--el-r-ctl);
+  padding: 0.75rem 1.25rem;
+  font-weight: 500;
+  box-shadow: var(--el-shadow);
+}
+.el-skip:focus {
+  transform: none;
+}
+
+/* Controle pequeno e discreto (A− / A+): 44px, sem sombra. */
+.el-tool-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  border-radius: var(--el-r-ctl);
+  background: var(--card);
+  color: var(--foreground);
+  font-size: var(--text-base);
+  font-weight: 500;
+  box-shadow: var(--el-shadow-sm);
+}
+.el-tool-sm:hover:not(:disabled) {
+  background: var(--muted);
+}
+.el-tool-sm:disabled {
+  opacity: 0.4;
+  box-shadow: none;
+}
+
+/* Link "Ver mais detalhes": botão com cara de link (sublinhado), alvo >= 44px. */
+.el-more {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--foreground);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: var(--el-accent-strong);
+  text-decoration-thickness: 3px;
+  text-underline-offset: 5px;
+}
+.el-more:hover {
+  text-decoration-color: var(--foreground);
+}
+
+/* Superfície: card sem borda, elevado por sombra em camadas. */
+.el-card {
+  background: var(--card);
+  border-radius: var(--el-r-card);
+  box-shadow: var(--el-shadow);
+}
+
+/* Botão principal (Atualizar, Carregar mais, Abrir no TSE): amarelo, texto escuro, >= 56px. */
+.el-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 3rem;
+  padding: 0.5rem 1.5rem;
+  border-radius: var(--el-r-ctl);
+  background: var(--el-accent);
+  color: var(--el-accent-fg);
+  font-weight: 500;
+  font-size: var(--text-lg);
+  text-align: center;
+  text-decoration: none;
+  box-shadow: var(--el-shadow-sm);
+  transition: filter 160ms, box-shadow 160ms;
+}
+.el-btn:hover:not(:disabled) {
+  filter: brightness(1.04);
+  box-shadow: var(--el-shadow);
+}
+.el-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.el-btn:disabled {
+  opacity: 0.75;
+  cursor: progress;
+}
+
+/* Botão secundário (pausar, ver todos, acessibilidade): fundo do card, sombra leve, >= 52px. */
+.el-tool {
+  display: inline-flex;
+  align-items: center;
+  min-height: 3rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--el-r-ctl);
+  background: var(--card);
+  color: var(--foreground);
+  font-size: var(--text-base);
+  box-shadow: var(--el-shadow-sm);
+}
+.el-tool:hover:not(:disabled) {
+  background: var(--muted);
+}
+.el-tool:disabled {
+  opacity: 0.45;
+  box-shadow: none;
+}
+/* Escolha em largura total: selecionado = amarelo + check + texto "selecionado" (não só cor). */
+.el-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--el-r-ctl);
+  background: var(--card);
+  color: var(--foreground);
+  font-size: var(--text-base);
+  box-shadow: var(--el-shadow-sm);
+  transition: background-color 160ms, box-shadow 160ms;
+}
+.el-choice:hover:not(:disabled) {
+  background: var(--muted);
+}
+.el-choice-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: var(--muted);
+  box-shadow: inset 0 0 0 1px var(--el-line);
+}
+.el-choice[aria-pressed='true'] {
+  background: var(--el-accent);
+  color: var(--el-accent-fg);
+  box-shadow: 0 0 0 1.5px var(--el-accent-strong), 0 6px 16px -6px color-mix(in oklch, var(--el-accent-strong) 70%, transparent);
+}
+.el-choice[aria-pressed='true'] .el-choice-mark {
+  background: var(--el-accent-fg);
+  color: var(--el-accent);
+  box-shadow: none;
+}
+.el-choice:disabled {
+  background: var(--muted);
+  box-shadow: none;
+  color: var(--muted-foreground);
+  cursor: not-allowed;
+}
+.el-choice:disabled .el-choice-mark {
+  opacity: 0.5;
+}
+
+/* Abas da página (Resultados / Painel oficial do TSE). */
+.el-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--el-r-ctl);
+  background: var(--card);
+  color: var(--foreground);
+  font-size: var(--text-base);
+  font-weight: 500;
+  text-align: center;
+  box-shadow: var(--el-shadow-sm);
+}
+.el-tab:hover {
+  background: var(--muted);
+}
+.el-tab[aria-current='page'] {
+  font-weight: 600;
+  box-shadow: var(--el-shadow-sm), inset 0 -4px 0 var(--el-accent);
+}
+
+.el-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* Campos (seletor de estado e busca): únicos com contorno fino; rótulo visível fora do campo. */
+.el-select {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--el-r-ctl) !important;
+  background: var(--card) !important;
+  color: var(--foreground);
+  border: 1px solid var(--el-line) !important;
+  font-size: var(--text-base);
+  font-weight: 400;
+}
+input.el-select {
+  display: block;
+}
+.el-select::placeholder {
+  color: var(--muted-foreground);
+}
+/* Painel do SelectPopover: rola dentro dele (28 itens), alvos >= 48px. */
+.el-select svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+.el-select-list {
+  background: var(--card);
+  z-index: 40;
+  max-height: min(22rem, 60dvh);
+  box-shadow: var(--el-shadow);
+  border: 0;
+}
+.el-select-list [role='option'] {
+  min-height: 3rem;
+  font-size: var(--text-base);
+  white-space: normal;
+}
+.el-select-list [role='option'][aria-selected='true'] {
+  background: var(--el-accent);
+  color: var(--el-accent-fg);
+  font-weight: 500;
+}
+.el-select-list [role='option']:hover:not([aria-selected='true']) {
+  background: var(--muted);
+}
+
+/* Botões de partido. */
+.el-chip {
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--el-shadow-sm);
+}
+.el-chip:hover {
+  background: var(--muted);
+}
+.el-chip[aria-pressed='true'] {
+  background: var(--el-accent);
+  color: var(--el-accent-fg);
+  box-shadow: 0 0 0 1.5px var(--el-accent-strong), 0 6px 16px -6px color-mix(in oklch, var(--el-accent-strong) 70%, transparent);
+}
+.el-chip[aria-pressed='true'] .el-track {
+  background: oklch(1 0 0 / 0.55);
+}
+
+/* Selo (Líder, Eleito, vagas): amarelo com texto escuro. */
+.el-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.125rem 0.75rem;
+  background: var(--el-accent);
+  color: var(--el-accent-fg);
+  font-weight: 600;
+  font-size: var(--text-xs);
+}
+.el-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  background: var(--muted);
+  padding: 0.125rem 0.75rem;
+  font-weight: 500;
+  font-size: var(--text-xs);
+}
+.el-dot {
+  background: var(--el-live);
+  animation: el-pulse 1.6s ease-out infinite;
+}
+
+/* Trilho de barras sem borda (fundo muted); líder em amarelo, demais em cinza médio. */
+.el-track {
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--el-track);
+}
+.el-fill-lead {
+  background: var(--el-accent-strong);
+  border-radius: 999px;
+}
+.el-count-fill {
+  position: relative;
+  overflow: hidden;
+  transition: width 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.el-count-fill[data-running='true']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(100deg, transparent, oklch(1 0 0 / 0.55), transparent);
+  animation: el-shine 2.2s ease-in-out infinite;
+}
+
+/* Deputados: lista de uma coluna. Majoritários: cards, dois por linha (também no celular). */
+.el-grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+.el-cards {
+  display: grid;
+  gap: 0.625rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Líder (e vagas do Senador): card com anel fino amarelo e sombra suave. */
+.el-lead {
+  background: var(--card);
+  border-radius: var(--ui-radius-card, 1rem);
+  box-shadow: 0 0 0 1.5px var(--el-accent-strong), var(--el-shadow);
+}
+.el-flash {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--el-accent);
+  opacity: 0;
+  animation: el-flash 1.8s ease-out 1;
+}
+.el-arrow {
+  animation: el-nudge 1.2s ease-in-out 3;
+}
+
+/* Entrada e troca: só com "Animações" ligadas. */
+.el-rise {
+  animation: el-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+.el-swap {
+  animation: el-swap 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.el-skeleton-img {
+  background: linear-gradient(110deg, var(--muted) 30%, var(--card) 50%, var(--muted) 70%);
+  background-size: 200% 100%;
+  animation: el-skel 1.4s linear infinite;
+}
+
+@keyframes el-shine {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(320%); }
+}
+@keyframes el-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--el-live) 70%, transparent); }
+  80%, 100% { box-shadow: 0 0 0 7px transparent; }
+}
+@keyframes el-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes el-swap {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes el-flash {
+  0% { opacity: 0.5; }
+  100% { opacity: 0; }
+}
+@keyframes el-nudge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes el-skel {
+  to { background-position: -200% 0; }
+}
+
+/* Respeita o pedido do sistema por menos movimento. */
+@media (prefers-reduced-motion: reduce) {
+  .eleicao-root *,
+  .eleicao-root *::before,
+  .eleicao-root *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

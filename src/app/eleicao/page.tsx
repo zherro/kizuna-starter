@@ -1,14 +1,17 @@
 import type { Metadata } from 'next';
 import { EleicaoPage } from '@/components/eleicao/eleicao-page';
 
+const TITLE = 'Eleições 2026 — Presidente, Governador, Senador e Deputados';
+const DESCRIPTION =
+  'Acompanhe a apuração das Eleições 2026 para Presidente, Governador, Senador, Deputado Federal e Deputado Estadual, no Brasil e por estado, com dados do TSE.';
+
 export const metadata: Metadata = {
-  title: 'Eleição 2026: apuração para Presidente',
-  description:
-    'Acompanhe a apuração dos votos para Presidente em 2026, no Brasil e por estado, com dados do TSE.',
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: '/eleicao' },
   openGraph: {
-    title: 'Eleição 2026: apuração para Presidente',
-    description: 'Resultados nacionais e por estado, com dados do TSE.',
+    title: TITLE,
+    description: 'Resultados de Presidente, Governador, Senador e Deputados, com dados do TSE.',
     locale: 'pt_BR',
     type: 'website',
   },

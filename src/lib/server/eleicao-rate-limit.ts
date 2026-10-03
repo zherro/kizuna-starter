@@ -49,10 +49,16 @@ export function createRateLimiter(
   };
 }
 
-// Instância compartilhada (sobrevive ao HMR do dev).
-const g = globalThis as unknown as { __eleicaoLimiter?: RateLimiter };
+// Instâncias compartilhadas (sobrevivem ao HMR do dev).
+const g = globalThis as unknown as { __eleicaoLimiter?: RateLimiter; __eleicaoFotoLimiter?: RateLimiter };
 export function sharedLimiter(): RateLimiter {
   return (g.__eleicaoLimiter ??= createRateLimiter());
+}
+
+/** Teto generoso e separado para as fotos (<img> não resolve captcha): 300 por 10s por IP. */
+export const FOTO_LIMIT_MAX = 300;
+export function fotoLimiter(): RateLimiter {
+  return (g.__eleicaoFotoLimiter ??= createRateLimiter(FOTO_LIMIT_MAX, RATE_LIMIT_WINDOW_MS));
 }
 
 /** IP do cliente via x-forwarded-for (primeiro) / x-real-ip. */

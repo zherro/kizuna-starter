@@ -18,9 +18,13 @@ const appVersion = [
 // Marca do site — bloco "site" do kizuna.config.json (mesma logo do header).
 const siteLogo = cfg.site?.logo ?? undefined;
 
+const AUTH_ROUTES = new Set(["/login", "/registre-se"]);
+
 export function Footer() {
   const pathname = usePathname();
   const isPainelRoute = pathname.startsWith("/painel");
+  // Telas de entrada: sem rodapé, para o foco ficar no formulário.
+  const isAuthRoute = AUTH_ROUTES.has(pathname.replace(/\/+$/, ""));
 
   const {
     language,
@@ -36,7 +40,7 @@ export function Footer() {
   } = useAppPreferences();
 
   // Rendered globally from the root layout; the painel has its own shell/chrome.
-  if (isPainelRoute) return null;
+  if (isPainelRoute || isAuthRoute) return null;
 
   const currentYear = new Date().getFullYear();
   const siteName = cfg.site?.name ?? messages.nav.title;
@@ -46,7 +50,10 @@ export function Footer() {
     { href: "/painel", label: messages.default.dashboard },
     { href: "/painel/taxonomia/categorias", label: messages.footer.categories },
     { href: "/eleicao", label: messages.election.footerLink },
-    { href: "#", label: messages.nav.contact },
+    { href: "/sobre", label: messages.footer.about },
+    { href: "/contato", label: messages.nav.contact },
+    { href: "/privacidade", label: messages.footer.privacy },
+    { href: "/termos", label: messages.footer.terms },
     { href: "/login", label: messages.nav.login },
     { href: "/registre-se", label: messages.nav.signUp },
   ];
@@ -148,15 +155,17 @@ export function Footer() {
             <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {messages.footer.navigation}
             </p>
-            {navLinks.map((link) => (
-              <Link
-                key={link.href + link.label}
-                href={link.href}
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {link.label}
-              </Link>
-            ))}
+            <div className="grid grid-flow-col grid-rows-5 gap-x-6 gap-y-2">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href + link.label}
+                  href={link.href}
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
           </nav>
 
           {/* Col 3 — Social */}
@@ -180,6 +189,18 @@ export function Footer() {
             </div>
           </div>
         </div>
+
+        {/* Citação */}
+        <figure className="mt-8 mx-auto max-w-[772px] text-center">
+          <blockquote className="text-sm italic leading-relaxed text-muted-foreground">
+            “Por isso louvei a alegria, porque nada há melhor para o homem debaixo do sol,
+            do que comer, e beber, e alegrar-se; porque isso o acompanhará no seu
+            trabalho, nos dias da sua vida, que Deus lhe deu debaixo do sol.”
+          </blockquote>
+          <figcaption className="mt-2 text-xs text-muted-foreground">
+            Eclesiastes 8:15 · Almeida
+          </figcaption>
+        </figure>
 
         {/* Divider + copyright */}
         <div className="mt-8 flex flex-col items-center justify-between gap-2 border-t border-border/70 pt-6 sm:flex-row">
