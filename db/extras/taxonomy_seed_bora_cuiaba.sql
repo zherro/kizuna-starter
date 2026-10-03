@@ -3,7 +3,7 @@
 -- Seed da taxonomia do Bora Cuiabá (plugin taxonomy): grupo -> categoria -> subcategoria -> tag.
 -- Conteúdo específico deste projeto — por isso fica em db/extras/ e não no plugin do core.
 --
---   16 grupos · 56 categorias · 215 subcategorias · 823 tags · 21 vínculos extras
+--   16 grupos · 59 categorias · 224 subcategorias · 864 tags · 21 vínculos extras
 --
 -- Pré-requisitos: schema do core + plugin taxonomy aplicados, e um usuário root já cadastrado
 -- (tenant_id/created_by vêm do primeiro root e do tenant dele, igual ao seed de páginas; sem root,
@@ -16,9 +16,10 @@
 -- ou public.demandas (mesmo inativa), o script ABORTA com RAISE EXCEPTION antes de apagar qualquer
 -- coisa (tudo roda numa transação). O clear-all roda a cada execução.
 --
--- Ordem de execução: 1) este seed de taxonomia -> 2) kizuna-core/db/extras/forms_seed_cinema.sql.
+-- Ordem de execução: 1) este seed de taxonomia -> 2) seeds de formulário: kizuna-core/db/extras/
+-- forms_seed_cinema.sql, db/extras/forms_seed_eventos.sql e db/extras/forms_seed_noticias.sql.
 -- O clear-all recria as categorias, então categories.form_key volta a NULL; o seed do formulário
--- (que faz UPDATE categories SET form_key='cinema') precisa rodar DEPOIS, sempre que este rodar.
+-- (UPDATE categories SET form_key=...) precisa rodar DEPOIS, sempre que este rodar.
 --
 -- Idempotente: rodar 2x dá o mesmo resultado (apaga e recria). Depois de reseedar, reaplique o
 -- seed do formulário.
@@ -133,6 +134,9 @@ FROM (VALUES
     ('noticias', 'Cultura & Entretenimento', 'cultura-e-entretenimento', 'Novidades do entretenimento local.', 'Megaphone'),
     ('noticias', 'Meio Ambiente & Clima', 'meio-ambiente-e-clima', 'Clima, queimadas, parques e regras de pesca.', 'CloudSun'),
     ('noticias', 'Esportes', 'esportes', 'Futebol mato-grossense, corridas e eventos esportivos.', 'Trophy'),
+    ('noticias', 'História', 'historia', 'Fatos, personagens e memória de Cuiabá e de Mato Grosso.', 'Landmark'),
+    ('noticias', 'Geografia', 'geografia', 'Território, rios, biomas e cidades de Mato Grosso.', 'Map'),
+    ('noticias', 'Política', 'politica', 'Governo, Câmara, Assembleia e eleições em Cuiabá e no estado.', 'Vote'),
     ('cultura-e-arte', 'Exposições & Galerias', 'exposicoes-e-galerias', 'Arte visual em galerias, museus e nas ruas.', 'Frame'),
     ('cultura-e-arte', 'Cultura Popular & Artesanato', 'cultura-popular-e-artesanato', 'A cultura que faz de Cuiabá, Cuiabá: viola de cocho, siriri, cururu e cerâmica.', 'Brush'),
     ('cultura-e-arte', 'Espaços Culturais', 'espacos-culturais', 'Centros culturais, bibliotecas, livrarias e saraus.', 'Library'),
@@ -308,6 +312,15 @@ FROM (VALUES
     ('esportes', 'Futebol mato-grossense', 'futebol-mato-grossense', 'Cuiabá, Mixto, Dom Bosco e o campeonato estadual.', 'cuiabá ec, mixto, dom bosco, arena pantanal, mato-grossense'),
     ('esportes', 'Corridas & maratonas', 'corridas-e-maratonas', 'Resultados, calendário e inscrições de corridas.', 'calendário, resultado, inscrição, percurso'),
     ('esportes', 'Outros esportes', 'outros-esportes', 'Vôlei, basquete, lutas e esportes radicais.', 'vôlei, basquete, lutas, radicais'),
+    ('historia', 'Fundação & período colonial', 'fundacao-e-periodo-colonial', 'Das minas de ouro do Coxipó aos 300 anos de Cuiabá.', 'fundação, bandeirantes, ouro, coxipó, 1719'),
+    ('historia', 'Patrimônio & centro histórico', 'patrimonio-e-centro-historico', 'Casarões, igrejas e o centro tombado da capital.', 'casarões, centro histórico, tombamento, igreja, iphan'),
+    ('historia', 'Personagens & memória', 'personagens-e-memoria', 'Gente que marcou a história cuiabana e mato-grossense.', 'biografia, memória, personalidades, homenagem'),
+    ('geografia', 'Biomas: Cerrado, Pantanal & Amazônia', 'biomas-de-mato-grosso', 'Os três biomas que se encontram em Mato Grosso.', 'cerrado, pantanal, amazônia, bioma, vegetação'),
+    ('geografia', 'Rios & bacias', 'rios-e-bacias', 'Rio Cuiabá, Paraguai e as águas que movem a região.', 'rio cuiabá, rio paraguai, bacia, nascentes, cheia'),
+    ('geografia', 'Cidades & regiões de MT', 'cidades-e-regioes-de-mt', 'Municípios, regiões e o centro geodésico da América do Sul.', 'municípios, baixada cuiabana, centro geodésico, população'),
+    ('politica', 'Prefeitura & Câmara', 'prefeitura-e-camara', 'Decisões da prefeitura e dos vereadores de Cuiabá e VG.', 'prefeito, vereadores, câmara municipal, projeto de lei'),
+    ('politica', 'Governo & Assembleia', 'governo-e-assembleia', 'Governo do estado e Assembleia Legislativa de MT.', 'governador, deputados estaduais, assembleia legislativa, secretarias'),
+    ('politica', 'Eleições', 'eleicoes', 'Candidatos, pesquisas, apuração e resultados.', 'candidatos, pesquisa eleitoral, apuração, urna, tse'),
     ('exposicoes-e-galerias', 'Exposições', 'exposicoes', 'Mostras temporárias de arte e fotografia.', 'vernissage, mostra temporária, curadoria, entrada gratuita'),
     ('exposicoes-e-galerias', 'Galerias', 'galerias', 'Galerias de arte da cidade.', 'galeria, arte contemporânea, artista local, venda de obras'),
     ('exposicoes-e-galerias', 'Arte urbana', 'arte-urbana', 'Grafites, murais e intervenções pela cidade.', 'grafite, mural, lambe-lambe, intervenção urbana'),
@@ -910,6 +923,47 @@ FROM (VALUES
     ('outros-esportes', 'Basquete', 'basquete'),
     ('outros-esportes', 'Lutas', 'lutas'),
     ('outros-esportes', 'Radicais', 'radicais'),
+    ('fundacao-e-periodo-colonial', 'Fundação', 'fundacao'),
+    ('fundacao-e-periodo-colonial', 'Bandeirantes', 'bandeirantes'),
+    ('fundacao-e-periodo-colonial', 'Ouro', 'ouro'),
+    ('fundacao-e-periodo-colonial', 'Coxipó', 'coxipo'),
+    ('fundacao-e-periodo-colonial', '1719', '1719'),
+    ('patrimonio-e-centro-historico', 'Casarões', 'casaroes'),
+    ('patrimonio-e-centro-historico', 'Centro histórico', 'centro-historico'),
+    ('patrimonio-e-centro-historico', 'Tombamento', 'tombamento'),
+    ('patrimonio-e-centro-historico', 'Igreja', 'igreja'),
+    ('patrimonio-e-centro-historico', 'IPHAN', 'iphan'),
+    ('personagens-e-memoria', 'Biografia', 'biografia'),
+    ('personagens-e-memoria', 'Memória', 'memoria'),
+    ('personagens-e-memoria', 'Personalidades', 'personalidades'),
+    ('personagens-e-memoria', 'Homenagem', 'homenagem'),
+    ('biomas-de-mato-grosso', 'Cerrado', 'cerrado'),
+    ('biomas-de-mato-grosso', 'Pantanal', 'pantanal'),
+    ('biomas-de-mato-grosso', 'Amazônia', 'amazonia'),
+    ('biomas-de-mato-grosso', 'Bioma', 'bioma'),
+    ('biomas-de-mato-grosso', 'Vegetação', 'vegetacao'),
+    ('rios-e-bacias', 'Rio cuiabá', 'rio-cuiaba'),
+    ('rios-e-bacias', 'Rio paraguai', 'rio-paraguai'),
+    ('rios-e-bacias', 'Bacia', 'bacia'),
+    ('rios-e-bacias', 'Nascentes', 'nascentes'),
+    ('rios-e-bacias', 'Cheia', 'cheia'),
+    ('cidades-e-regioes-de-mt', 'Municípios', 'municipios'),
+    ('cidades-e-regioes-de-mt', 'Baixada cuiabana', 'baixada-cuiabana'),
+    ('cidades-e-regioes-de-mt', 'Centro geodésico', 'centro-geodesico'),
+    ('cidades-e-regioes-de-mt', 'População', 'populacao'),
+    ('prefeitura-e-camara', 'Prefeito', 'prefeito'),
+    ('prefeitura-e-camara', 'Vereadores', 'vereadores'),
+    ('prefeitura-e-camara', 'Câmara municipal', 'camara-municipal'),
+    ('prefeitura-e-camara', 'Projeto de lei', 'projeto-de-lei'),
+    ('governo-e-assembleia', 'Governador', 'governador'),
+    ('governo-e-assembleia', 'Deputados estaduais', 'deputados-estaduais'),
+    ('governo-e-assembleia', 'Assembleia legislativa', 'assembleia-legislativa'),
+    ('governo-e-assembleia', 'Secretarias', 'secretarias'),
+    ('eleicoes', 'Candidatos', 'candidatos'),
+    ('eleicoes', 'Pesquisa eleitoral', 'pesquisa-eleitoral'),
+    ('eleicoes', 'Apuração', 'apuracao'),
+    ('eleicoes', 'Urna', 'urna'),
+    ('eleicoes', 'TSE', 'tse'),
     ('exposicoes', 'Vernissage', 'vernissage'),
     ('exposicoes', 'Mostra temporária', 'mostra-temporaria'),
     ('exposicoes', 'Curadoria', 'curadoria'),

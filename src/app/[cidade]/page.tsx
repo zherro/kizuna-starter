@@ -10,6 +10,11 @@ import { resolveCitySlug } from '@/lib/server/cities';
 type Props = { params: Promise<{ cidade: string }> };
 
 export const revalidate = 300;
+// ISR de verdade: os loaders do core leem o PostgREST com `no-store` e alguns engolem erro com
+// `.catch(() => [])`, o que esconde do Next o "bail out" para dinâmico no 1º render e estoura
+// "Page changed from static to dynamic at runtime" em prd. `force-static` faz esses fetches
+// entrarem no cache da página, renovado a cada `revalidate`.
+export const dynamic = 'force-static';
 export const dynamicParams = true;
 
 export function generateStaticParams(): { cidade: string }[] {

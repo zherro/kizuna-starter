@@ -1,21 +1,22 @@
+import { Typography } from '@kizuna/core/client/components/ui/typography';
 import { RegisterArt } from '@/components/register-art';
 
 /**
- * Título, slogan e ilustração da tela de cadastro. No desktop ficam à esquerda; no celular,
- * abaixo do formulário e sem a ilustração.
+ * Ilustração, título e slogan da tela de cadastro. No desktop ficam à esquerda; no celular,
+ * abaixo do formulário. A ilustração vem sempre acima do texto.
  */
 export function RegisterAside() {
   return (
     <div className="flex flex-col gap-8">
+      <RegisterArt className="max-w-[16rem] md:max-w-[22rem]" />
       <div className="space-y-3">
-        <h1 className="font-display text-[1.4rem] leading-[1.1] font-bold tracking-tight text-foreground md:text-4xl">
+        <Typography.H1 size="5xl" font="display" weight="bold" className="leading-[1.1] tracking-tight">
           Conecte-se ao que acontece
-        </h1>
-        <p className="text-[2rem] leading-tight text-muted-foreground md:text-4xl">
+        </Typography.H1>
+        <Typography.P size="lg" color="muted" className="leading-tight">
           Unindo ideias, pessoas e experiências.
-        </p>
+        </Typography.P>
       </div>
-      <RegisterArt className="hidden max-w-[22rem] md:block" />
     </div>
   );
 }

@@ -1,8 +1,15 @@
+import { redirect } from 'next/navigation';
+import { getSession } from '@kizuna/core/server';
 import { LoginPageContent } from '@kizuna/core/client/components/login-page';
 import { AuthSplit } from '@/components/auth-split';
 import { LoginAside } from '@/components/login-aside';
 
-export default function LoginPage() {
+// Usuário já logado não fica aqui: vai direto para o painel (checado no servidor, sem cache).
+export const dynamic = 'force-dynamic';
+
+export default async function LoginPage() {
+  if (await getSession()) redirect('/painel');
+
   return (
     <AuthSplit aside={<LoginAside />}>
       <LoginPageContent

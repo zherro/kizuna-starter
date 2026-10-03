@@ -50,10 +50,10 @@ VALUES
   (5103403, 51, 'Cuiabá', true),
   (5108402, 51, 'Várzea Grande', true),
   (5103007, 51, 'Chapada dos Guimarães', true),
-  (5107602, 51, 'Rondonópolis', true),
-  (5107909, 51, 'Sinop', true),
-  (5107925, 51, 'Sorriso', true),
-  (5002704, 50, 'Campo Grande', true)
+  (5107602, 51, 'Rondonópolis', false),
+  (5107909, 51, 'Sinop', false),
+  (5107925, 51, 'Sorriso', false),
+  (5002704, 50, 'Campo Grande', false)
 ON CONFLICT (id) DO UPDATE
   SET state_id = EXCLUDED.state_id, name = EXCLUDED.name, search_city = EXCLUDED.search_city,
       updated_at = now();
