@@ -4,6 +4,7 @@ import {
   Briefcase,
   Compass,
   Home,
+  LayoutDashboard,
   LogIn,
   Megaphone,
   PlusCircle,
@@ -179,11 +180,19 @@ export default function RootLayout({
               hideOn={['/painel/meus-servicos/novo', '/painel/onboarding']}
               items={[
                 ...tabsCommon,
+                // Mesma vaga na barra: dentro do painel "Meus anúncios", fora dele "Meu painel".
                 {
                   href: '/painel/meus-servicos',
                   label: 'Meus anúncios',
                   icon: <Briefcase />,
                   exact: true,
+                  onlyOn: ['/painel'],
+                },
+                {
+                  href: '/painel',
+                  label: 'Meu painel',
+                  icon: <LayoutDashboard />,
+                  exceptOn: ['/painel'],
                 },
                 { href: '/painel/minha-conta', label: 'Conta', icon: <UserCircle /> },
               ]}

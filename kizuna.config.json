@@ -112,6 +112,22 @@
     "_comment_categorias": "\"categoriesOnlyWithListings\": true lista no carrossel só categorias com ao menos um anúncio publicado (requer plugin services).",
     "categoriesOnlyWithListings": true,
     "showDiscover": true,
+    "_comment_slider": "Slider de destaques da home, logo abaixo do banner do swipe. \"enabled\": false esconde; \"autoplayMs\": tempo entre slides (0 = parado; com 1 slide não há autoplay). Cada slide: id (único), eyebrow, title, text, cta {label, href}, art (\"urna\" = urna animada) e live (texto do selo pulsante, opcional). Hoje só o slide da eleição.",
+    "slider": {
+      "enabled": true,
+      "autoplayMs": 6000,
+      "slides": [
+        {
+          "id": "eleicao",
+          "eyebrow": "Eleições 2026",
+          "title": "Acompanhe a apuração em tempo real",
+          "text": "Presidente, Governador, Senador e Deputados — no Brasil e por estado, com dados do TSE.",
+          "cta": { "label": "Ver resultados", "href": "/eleicao" },
+          "art": "urna",
+          "live": "Apuração ao vivo"
+        }
+      ]
+    },
     "_comment_instagram": "URL do perfil do Instagram (ex.: https://instagram.com/seuperfil). Vazio = o card de Instagram nao aparece.",
     "instagramUrl": "",
     "_comment": "\"inkPicker\": mostra o seletor de intensidade do fundo escuro dos cards (false esconde). \"inkLevel\": intensidade padrão (1-7); com o seletor ativo, a escolha salva do usuário prevalece.",

@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useAppPreferences } from '@kizuna/core/client/providers/app-preferences-provider';
 import { DiscoverCta } from '@kizuna/core/client/components/home/discover-cta';
 import { HomeHero } from './home/home-hero';
+import { HomeSlider, type HomeSlide } from './home/home-slider';
 import { CategoryRail } from './home/category-rail';
 import { NearbyGrid } from './home/nearby-grid';
 import { HowItWorks } from './home/how-it-works';
@@ -28,6 +29,10 @@ type HomeContentProps = {
   categoriesOnlyWithListings?: boolean;
   /** mostra o banner "Descobrir no swipe" — vem de home.showDiscover */
   showDiscover?: boolean;
+  /** slider de destaques abaixo do swipe — vem de home.slider (sem slides, não aparece) */
+  sliderSlides?: HomeSlide[];
+  /** ms entre slides do slider (0 = sem autoplay) — vem de home.slider.autoplayMs */
+  sliderAutoplayMs?: number;
   /** mostra o seletor de intensidade do fundo "ink" — vem de home.inkPicker */
   inkPicker?: boolean;
   /** nível padrão do fundo "ink" (1-7) — vem de home.inkLevel */
@@ -43,6 +48,8 @@ export function HomeContent({
   categoriesVariant = 'classic',
   categoriesOnlyWithListings = false,
   showDiscover = false,
+  sliderSlides,
+  sliderAutoplayMs,
   inkPicker = HOME_INK_TONE_PICKER_ENABLED,
   inkLevel: defaultInkLevel = HOME_INK_FIXED_LEVEL,
   categoryRails,
@@ -89,6 +96,11 @@ export function HomeContent({
       {showDiscover ? (
         <div className="pb-6">
           <DiscoverCta />
+        </div>
+      ) : null}
+      {sliderSlides && sliderSlides.length > 0 ? (
+        <div className={showDiscover ? undefined : 'pt-5'}>
+          <HomeSlider slides={sliderSlides} autoplayMs={sliderAutoplayMs} />
         </div>
       ) : null}
       {categoryRails}
