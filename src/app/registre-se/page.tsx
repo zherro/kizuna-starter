@@ -13,7 +13,7 @@ export default async function RegisterPage() {
   return (
     <AuthSplit aside={<RegisterAside />}>
       <RegisterPageContent
-        title="Como prefere se cadastrar?"
+        title="Criar conta"
         description="Cadastre-se com sua conta do gmail"
         soft
       />

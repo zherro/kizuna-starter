@@ -14,6 +14,8 @@ const home = (cfg as { home?: { categoriesVariant?: string; categoriesOnlyWithLi
 const serviceDetailConfig: ServiceDetailConfig | null =
   (cfg as { serviceDetail?: ServiceDetailConfig }).serviceDetail ?? null;
 const excludeFromMixedCategorySlugs = serviceDetailConfig?.excludeFromMixedCategorySlugs ?? [];
+// `search.ai` no kizuna.config.json: false desativa a busca com IA (assistente). Omitido = ligado.
+const aiEnabled = (cfg as { search?: { ai?: boolean } }).search?.ai !== false;
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -66,6 +68,7 @@ export default function BuscaPage() {
         }}
         excludeFromMixedCategorySlugs={excludeFromMixedCategorySlugs}
         serviceDetailConfig={serviceDetailConfig}
+        aiEnabled={aiEnabled}
         impressionRule={trackRule('service', 'impression')}
       />
     </Suspense>

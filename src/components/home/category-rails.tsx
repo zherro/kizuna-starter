@@ -1,18 +1,23 @@
 // EXEMPLO — carrosséis "por categoria" da home (Server Component). Um por item de
-// `home.categoryRails` no kizuna.config.json, na ordem do array. Reusa o carrossel do detalhe do
+// `home.categoryRails` no kizuna.config.json, na ordem do array — por categoria (`slug`) ou por
+// grupo de categoria (`group`). Mesma RPC da busca (só anúncios ativos e não expirados). A ordem
+// é embaralhada a cada visita no navegador (ShuffledServiceCarouselSection), já que a home é ISR.
+// Reusa o carrossel do detalhe do
 // anúncio (ServiceCarouselSection), então os cards já vêm com o estilo da categoria
 // (`serviceDetail`: cinema sem preço, cor de acento...). Categoria inexistente/sem anúncio some.
 import { loadCategoryRail } from '@kizuna/core/server';
 import type { RoutableCity } from '@kizuna/core/shared/city-routing/city-slug';
 import {
-  ServiceCarouselSection,
+  ShuffledServiceCarouselSection,
   resolveCategoryHue,
   type ServiceDetailConfig,
 } from '@kizuna/core/client/components/services/detail';
 
 export type CategoryRailConfig = {
-  /** slug da categoria (`categories.slug`) */
-  slug: string;
+  /** slug da categoria (`categories.slug`) — use este OU `group` */
+  slug?: string;
+  /** slug do grupo de categoria (`categories_group.slug`) — use este OU `slug` */
+  group?: string;
   /** título da trilha; sem ele usa o nome da categoria */
   title?: string;
   /** máximo de cards (default 10); se vierem todos, a trilha termina com o card "Ver mais" */
@@ -30,7 +35,10 @@ export async function CategoryRails({
   city?: RoutableCity | null;
 }) {
   const loaded = await Promise.all(
-    rails.map((rail) => loadCategoryRail(rail.slug, { ...rail, cityIbge: city?.ibge }))
+    rails.map((rail) => loadCategoryRail(
+        rail.group ? { group: rail.group } : { slug: rail.slug ?? '' },
+        { limit: rail.limit, cityIbge: city?.ibge }
+      ))
   );
   const cityQuery = city
     ? `&state=${city.state}&cityId=${city.ibge}&cityName=${encodeURIComponent(city.name)}`
@@ -40,16 +48,19 @@ export async function CategoryRails({
     <>
       {loaded.map((data, index) => {
         if (!data) return null;
-        const { category, items, hasMore } = data;
+        const { kind, category, items, limit, hasMore } = data;
+        const searchFilter =
+          kind === 'group' ? `group=${category.slug}` : `categoryId=${category.id}`;
         return (
-          <ServiceCarouselSection
-            key={category.slug}
+          <ShuffledServiceCarouselSection
+            key={`${kind}:${category.slug}`}
             title={rails[index].title ?? category.name}
             services={items}
+            limit={limit}
             hue={resolveCategoryHue(category, detailConfig)}
             detailConfig={detailConfig}
             className="mx-auto w-full max-w-[1600px] px-4 pb-8 sm:px-6"
-            moreHref={hasMore ? `/busca?categoryId=${category.id}${cityQuery}` : undefined}
+            moreHref={hasMore ? `/busca?${searchFilter}${cityQuery}` : undefined}
             showCity={!city}
           />
         );

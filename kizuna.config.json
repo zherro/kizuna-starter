@@ -19,6 +19,10 @@
     "_comment": "Como o app chama o item que o usuário cria e gerencia (menu, telas do painel). Só texto: rotas e banco não mudam. \"context\": preset — publicacao (padrão: Publicação/Publicações, feminino) | servico (Serviço/Serviços, masculino). \"terms.item\": troca o termo — singular, plural e gender (\"m\" | \"f\"; obrigatório ao trocar o termo, as frases Novo/Nova, Nenhum/Nenhuma dependem dele). \"phrases\": sobrescreve uma frase pronta (singular, plural, new, manage, manageDescription, yours, mine, createFirst, noneRegistered, registerFirstHint, noneFound, reviewTitle, reviewDescription). Exemplo: { \"terms\": { \"item\": { \"singular\": \"Anúncio\", \"plural\": \"Anúncios\", \"gender\": \"m\" } }, \"phrases\": { \"new\": \"Anunciar\" } }. Ver kizuna-core/docs/interface/vocabulario.md.",
     "context": "publicacao"
   },
+  "search": {
+    "_comment": "Plugin search (/busca). \"ai\": liga/desliga a busca com IA (assistente Naví: botão, chat e título \"Buscar com IA\"). false = só busca por texto + filtros. Omitido = true. Ver kizuna-core/docs/plugins/search.md.",
+    "ai": false
+  },
   "header": {
     "_comment": "\"variant\": classic (padrão) | compact — layout do cabeçalho do site.",
     "variant": "classic"
@@ -133,7 +137,7 @@
     "_comment": "\"inkPicker\": mostra o seletor de intensidade do fundo escuro dos cards (false esconde). \"inkLevel\": intensidade padrão (1-7); com o seletor ativo, a escolha salva do usuário prevalece.",
     "inkPicker": false,
     "inkLevel": 6,
-    "_comment_categoryRails": "Carrosséis por categoria na home (um por item, na ordem). slug = categories.slug; title opcional (default = nome da categoria); limit opcional (default 10) — se vierem todos, a trilha termina com o card \"Ver mais\" (leva à busca da categoria). O estilo dos cards vem de serviceDetail. Categoria sem anúncios não aparece.",
+    "_comment_categoryRails": "Carrosséis por categoria ou grupo na home (um por item, na ordem). slug = categories.slug OU group = categories_group.slug; mesma base da busca (só ativos e não expirados), ordem embaralhada a cada visita; title opcional (default = nome da categoria); limit opcional (default 10) — se houver mais que isso, a trilha termina com o card \"Ver mais\" (leva à busca da categoria). O estilo dos cards vem de serviceDetail. Categoria sem anúncios não aparece.",
     "categoryRails": [
       { "slug": "cinema", "title": "Cinema - em cartaz", "limit": 10 }
     ]
