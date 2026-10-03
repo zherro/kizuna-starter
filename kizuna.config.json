@@ -33,13 +33,14 @@
     "defaultCityIbge": "5103403"
   },
   "weather": {
-    "_comment": "Plugin weather (widget de clima no header, depois da busca). Integração: Open-Meteo — grátis, sem chave de API. apiUrl = endpoint do provedor; timezone = fuso das datas (IANA); cacheSeconds = quanto tempo o servidor guarda a resposta; rotateSeconds = intervalo da troca de cidade no botão; pastDays/forecastDays = dias antes/depois de hoje no modal. cities = lista exibida (a 1ª aparece primeiro). Remova o bloco para esconder o widget.",
+    "_comment": "Plugin weather (widget de clima no header, depois da busca). Integração: Open-Meteo — grátis, sem chave de API. apiUrl = endpoint do provedor; timezone = fuso das datas (IANA); cacheSeconds = quanto tempo o servidor guarda a resposta; rotateSeconds = intervalo da troca de cidade no botão; pastDays/forecastDays = dias antes/depois de hoje no modal; forecastModal = false desativa o modal (a temperatura vira só informação, sem clique). cities = lista exibida (a 1ª aparece primeiro). Remova o bloco para esconder o widget.",
     "apiUrl": "https://api.open-meteo.com/v1/forecast",
     "timezone": "America/Cuiaba",
     "cacheSeconds": 900,
     "rotateSeconds": 5,
     "pastDays": 1,
     "forecastDays": 7,
+    "forecastModal": false,
     "cities": [
       { "name": "Cuiabá", "latitude": -15.6014, "longitude": -56.0979 },
       { "name": "Várzea Grande", "latitude": -15.6467, "longitude": -56.1325 },
@@ -47,7 +48,8 @@
     ]
   },
   "accountLevels": {
-    "_comment": "Níveis de conta progressivos (entra fácil, evolui para fazer mais). Aqui só rótulo e ordem: key (usada no mapa de capacidades em src/lib/account-levels.ts), level (1..N, sequencial; 0 = visitante, implícito), title, description, onboardingOrder (ordem na tela /painel/onboarding), profileOrder (ordem no resumo da conta), requirement (regra em código: authenticated | contact_verified | profile_complete | listing_published | identity_verified), enabled (false = 'em breve'), href (para onde o botão 'completar' leva). O que cada nível LIBERA fica em src/lib/account-levels.ts. Ver kizuna-core/docs/arquitetura/niveis-de-conta.md.",
+    "contactVerification": { "email": true, "phone": false },
+    "_comment": "Níveis de conta progressivos (entra fácil, evolui para fazer mais). Aqui só rótulo e ordem: key (usada no mapa de capacidades em src/lib/account-levels.ts), level (1..N, sequencial; 0 = visitante, implícito), title, description, onboardingOrder (ordem na tela /painel/onboarding), profileOrder (ordem no resumo da conta), requirement (regra em código: authenticated | contact_verified | profile_complete | listing_published | identity_verified), enabled (false = 'em breve'), href (para onde o botão 'completar' leva). contactVerification: quais contatos o nível contact_verified exige ({ email, phone }; padrão os dois). missingLinks: para onde cada pendência (\"Falta: ...\") leva — chaves login, email, phone, fullName, avatar, document, address, listing, listingPending; só sobrescreve as informadas (padrões em DEFAULT_MISSING_LINKS do core). O que cada nível LIBERA fica em src/lib/account-levels.ts. Ver kizuna-core/docs/arquitetura/niveis-de-conta.md.",
     "levels": [
       {
         "key": "conta",
@@ -62,11 +64,11 @@
         "key": "contato",
         "level": 2,
         "title": "Contato verificado",
-        "description": "Confirme seu email e seu celular para avaliar, comentar e anunciar.",
+        "description": "Confirme seu email para avaliar, comentar e anunciar.",
         "onboardingOrder": 2,
         "profileOrder": 3,
         "requirement": "contact_verified",
-        "href": "/painel/onboarding#contato"
+        "href": "/painel/minha-conta#contato"
       },
       {
         "key": "perfil",

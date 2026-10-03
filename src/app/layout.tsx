@@ -163,7 +163,11 @@ export default function RootLayout({
               authCta="single"
               brandLabel={siteName}
               brandLogo={site?.logo ?? undefined}
-              actions={cfg.weather ? <WeatherWidget mini={headerVariant === 'classic'} /> : undefined}
+              actions={
+                cfg.weather ? (
+                  <WeatherWidget forecastModal={cfg.weather.forecastModal !== false} />
+                ) : undefined
+              }
               navLinks={[
                 { href: '/busca', label: 'Buscar', icon: <Search /> },
                 { href: '/painel', label: 'Anunciar', icon: <Megaphone /> },
