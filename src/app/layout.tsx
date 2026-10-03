@@ -17,6 +17,7 @@ import {
   type MobileTabItem,
 } from '@kizuna/core/client/components/ui-better-soft/mobile-tab-bar';
 import { PreferencesFab } from '@kizuna/core/client/components/preferences-fab';
+import { ThemeColorMeta } from '@kizuna/core/client/components/theme-color-meta';
 import { AppPreferencesProvider } from '@kizuna/core/client/providers/app-preferences-provider';
 import { ACTIVE_UI_STYLE } from '@kizuna/core/client/lib/ui-theme';
 import { isThemeColor } from '@kizuna/core/shared/theme-colors';
@@ -110,8 +111,17 @@ export const metadata: Metadata = {
   twitter: { card: 'summary_large_image', title: siteName, description: site?.description },
 };
 
+// Cor da barra do navegador (mobile) na 1ª pintura, por modo claro/escuro do sistema. Depois do
+// JS, o <ThemeColorMeta /> passa a copiar o fundo real da página (= header), inclusive quando o
+// usuário força o modo ou troca o tema.
+const metaColor = cfg.theme?.metaColor ?? '#2563eb';
+const metaColorDark = (cfg.theme as { metaColorDark?: string } | undefined)?.metaColorDark ?? metaColor;
+
 export const viewport: Viewport = {
-  themeColor: cfg.theme?.metaColor ?? '#2563eb',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: metaColor },
+    { media: '(prefers-color-scheme: dark)', color: metaColorDark },
+  ],
 };
 
 // Primeiros 3 itens da barra inferior (mobile), iguais para logado e visitante. "Anunciar" é o CTA
@@ -155,6 +165,7 @@ export default function RootLayout({
           <AuthProvider initialUser={null}>
             <ViewingCityProvider>
             <PwaRegister swUrl="/sw.js?v=1" migrationKey="kizuna-sw-v1" />
+            <ThemeColorMeta />
             <CityCookieSync />
             {/* Variante vem de kizuna.config.json (header.variant: classic|compact). */}
             <KizunaHeader

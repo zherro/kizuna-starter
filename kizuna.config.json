@@ -10,10 +10,11 @@
     "logo": "/brand/logo.png"
   },
   "theme": {
-    "_comment": "Cor/tema visual padrão. \"default\" é aplicado enquanto o usuário não escolhe outro (ou sempre, se \"selectable\" for false — aí o seletor de cor some do botão de preferências). Temas disponíveis: blue, green, purple, teal, red, orange, coral, terracotta, bora_cuiaba, metro_orange, laranja_intenso, laranja_medio. \"metaColor\" é a cor da barra do navegador no mobile (meta theme-color). \"displayFont\": fonte dos títulos, uma de quicksand | baloo | bricolage; sem ela vale o padrão do estilo (NEXT_PUBLIC_UI_STYLE: classic = quicksand, soft = baloo).",
+    "_comment": "Cor/tema visual padrão. \"default\" é aplicado enquanto o usuário não escolhe outro (ou sempre, se \"selectable\" for false — aí o seletor de cor some do botão de preferências). Temas disponíveis: blue, green, purple, teal, red, orange, coral, terracotta, bora_cuiaba, metro_orange, laranja_intenso, laranja_medio. \"metaColor\" / \"metaColorDark\" são a cor da barra do navegador no mobile (meta theme-color) no modo claro / escuro antes do JS carregar — use o --background do tema; depois o ThemeColorMeta copia o fundo real da página. \"displayFont\": fonte dos títulos, uma de quicksand | baloo | bricolage; sem ela vale o padrão do estilo (NEXT_PUBLIC_UI_STYLE: classic = quicksand, soft = baloo).",
     "default": "bora_cuiaba",
     "selectable": false,
-    "metaColor": "#fbf7f0"
+    "metaColor": "#fdfbf8",
+    "metaColorDark": "#1c0e05"
   },
   "vocabulary": {
     "_comment": "Como o app chama o item que o usuário cria e gerencia (menu, telas do painel). Só texto: rotas e banco não mudam. \"context\": preset — publicacao (padrão: Publicação/Publicações, feminino) | servico (Serviço/Serviços, masculino). \"terms.item\": troca o termo — singular, plural e gender (\"m\" | \"f\"; obrigatório ao trocar o termo, as frases Novo/Nova, Nenhum/Nenhuma dependem dele). \"phrases\": sobrescreve uma frase pronta (singular, plural, new, manage, manageDescription, yours, mine, createFirst, noneRegistered, registerFirstHint, noneFound, reviewTitle, reviewDescription). Exemplo: { \"terms\": { \"item\": { \"singular\": \"Anúncio\", \"plural\": \"Anúncios\", \"gender\": \"m\" } }, \"phrases\": { \"new\": \"Anunciar\" } }. Ver kizuna-core/docs/interface/vocabulario.md.",
