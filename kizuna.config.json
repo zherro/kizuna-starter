@@ -119,7 +119,7 @@
     "inkLevel": 6,
     "_comment_categoryRails": "Carrosséis por categoria na home (um por item, na ordem). slug = categories.slug; title opcional (default = nome da categoria); limit opcional (default 10) — se vierem todos, a trilha termina com o card \"Ver mais\" (leva à busca da categoria). O estilo dos cards vem de serviceDetail. Categoria sem anúncios não aparece.",
     "categoryRails": [
-      { "slug": "cinema", "title": "Em cartaz", "limit": 10 }
+      { "slug": "cinema", "title": "Cinema - em cartaz", "limit": 10 }
     ]
   },
   "serviceDetail": {
