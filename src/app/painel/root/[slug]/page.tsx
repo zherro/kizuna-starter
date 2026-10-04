@@ -1,4 +1,5 @@
 import { resolveRootScreen } from '@kizuna/core/client/components/root-screens/resolver';
+import { AiAdminScreen } from '@kizuna/core/client/components/ai-review';
 import { SystemConfigScreen } from '@kizuna/core/client/components/administracao/system-config-screen';
 import { panelMenuForRoles } from '@/components/panel-nav';
 
@@ -14,12 +15,12 @@ type PageProps = {
  * that screen.
  *
  * Slugs live today: `plugins` (`/painel/root/plugins`), `configuracoes`
- * (`/painel/root/configuracoes`).
+ * (`/painel/root/configuracoes`), `ia` (`/painel/root/ia`).
  */
 export default async function RootAdminScreenPage({ params }: Readonly<PageProps>) {
   const { slug } = await params;
   const { Component } = await resolveRootScreen('root', slug, {
-    slotComponents: { configuracoes: SystemConfigScreen },
+    slotComponents: { configuracoes: SystemConfigScreen, ia: AiAdminScreen },
   });
 
   // Papéis e permissões: mostra cada permissão com os nomes do menu do painel (mesma lista da barra lateral).

@@ -14,6 +14,7 @@ Instruções para o robô que lê os JSONs do crawler (ingresso.com) e grava os 
 - Não use colunas fora deste documento. Não rode seeds nem migrations.
 - **Gênero** é taxonomia (subcategoria de Cinema): o robô insere o gênero que faltar **sempre com `active = false`** e **nunca** ativa, edita ou apaga taxonomia. Quem ativa é a pessoa responsável, pela UI. **Nenhum anúncio é gravado enquanto houver gênero usado pelos arquivos que não esteja `active = true`.**
 - **Opções de formulário** (`tags`, `detalhes_avisos_classificacao`, `cinemas.idiomas`, `cinemas.formatos`): o robô **acrescenta ao `forms.schema`** a opção que faltar (passo 1.4) e segue; a aprovação dessas opções é feita fora do Kizuna. Nunca remova nem renomeie opção existente.
+- **Descrição revisada por IA não é sobrescrita:** no UPDATE, `description` só muda se o serviço **não** tiver linha em `public.service_text_revisions` com `field = 'description'` e `status = 'approved'`. Os demais campos seguem atualizando.
 - Grave em `public.form_results` direto; não use `fn_form_result_upsert`.
 
 ## Fase 1: verificação prévia (antes de inserir qualquer arquivo)
@@ -269,10 +270,14 @@ VALUES (%(titulo)s, %(group_id)s, %(category_id)s, %(descricao)s, 0, 'quote',
 RETURNING id;
 ```
 
-**5. Passo 1 com linha: atualizar serviço** (mantém o status se estiver `paused` ou `archived`; `created_at` não muda)
+**5. Passo 1 com linha: atualizar serviço** (mantém o status se estiver `paused` ou `archived`; `created_at` não muda; `description` fica intacta quando existe revisão `approved`)
 ```sql
 UPDATE public.services SET
-  title = %(titulo)s, description = %(descricao)s,
+  title = %(titulo)s,
+  description = CASE WHEN EXISTS (
+      SELECT 1 FROM public.service_text_revisions r
+      WHERE r.service_id = services.id AND r.field = 'description' AND r.status = 'approved')
+    THEN description ELSE %(descricao)s END,
   starting_price = 0, price_unit = 'quote',
   status = CASE WHEN status IN ('paused','archived') THEN status ELSE 'active' END,
   extras = (extras - 'origem' - 'images' - 'coverFileId') || %(extras)s::jsonb,

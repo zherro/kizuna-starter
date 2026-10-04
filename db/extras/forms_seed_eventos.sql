@@ -1,7 +1,7 @@
 -- db/extras/forms_seed_eventos.sql
 --
 -- Seed do formulario `eventos` (plugin forms): data, realizador, link, endereco e a tabela de
--- ingressos (`list`: descricao, valor, situacao). Titulo, descricao e imagens ficam no anuncio.
+-- ingressos (`list`: titulo, valor com mascara R$, descricao, link de compra e situacao). Titulo, descricao e imagens ficam no anuncio.
 -- O importador grava as respostas em public.form_results.
 -- DESTRUTIVO (recria): apaga e reinsere o formulario do tenant do root; ABORTA se ja houver respostas.
 -- Vincula as categorias do grupo ao formulario (categories.form_key) sem sobrescrever um form_key existente.
@@ -198,11 +198,11 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
       "itemLabel": "Ingresso",
       "itemFields": [
         {
-          "id": "ing_descricao",
-          "key": "descricao",
-          "name": "descricao",
+          "id": "ing_titulo",
+          "key": "titulo",
+          "name": "titulo",
           "type": "text",
-          "label": "Descrição",
+          "label": "Título",
           "grid": {
             "xs": 12,
             "sm": 12,
@@ -234,7 +234,8 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
           },
           "behavior": {},
           "validation": {},
-          "appearance": {}
+          "appearance": {},
+          "placeholder": "R$ 0,00"
         },
         {
           "id": "ing_situacao",
@@ -275,7 +276,46 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
               "value": "Encerrado"
             }
           ]
+        },
+        {
+          "id": "ing_descricao",
+          "key": "descricao",
+          "name": "descricao",
+          "type": "textarea",
+          "label": "Descrição",
+          "grid": {
+            "xs": 12,
+            "sm": 12,
+            "md": 12,
+            "lg": 12,
+            "xl": 12,
+            "2xl": 12
+          },
+          "behavior": {},
+          "validation": {},
+          "appearance": {},
+          "placeholder": "O que está incluso, regras de meia-entrada, idade mínima..."
+        },
+        {
+          "id": "ing_link",
+          "key": "link",
+          "name": "link",
+          "type": "url",
+          "label": "Link de compra",
+          "grid": {
+            "xs": 12,
+            "sm": 12,
+            "md": 12,
+            "lg": 12,
+            "xl": 12,
+            "2xl": 12
+          },
+          "behavior": {},
+          "validation": {},
+          "appearance": {},
+          "placeholder": "https://"
         }
+
       ]
     }
   ]

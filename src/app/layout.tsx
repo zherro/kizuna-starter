@@ -178,9 +178,14 @@ export default function RootLayout({
               brandLabel={siteName}
               brandLogo={site?.logo ?? undefined}
               actions={
+                // Só no desktop: no mobile o header já tem cidade + menu e ficava apertado.
                 cfg.weather ? (
+<<<<<<< HEAD
                   // Clima só a partir de tablet: no celular o header fica só com logo e conta.
                   <div className="hidden md:flex">
+=======
+                  <div className="hidden md:block">
+>>>>>>> 4f07107 (IA text review)
                     <WeatherWidget forecastModal={cfg.weather.forecastModal !== false} />
                   </div>
                 ) : undefined
