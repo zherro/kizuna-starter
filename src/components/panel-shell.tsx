@@ -14,24 +14,33 @@ import {
   PanelShellBase,
   type PanelTopAction,
 } from '@kizuna/core/client/components/panel-shell';
+import { useAuth } from '@kizuna/core/client/providers/auth-provider';
 import { navigationGroups } from './panel-nav';
 import { OpenTicketsBadge } from '@kizuna/core/client/components/tickets/open-tickets-badge';
 
 const site = (cfg as { site?: { name?: string; logo?: string } }).site;
 const siteName = site?.name ?? 'Kizuna';
 
-
 export function PanelShell({ children }: Readonly<{ children: React.ReactNode }>) {
   const pathname = usePathname() ?? '';
+  const { user } = useAuth();
+  // Mesmas permissões dos itens do menu (panel-nav.ts): desmarcado no perfil, some daqui também.
+  const can = (resource: string) => user?.hasPerm?.(resource) ?? false;
   const topActions: PanelTopAction[] = [
-    { title: 'Tela inicial', href: '/', icon: Home },
-    { title: 'Painel', href: '/painel', icon: LayoutGrid, isActive: pathname === '/painel' },
-    {
-      title: 'Minha conta',
-      href: '/painel/minha-conta',
-      icon: UserCircle,
-      isActive: pathname.startsWith('/painel/minha-conta'),
-    },
+    ...(can('painel_tela_inicial') ? [{ title: 'Tela inicial', href: '/', icon: Home }] : []),
+    ...(can('default')
+      ? [{ title: 'Painel', href: '/painel', icon: LayoutGrid, isActive: pathname === '/painel' }]
+      : []),
+    ...(can('painel_minha_conta')
+      ? [
+          {
+            title: 'Minha conta',
+            href: '/painel/minha-conta',
+            icon: UserCircle,
+            isActive: pathname.startsWith('/painel/minha-conta'),
+          },
+        ]
+      : []),
   ];
 
   return (

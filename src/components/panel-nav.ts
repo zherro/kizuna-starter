@@ -1,3 +1,7 @@
+// Cada item tem a SUA permissão (`painel_*`, db/extras/painel_menu_permissions.sql) — habilitável
+// por perfil em /painel/root/papeis. "Painel" (`/painel`) segue em `default` (Acessar o painel) e
+// libera as telas sem item próprio.
+//
 // Menu do painel — fonte única: a barra lateral (`panel-shell.tsx`) e a tela de papéis
 // (`/painel/root/papeis`, via `panelMenuForRoles`) leem esta lista, então um item novo aparece nos
 // dois com o mesmo nome. Sem 'use client': também é importado por Server Components.
@@ -37,32 +41,32 @@ export const navigationGroups: PanelNavGroup[] = [
         title: vocabulary.phrases.new,
         href: '/painel/meus-servicos/novo',
         icon: PlusCircle,
-        permResource: 'default',
+        permResource: 'painel_nova_publicacao',
       },
       {
         title: vocabulary.phrases.mine,
         href: '/painel/meus-servicos',
         icon: Briefcase,
-        permResource: 'default',
+        permResource: 'painel_minhas_publicacoes',
       },
       {
         title: 'Métricas',
         href: '/painel/metricas',
         icon: BarChart3,
-        permResource: 'default',
+        permResource: 'painel_metricas',
       },
       {
         title: 'Avaliação',
         href: '/painel/administracao/avaliacoes',
         icon: Star,
-        permResource: 'default',
+        permResource: 'painel_avaliacoes',
       },
       {
         // Plugin tickets. Contador de abertos ao lado (renderItemBadge abaixo).
         title: 'Chamados',
         href: '/painel/chamados',
         icon: LifeBuoy,
-        permResource: 'default',
+        permResource: 'painel_chamados',
       },
     ],
   },
@@ -75,7 +79,7 @@ export const navigationGroups: PanelNavGroup[] = [
         title: 'Tela inicial',
         href: '/',
         icon: Home,
-        permResource: 'default',
+        permResource: 'painel_tela_inicial',
         sidebarHidden: true,
       },
       {
@@ -135,7 +139,7 @@ export const navigationGroups: PanelNavGroup[] = [
         title: 'Minha conta',
         href: '/painel/minha-conta',
         icon: UserCircle,
-        permResource: 'default',
+        permResource: 'painel_minha_conta',
       },
     ],
   },
