@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { pgrstRpc } from '@kizuna/core/server';
-import { requireAiAccess } from '@/lib/server/ai-gate';
+import { aiRpc } from '@kizuna/core/server/ai';
+import { requireAiRoot } from '@/lib/server/ai-gate';
 
 export const runtime = 'nodejs';
 
 /** Aplica várias revisões (texto da IA, sem edição). Devolve o resultado por id. */
 export async function POST(request: Request) {
-  const gate = await requireAiAccess('review');
+  const gate = await requireAiRoot();
   if (gate.error) return gate.error;
   const body = (await request.json().catch(() => null)) as { ids?: unknown[] } | null;
   const ids = (Array.isArray(body?.ids) ? body.ids : [])
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   const results: Array<{ id: number; ok: boolean; message?: string }> = [];
   for (const id of ids) {
     try {
-      const res = await pgrstRpc('fn_service_revision_apply', { p_revision_id: id, p_text: null });
+      const res = await aiRpc(gate.db, 'fn_service_revision_apply', { p_revision_id: id, p_text: null });
       if (res.ok) results.push({ id, ok: true });
       else {
         const d = (await res.json().catch(() => null)) as { message?: string } | null;

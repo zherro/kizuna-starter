@@ -1,19 +1,26 @@
 import { NextResponse } from 'next/server';
-import { getSession, type SessionPayload } from '@kizuna/core/server';
-import { canAccessAiReview, type AiReviewPerm } from '@kizuna/core/server/ai';
+import { getSession, getTokenFromCookies, type SessionPayload } from '@kizuna/core/server';
+import { canAccessAiReview, type AiUserDb } from '@kizuna/core/server/ai';
 
-/** Gate das rotas /api/ai/*: root ou permissão `ai_review.<perm>` (manage cobre review). */
-export async function requireAiAccess(
-  perm: AiReviewPerm
-): Promise<{ session: SessionPayload; error: null } | { session: null; error: NextResponse }> {
-  const session = await getSession();
-  if (!session) {
-    return { session: null, error: NextResponse.json({ message: 'Sessão expirada.' }, { status: 401 }) };
+/**
+ * Gate das rotas /api/ai/*: somente root. Devolve também o `db` (JWT da sessão) que as funções de
+ * IA usam para falar com o PostgREST — nunca o token de serviço.
+ */
+export async function requireAiRoot(): Promise<
+  { session: SessionPayload; db: AiUserDb; error: null } | { session: null; db: null; error: NextResponse }
+> {
+  const [session, accessToken] = await Promise.all([getSession(), getTokenFromCookies()]);
+  if (!session || !accessToken) {
+    return {
+      session: null,
+      db: null,
+      error: NextResponse.json({ message: 'Sessão expirada.' }, { status: 401 }),
+    };
   }
-  if (!canAccessAiReview(session, perm)) {
-    return { session: null, error: NextResponse.json({ message: 'Acesso negado.' }, { status: 403 }) };
+  if (!canAccessAiReview(session)) {
+    return { session: null, db: null, error: NextResponse.json({ message: 'Acesso negado.' }, { status: 403 }) };
   }
-  return { session, error: null };
+  return { session, db: { accessToken }, error: null };
 }
 
 export function jsonError(e: unknown, status = 500) {

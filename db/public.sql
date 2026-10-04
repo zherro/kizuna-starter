@@ -4,10 +4,14 @@
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/public.sql
 -- Ordem = kizuna.plugins.json (ordem de dependência).
 <<<<<<< HEAD
+<<<<<<< HEAD
 -- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (2), onboarding (1), storage (6), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (3), services (8), reviews (1), analytics (1), search (3), swipe (2), messaging (1), ai_assistant (1), demandas (4), pedidos (4)
 =======
 -- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (2), onboarding (1), storage (4), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (4), services (8), reviews (1), analytics (1), search (3), swipe (2), messaging (1), ai_assistant (1), ai_review (1), demandas (4), pedidos (4)
 >>>>>>> 4f07107 (IA text review)
+=======
+-- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (2), onboarding (1), storage (6), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (4), services (8), reviews (1), analytics (1), search (3), swipe (2), messaging (1), ai_assistant (1), ai_review (1), demandas (4), pedidos (4)
+>>>>>>> 4cadc1a (IA text review)
 
 
 -- ===============================================================================================
@@ -5866,12 +5870,29 @@ NOTIFY pgrst, 'reload schema';
 -- Plugin: ai_review — revisão de textos de anúncios (services.description) por IA, com fila de
 -- aprovação humana. Este arquivo é só banco: credenciais de provider, prompts versionados,
 -- revisões propostas, execuções em lote e as RPCs de aprovar/rejeitar. Quem chama a IA e cifra a
--- chave é o servidor Node (service_role). Depende de `services` e `taxonomy`
--- (categories.ai_review, taxonomy 0004).
+-- chave é o servidor Node, sempre com o JWT do usuário logado (nada de service_role). Depende de
+-- `services` e `taxonomy` (categories.ai_review, taxonomy 0004).
 --
--- Idempotente, from-zero-safe (convenção de plugins/*/0001_*.sql). Registra as permissões
--- ai_review.manage e ai_review.review só no catálogo — nunca em auth.role_grants (root passa por
--- auth.fun_auth_has_perm).
+-- REGRA EFETIVA DE ACESSO: SOMENTE ROOT (claim is_root do JWT, via public.fn_ai_review_is_root()).
+-- As permissões ai_review.manage / ai_review.review continuam no catálogo (auth.permissions), mas
+-- nenhuma policy/RPC as consulta: conceder uma delas a um papel não abre acesso.
+--
+-- Idempotente, from-zero-safe (convenção de plugins/*/0001_*.sql). Nunca escreve em auth.role_grants.
+
+-- =========================================================================
+-- 0) Gate único: o JWT é de root?
+-- =========================================================================
+CREATE OR REPLACE FUNCTION public.fn_ai_review_is_root()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SET search_path = pg_catalog
+AS $function$
+  SELECT COALESCE((NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'is_root')::boolean, false);
+$function$;
+
+REVOKE EXECUTE ON FUNCTION public.fn_ai_review_is_root() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.fn_ai_review_is_root() TO auth_user;
 
 -- =========================================================================
 -- 1) ai_credentials — chaves de API dos providers (cifradas no Node, AES-256-GCM)
@@ -5891,21 +5912,90 @@ CREATE INDEX IF NOT EXISTS ai_credentials_provider_idx ON public.ai_credentials 
 
 ALTER TABLE public.ai_credentials ENABLE ROW LEVEL SECURITY;
 
--- auth_user nunca lê key_cipher: GRANT por coluna (REVOKE de tabela primeiro). A criação e a
--- troca da chave são do servidor (service_role); o gestor só lista, renomeia e ativa/desativa.
+-- auth_user nunca lê key_cipher: GRANT por coluna (REVOKE de tabela primeiro). Criar/trocar a
+-- chave passa pela RPC fn_ai_credential_save (a cifra é feita no Node); o cipher só sai por
+-- fn_ai_credential_get_cipher (root). Renomear e ativar/desativar é UPDATE direto.
 REVOKE ALL ON TABLE public.ai_credentials FROM anon, auth_user;
 GRANT SELECT (id, provider, label, key_last4, active, created_by, created_at, updated_at)
   ON TABLE public.ai_credentials TO auth_user;
+GRANT INSERT (provider, label, key_cipher, key_last4, active) ON TABLE public.ai_credentials TO auth_user;
 GRANT UPDATE (label, active, updated_at) ON TABLE public.ai_credentials TO auth_user;
 
 DROP POLICY IF EXISTS ai_credentials_select ON public.ai_credentials;
 CREATE POLICY ai_credentials_select ON public.ai_credentials FOR SELECT TO auth_user
-  USING (auth.fun_auth_has_perm('ai_review', 'manage'));
+  USING (public.fn_ai_review_is_root());
+
+DROP POLICY IF EXISTS ai_credentials_insert ON public.ai_credentials;
+CREATE POLICY ai_credentials_insert ON public.ai_credentials FOR INSERT TO auth_user
+  WITH CHECK (public.fn_ai_review_is_root());
 
 DROP POLICY IF EXISTS ai_credentials_update ON public.ai_credentials;
 CREATE POLICY ai_credentials_update ON public.ai_credentials FOR UPDATE TO auth_user
-  USING (auth.fun_auth_has_perm('ai_review', 'manage'))
-  WITH CHECK (auth.fun_auth_has_perm('ai_review', 'manage'));
+  USING (public.fn_ai_review_is_root())
+  WITH CHECK (public.fn_ai_review_is_root());
+
+-- Grava a nova chave ativa e desativa as anteriores do provider, numa transação só. Devolve o id.
+CREATE OR REPLACE FUNCTION public.fn_ai_credential_save(
+  p_provider   text,
+  p_label      text,
+  p_key_cipher text,
+  p_key_last4  text
+) RETURNS bigint
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $function$
+DECLARE
+  v_id bigint;
+BEGIN
+  IF NOT public.fn_ai_review_is_root() THEN
+    RAISE EXCEPTION 'forbidden' USING errcode = '42501';
+  END IF;
+  IF p_provider IS NULL OR p_provider NOT IN ('gemini', 'claude', 'openai') THEN
+    RAISE EXCEPTION 'provider inválido' USING errcode = '22023';
+  END IF;
+  IF p_key_cipher IS NULL OR btrim(p_key_cipher) = '' THEN
+    RAISE EXCEPTION 'chave vazia' USING errcode = '22023';
+  END IF;
+
+  UPDATE public.ai_credentials
+     SET active = false, updated_at = now()
+   WHERE provider = p_provider AND active;
+
+  INSERT INTO public.ai_credentials (provider, label, key_cipher, key_last4, active)
+  VALUES (p_provider, NULLIF(btrim(COALESCE(p_label, '')), ''), p_key_cipher, p_key_last4, true)
+  RETURNING id INTO v_id;
+
+  RETURN v_id;
+END;
+$function$;
+
+-- Cipher ativo do provider (ou NULL). Só root; é a única porta de leitura de key_cipher.
+CREATE OR REPLACE FUNCTION public.fn_ai_credential_get_cipher(p_provider text)
+RETURNS text
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $function$
+DECLARE
+  v_cipher text;
+BEGIN
+  IF NOT public.fn_ai_review_is_root() THEN
+    RAISE EXCEPTION 'forbidden' USING errcode = '42501';
+  END IF;
+  SELECT key_cipher INTO v_cipher
+    FROM public.ai_credentials
+   WHERE provider = p_provider AND active
+   ORDER BY updated_at DESC, id DESC
+   LIMIT 1;
+  RETURN v_cipher;
+END;
+$function$;
+
+REVOKE EXECUTE ON FUNCTION public.fn_ai_credential_save(text, text, text, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.fn_ai_credential_get_cipher(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.fn_ai_credential_save(text, text, text, text) TO auth_user;
+GRANT EXECUTE ON FUNCTION public.fn_ai_credential_get_cipher(text) TO auth_user;
 
 -- =========================================================================
 -- 2) ai_prompts — prompts versionados (override opcional por categoria)
@@ -5958,19 +6048,19 @@ GRANT SELECT, INSERT, UPDATE ON TABLE public.ai_prompts TO auth_user;
 
 DROP POLICY IF EXISTS ai_prompts_select ON public.ai_prompts;
 CREATE POLICY ai_prompts_select ON public.ai_prompts FOR SELECT TO auth_user
-  USING (auth.fun_auth_has_perm('ai_review', 'manage'));
+  USING (public.fn_ai_review_is_root());
 
 DROP POLICY IF EXISTS ai_prompts_insert ON public.ai_prompts;
 CREATE POLICY ai_prompts_insert ON public.ai_prompts FOR INSERT TO auth_user
-  WITH CHECK (auth.fun_auth_has_perm('ai_review', 'manage'));
+  WITH CHECK (public.fn_ai_review_is_root());
 
 DROP POLICY IF EXISTS ai_prompts_update ON public.ai_prompts;
 CREATE POLICY ai_prompts_update ON public.ai_prompts FOR UPDATE TO auth_user
-  USING (auth.fun_auth_has_perm('ai_review', 'manage'))
-  WITH CHECK (auth.fun_auth_has_perm('ai_review', 'manage'));
+  USING (public.fn_ai_review_is_root())
+  WITH CHECK (public.fn_ai_review_is_root());
 
 -- =========================================================================
--- 3) ai_review_runs — execuções em lote
+-- 3) ai_review_runs — execuções em lote (processadas em passos acionados pela tela)
 -- =========================================================================
 CREATE TABLE IF NOT EXISTS public.ai_review_runs (
   id                bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -5985,26 +6075,42 @@ CREATE TABLE IF NOT EXISTS public.ai_review_runs (
   tokens_in         integer NOT NULL DEFAULT 0,
   tokens_out        integer NOT NULL DEFAULT 0,
   error             text,
+  -- ids dos anúncios selecionados no início do run (o passo recalcula os pendentes a partir daqui)
+  service_ids       jsonb NOT NULL DEFAULT '[]'::jsonb,
+  -- ids que falharam (não são reprocessados no mesmo run)
+  failed_ids        jsonb NOT NULL DEFAULT '[]'::jsonb,
   created_by        uuid DEFAULT auth.fun_auth_user_id(),
   created_at        timestamptz NOT NULL DEFAULT now(),
+  -- último passo processado: base do stale-run (sem passo há 30 min = preso)
+  updated_at        timestamptz NOT NULL DEFAULT now(),
   finished_at       timestamptz
 );
+-- Bancos que já tinham a tabela (migration anterior) ganham as colunas aqui.
+ALTER TABLE public.ai_review_runs ADD COLUMN IF NOT EXISTS service_ids jsonb NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE public.ai_review_runs ADD COLUMN IF NOT EXISTS failed_ids jsonb NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE public.ai_review_runs ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
 CREATE INDEX IF NOT EXISTS ai_review_runs_status_idx ON public.ai_review_runs (status, created_at DESC);
 
 ALTER TABLE public.ai_review_runs ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.ai_review_runs FROM anon, auth_user;
-GRANT SELECT ON TABLE public.ai_review_runs TO auth_user;
--- O gestor só consegue cancelar (a policy limita o novo valor); o resto é do servidor.
-GRANT UPDATE (status) ON TABLE public.ai_review_runs TO auth_user;
+GRANT SELECT, INSERT ON TABLE public.ai_review_runs TO auth_user;
+GRANT UPDATE (status, total, processed, failed, tokens_in, tokens_out, error, service_ids, failed_ids,
+  updated_at, finished_at)
+  ON TABLE public.ai_review_runs TO auth_user;
 
 DROP POLICY IF EXISTS ai_review_runs_select ON public.ai_review_runs;
 CREATE POLICY ai_review_runs_select ON public.ai_review_runs FOR SELECT TO auth_user
-  USING (auth.fun_auth_has_perm('ai_review', 'manage') OR auth.fun_auth_has_perm('ai_review', 'review'));
+  USING (public.fn_ai_review_is_root());
 
-DROP POLICY IF EXISTS ai_review_runs_cancel ON public.ai_review_runs;
-CREATE POLICY ai_review_runs_cancel ON public.ai_review_runs FOR UPDATE TO auth_user
-  USING (auth.fun_auth_has_perm('ai_review', 'manage') AND status IN ('pending', 'running'))
-  WITH CHECK (auth.fun_auth_has_perm('ai_review', 'manage') AND status = 'cancelled');
+DROP POLICY IF EXISTS ai_review_runs_insert ON public.ai_review_runs;
+CREATE POLICY ai_review_runs_insert ON public.ai_review_runs FOR INSERT TO auth_user
+  WITH CHECK (public.fn_ai_review_is_root());
+
+DROP POLICY IF EXISTS ai_review_runs_cancel ON public.ai_review_runs; -- substituída por ai_review_runs_update
+DROP POLICY IF EXISTS ai_review_runs_update ON public.ai_review_runs;
+CREATE POLICY ai_review_runs_update ON public.ai_review_runs FOR UPDATE TO auth_user
+  USING (public.fn_ai_review_is_root())
+  WITH CHECK (public.fn_ai_review_is_root());
 
 -- =========================================================================
 -- 4) service_text_revisions — texto original x proposto, pendente de aprovação
@@ -6027,7 +6133,7 @@ CREATE TABLE IF NOT EXISTS public.service_text_revisions (
   reviewed_by     uuid,
   reviewed_at     timestamptz,
   created_at      timestamptz NOT NULL DEFAULT now(),
-  -- Nulo permitido: o servidor (service_role) não tem JWT e informa o tenant do anúncio.
+  -- O servidor informa o tenant do anúncio (o JWT do root pode estar em outro tenant).
   tenant_id       uuid DEFAULT auth.fun_auth_current_tenant_id()
 );
 CREATE INDEX IF NOT EXISTS service_text_revisions_service_status_idx
@@ -6040,19 +6146,23 @@ CREATE INDEX IF NOT EXISTS service_text_revisions_run_idx
 
 ALTER TABLE public.service_text_revisions ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.service_text_revisions FROM anon, auth_user;
-GRANT SELECT ON TABLE public.service_text_revisions TO auth_user;
+GRANT SELECT, INSERT ON TABLE public.service_text_revisions TO auth_user;
 -- O revisor só edita o texto proposto; aprovar/rejeitar passa pelas RPCs (que gravam status).
 GRANT UPDATE (revised_text) ON TABLE public.service_text_revisions TO auth_user;
 
 DROP POLICY IF EXISTS service_text_revisions_select ON public.service_text_revisions;
 CREATE POLICY service_text_revisions_select ON public.service_text_revisions FOR SELECT TO auth_user
-  USING (auth.fun_auth_has_perm('ai_review', 'review') OR auth.fun_auth_has_perm('ai_review', 'manage'));
+  USING (public.fn_ai_review_is_root());
+
+-- A revisão nasce sempre pendente: aprovar/rejeitar é exclusivo das RPCs.
+DROP POLICY IF EXISTS service_text_revisions_insert ON public.service_text_revisions;
+CREATE POLICY service_text_revisions_insert ON public.service_text_revisions FOR INSERT TO auth_user
+  WITH CHECK (public.fn_ai_review_is_root() AND status = 'pending');
 
 DROP POLICY IF EXISTS service_text_revisions_update ON public.service_text_revisions;
 CREATE POLICY service_text_revisions_update ON public.service_text_revisions FOR UPDATE TO auth_user
-  USING ((auth.fun_auth_has_perm('ai_review', 'review') OR auth.fun_auth_has_perm('ai_review', 'manage'))
-         AND status = 'pending')
-  WITH CHECK (auth.fun_auth_has_perm('ai_review', 'review') OR auth.fun_auth_has_perm('ai_review', 'manage'));
+  USING (public.fn_ai_review_is_root() AND status = 'pending')
+  WITH CHECK (public.fn_ai_review_is_root());
 
 -- =========================================================================
 -- 5) RPCs — aprovar (aplica no anúncio) e rejeitar
@@ -6089,7 +6199,7 @@ DECLARE
   v_row     public.service_text_revisions;
   v_current text;
 BEGIN
-  IF NOT (auth.fun_auth_has_perm('ai_review', 'review') OR auth.fun_auth_has_perm('ai_review', 'manage')) THEN
+  IF NOT public.fn_ai_review_is_root() THEN
     RAISE EXCEPTION 'forbidden' USING errcode = '42501';
   END IF;
 
@@ -6152,7 +6262,7 @@ AS $function$
 DECLARE
   v_row public.service_text_revisions;
 BEGIN
-  IF NOT (auth.fun_auth_has_perm('ai_review', 'review') OR auth.fun_auth_has_perm('ai_review', 'manage')) THEN
+  IF NOT public.fn_ai_review_is_root() THEN
     RAISE EXCEPTION 'forbidden' USING errcode = '42501';
   END IF;
 
@@ -6171,26 +6281,23 @@ END;
 $function$;
 
 REVOKE EXECUTE ON FUNCTION public.fn_ai_review_html_safe(text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.fn_ai_review_html_safe(text) TO auth_user, service_role;
+GRANT EXECUTE ON FUNCTION public.fn_ai_review_html_safe(text) TO auth_user;
 REVOKE EXECUTE ON FUNCTION public.fn_service_revision_apply(bigint, text) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.fn_service_revision_reject(bigint) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.fn_service_revision_apply(bigint, text) TO auth_user;
 GRANT EXECUTE ON FUNCTION public.fn_service_revision_reject(bigint) TO auth_user;
 
 -- =========================================================================
--- 6) service_role (servidor): chama a IA, grava revisões e acompanha runs. BYPASSRLS; só GRANTs.
+-- 6) Limpeza: versões anteriores deste plugin davam GRANTs ao service_role. A IA agora roda só com o
+--    JWT do root; remove o que ficou nas tabelas do plugin (não toca em categories/services/forms,
+--    que outros plugins/rotinas do core podem usar).
 -- =========================================================================
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
-    GRANT SELECT, INSERT, UPDATE ON TABLE public.ai_credentials TO service_role;
-    GRANT SELECT, INSERT, UPDATE ON TABLE public.ai_prompts TO service_role;
-    GRANT SELECT, INSERT, UPDATE ON TABLE public.service_text_revisions TO service_role;
-    GRANT SELECT, INSERT, UPDATE ON TABLE public.ai_review_runs TO service_role;
-    -- Contexto do prompt (categoria, grupo, subcategorias, campos do formulário).
-    GRANT SELECT ON TABLE public.categories, public.categories_group, public.categories_sub,
-      public.service_categories_sub, public.forms TO service_role;
-    GRANT SELECT, UPDATE ON TABLE public.services TO service_role;
+    REVOKE ALL ON TABLE public.ai_credentials, public.ai_prompts, public.service_text_revisions,
+      public.ai_review_runs FROM service_role;
+    REVOKE EXECUTE ON FUNCTION public.fn_ai_review_html_safe(text) FROM service_role;
   END IF;
 END
 $$;
@@ -6243,7 +6350,7 @@ WHERE NOT EXISTS (
 );
 
 -- =========================================================================
--- 8) RBAC (só catálogo) + registro do plugin
+-- 8) Catálogo de permissões (informativo: a regra efetiva é root) + registro do plugin
 -- =========================================================================
 INSERT INTO auth.permissions (resource, action, name) VALUES
   ('ai_review', 'manage', 'Gerenciar a revisão por IA (credenciais, prompts, execuções)'),

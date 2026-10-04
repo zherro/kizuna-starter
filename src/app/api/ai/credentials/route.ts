@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { AiUnavailableError, saveProviderKey, type AiProviderId } from '@kizuna/core/server/ai';
-import { serviceTable } from '@kizuna/core/server';
-import { jsonError, requireAiAccess } from '@/lib/server/ai-gate';
+import { aiTable, AiUnavailableError, saveProviderKey, type AiProviderId } from '@kizuna/core/server/ai';
+import { jsonError, requireAiRoot } from '@/lib/server/ai-gate';
 
 export const runtime = 'nodejs';
 
@@ -9,10 +8,11 @@ const ALLOWED: AiProviderId[] = ['gemini', 'claude'];
 
 /** Lista credenciais SEM a chave (só os 4 últimos dígitos). */
 export async function GET() {
-  const gate = await requireAiAccess('manage');
+  const gate = await requireAiRoot();
   if (gate.error) return gate.error;
   try {
-    const res = await serviceTable(
+    const res = await aiTable(
+      gate.db,
       '/ai_credentials?select=id,provider,label,key_last4,active,created_at,updated_at&order=created_at.desc'
     );
     if (!res.ok) return NextResponse.json({ message: 'Falha ao listar credenciais.' }, { status: 502 });
@@ -35,7 +35,7 @@ export async function GET() {
 
 /** Cifra e grava a chave (desativa as anteriores do provedor). */
 export async function POST(request: Request) {
-  const gate = await requireAiAccess('manage');
+  const gate = await requireAiRoot();
   if (gate.error) return gate.error;
   const body = (await request.json().catch(() => null)) as {
     provider?: string;
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   }
   if (key.length < 8) return NextResponse.json({ message: 'Chave inválida.' }, { status: 400 });
   try {
-    const saved = await saveProviderKey(provider, String(body?.label ?? '').trim() || provider, key);
+    const saved = await saveProviderKey(gate.db, provider, String(body?.label ?? '').trim() || provider, key);
     return NextResponse.json({ id: saved.id, last4: saved.last4 }, { status: 201 });
   } catch (e) {
     if (e instanceof AiUnavailableError) return jsonError(e, 503);
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
 
 /** Desativa uma credencial: `?id=` (ou corpo com id). */
 export async function DELETE(request: Request) {
-  const gate = await requireAiAccess('manage');
+  const gate = await requireAiRoot();
   if (gate.error) return gate.error;
   const url = new URL(request.url);
   const body = (await request.json().catch(() => null)) as { id?: number | string } | null;
@@ -68,7 +68,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ message: 'id inválido.' }, { status: 400 });
   }
   try {
-    const res = await serviceTable(`/ai_credentials?id=eq.${id}`, {
+    const res = await aiTable(gate.db, `/ai_credentials?id=eq.${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ active: false, updated_at: new Date().toISOString() }),

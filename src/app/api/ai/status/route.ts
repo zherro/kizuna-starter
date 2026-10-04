@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getProviderKey, listSkillContexts, readSystemConfig } from '@kizuna/core/server/ai';
-import { jsonError, requireAiAccess } from '@/lib/server/ai-gate';
+import { jsonError, requireAiRoot } from '@/lib/server/ai-gate';
 
 export const runtime = 'nodejs';
 
@@ -8,13 +8,13 @@ const PROVIDERS = ['gemini', 'claude'] as const;
 
 /** Status por provedor (chave presente: banco cifrado ou env) + config global + contextos. */
 export async function GET() {
-  const gate = await requireAiAccess('review');
+  const gate = await requireAiRoot();
   if (gate.error) return gate.error;
   try {
     const configured: Record<string, boolean> = {};
     for (const p of PROVIDERS) {
       try {
-        configured[p] = Boolean(await getProviderKey(p));
+        configured[p] = Boolean(await getProviderKey(p, gate.db));
       } catch {
         configured[p] = false;
       }

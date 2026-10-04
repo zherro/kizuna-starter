@@ -49,7 +49,7 @@ INSERT INTO public.location_city (id, state_id, name, search_city)
 VALUES
   (5103403, 51, 'Cuiabá', true),
   (5108402, 51, 'Várzea Grande', true),
-  (5103007, 51, 'Chapada dos Guimarães', true),
+  (5103007, 51, 'Chapada dos Guimarães', false),
   (5107602, 51, 'Rondonópolis', false),
   (5107909, 51, 'Sinop', false),
   (5107925, 51, 'Sorriso', false),

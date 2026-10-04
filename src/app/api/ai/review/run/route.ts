@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server';
-import { ReviewRunConflictError, runReviewBatch } from '@kizuna/core/server/ai';
-import { serviceTable } from '@kizuna/core/server';
-import { jsonError, requireAiAccess } from '@/lib/server/ai-gate';
+import {
+  ReviewCategoryDisabledError,
+  ReviewRunConflictError,
+  startReviewRun,
+} from '@kizuna/core/server/ai';
+import { jsonError, requireAiRoot } from '@/lib/server/ai-gate';
 
-// Node (não edge): o processamento segue em segundo plano após a resposta. O projeto roda
-// standalone (Docker), então o processo permanece vivo; em serverless puro isso não valeria.
 export const runtime = 'nodejs';
 
+/**
+ * Cria o run (valida a categoria, seleciona os anúncios e grava total + ids) e devolve o runId.
+ * Não processa nada: a tela chama `POST /api/ai/review/runs/[id]/step` em seguida, em loop.
+ */
 export async function POST(request: Request) {
-  const gate = await requireAiAccess('review');
+  const gate = await requireAiRoot();
   if (gate.error) return gate.error;
   const body = (await request.json().catch(() => null)) as {
     categoryId?: number;
@@ -24,26 +29,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Quantidade inválida.' }, { status: 400 });
   }
   try {
-    const cat = await serviceTable(`/categories?id=eq.${categoryId}&select=id,ai_review&limit=1`);
-    const rows = cat.ok ? ((await cat.json()) as Array<{ ai_review?: boolean }>) : [];
-    if (rows[0]?.ai_review !== true) {
-      return NextResponse.json(
-        { message: 'A categoria não está habilitada para revisão por IA.' },
-        { status: 400 }
-      );
-    }
-    const result = await runReviewBatch({
+    const result = await startReviewRun(gate.db, {
       categoryId,
       limit,
       includeReviewed: Boolean(body?.includeReviewed),
       userId: gate.session.user_id,
-      background: true,
     });
     return NextResponse.json(
       { runId: result.runId, status: result.status, total: result.total },
-      { status: 202 }
+      { status: 201 }
     );
   } catch (e) {
+    if (e instanceof ReviewCategoryDisabledError) {
+      return NextResponse.json({ message: e.message }, { status: 400 });
+    }
     if (e instanceof ReviewRunConflictError) {
       return NextResponse.json({ message: e.message, runId: e.runId }, { status: 409 });
     }

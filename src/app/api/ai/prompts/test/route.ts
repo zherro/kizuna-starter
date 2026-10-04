@@ -8,13 +8,13 @@ import {
   type TextReviewInput,
   type TextReviewOutput,
 } from '@kizuna/core/server/ai';
-import { jsonError, requireAiAccess } from '@/lib/server/ai-gate';
+import { jsonError, requireAiRoot } from '@/lib/server/ai-gate';
 
 export const runtime = 'nodejs';
 
 /** Roda o prompt em UM anúncio sem gravar revisão. `overrides` testa edições ainda não salvas. */
 export async function POST(request: Request) {
-  const gate = await requireAiAccess('manage');
+  const gate = await requireAiRoot();
   if (gate.error) return gate.error;
   const body = (await request.json().catch(() => null)) as {
     promptKey?: string;
@@ -35,11 +35,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Anúncio inválido.' }, { status: 400 });
   }
   try {
-    const context = await buildServiceContext(serviceId);
+    const context = await buildServiceContext(gate.db, serviceId);
     if (!context.description.trim()) {
       return NextResponse.json({ message: 'O anúncio não tem descrição.' }, { status: 400 });
     }
-    const base = await loadReviewPrompt(context.categoryId);
+    const base = await loadReviewPrompt(gate.db, context.categoryId);
     const o = body?.overrides ?? {};
     const prompt = {
       ...base,
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     const r = await runSkill<TextReviewInput, TextReviewOutput>(
       TEXT_REVIEW_SKILL_KEY,
       { serviceId, context, prompt },
-      { userId: gate.session.user_id, tenantId: context.tenantId ?? '' },
+      { userId: gate.session.user_id, tenantId: context.tenantId ?? '', db: gate.db },
       { provider: prompt.provider, model: prompt.model, temperature: prompt.temperature }
     );
     return NextResponse.json({

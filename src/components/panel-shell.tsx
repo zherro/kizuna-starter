@@ -56,9 +56,20 @@ const navigationGroups: PanelNavGroup[] = [
         permResource: 'default',
       },
       {
-        title: 'Avaliação',
+        title: 'Avaliações',
         href: '/painel/administracao/avaliacoes',
         icon: Star,
+        permResource: 'default',
+      },
+    ],
+  },
+  {
+    title: 'Conta',
+    items: [
+      {
+        title: 'Minha conta',
+        href: '/painel/minha-conta',
+        icon: UserCircle,
         permResource: 'default',
       },
       {
@@ -68,6 +79,91 @@ const navigationGroups: PanelNavGroup[] = [
         icon: LifeBuoy,
         permResource: 'default',
       },
+    ],
+  },
+  {
+    title: 'Conteúdo',
+    items: [
+      { title: 'Agenda', href: '/painel/agenda', icon: CalendarDays, permResource: 'agenda' },
+      {
+        title: 'Páginas',
+        href: '/painel/administracao/paginas',
+        icon: FileText,
+        permResource: 'pages',
+      },
+      {
+        title: 'Formulários',
+        href: '/painel/administracao/formularios',
+        icon: NotebookPen,
+        permResource: 'forms',
+      },
+    ],
+  },
+  {
+    title: 'Catálogo',
+    items: [
+      {
+        title: 'Árvore',
+        href: '/painel/taxonomia/arvore',
+        icon: Network,
+        permResource: 'categorias',
+      },
+      {
+        title: 'Categorias',
+        href: '/painel/taxonomia/categorias',
+        icon: FolderTree,
+        permResource: 'categorias',
+      },
+      {
+        title: 'Subcategorias',
+        href: '/painel/taxonomia/subcategorias',
+        icon: GitFork,
+        permResource: 'categorias',
+      },
+    ],
+  },
+  {
+    title: 'Moderação',
+    items: [
+      {
+        title: 'Aprovações',
+        href: '/painel/administracao/aprovacoes',
+        icon: ClipboardCheck,
+        rootOnly: true,
+      },
+      {
+        title: 'Revisão por IA',
+        href: '/painel/administracao/revisao-ia',
+        icon: Sparkles,
+        rootOnly: true,
+      },
+      {
+        title: 'Acessos dos usuários',
+        href: '/painel/administracao/acessos',
+        icon: UserCog,
+        rootOnly: true,
+      },
+    ],
+  },
+  {
+    title: 'Sistema',
+    items: [
+      {
+        title: 'Configurações',
+        href: '/painel/root/configuracoes',
+        icon: Settings,
+        rootOnly: true,
+      },
+      { title: 'Inteligência artificial', href: '/painel/root/ia', icon: Sparkles, rootOnly: true },
+      { title: 'Plugins instalados', href: '/painel/root/plugins', icon: Blocks, rootOnly: true },
+      { title: 'Papéis e permissões', href: '/painel/root/papeis', icon: KeyRound, rootOnly: true },
+      {
+        title: 'Log de acesso root',
+        href: '/painel/security/root-access-log',
+        icon: LockKeyhole,
+        rootOnly: true,
+      },
+      { title: 'Teste de funções', href: '/painel/funcoes', icon: FlaskConical, devOnly: true, rootOnly: true },
     ],
   },
   {
@@ -88,107 +184,6 @@ const navigationGroups: PanelNavGroup[] = [
         icon: LayoutGrid,
         permResource: 'default',
         sidebarHidden: true,
-      },
-    ],
-  },
-  {
-    title: 'Catálogo',
-    items: [
-      {
-        title: 'Categorias',
-        href: '/painel/taxonomia/categorias',
-        icon: FolderTree,
-        permResource: 'categories',
-      },
-      {
-        title: 'Subcategorias',
-        href: '/painel/taxonomia/subcategorias',
-        icon: GitFork,
-        permResource: 'categories',
-      },
-      {
-        title: 'Árvore',
-        href: '/painel/taxonomia/arvore',
-        icon: Network,
-        permResource: 'categories',
-      },
-    ],
-  },
-  {
-    title: 'Conteúdo',
-    items: [
-      {
-        title: 'Formulários',
-        href: '/painel/administracao/formularios',
-        icon: NotebookPen,
-        permResource: 'forms',
-      },
-      {
-        title: 'Páginas',
-        href: '/painel/administracao/paginas',
-        icon: FileText,
-        permResource: 'pages',
-      },
-      { title: 'Agenda', href: '/painel/agenda', icon: CalendarDays, permResource: 'agenda' },
-    ],
-  },
-  {
-    title: 'Configuração',
-    items: [
-      {
-        title: 'Minha conta',
-        href: '/painel/minha-conta',
-        icon: UserCircle,
-        permResource: 'default',
-      },
-    ],
-  },
-  {
-    title: 'Administração',
-    items: [
-      {
-        title: 'Acessos dos usuários',
-        href: '/painel/administracao/acessos',
-        icon: UserCog,
-        rootOnly: true,
-      },
-      {
-        title: 'Aprovações',
-        href: '/painel/administracao/aprovacoes',
-        icon: ClipboardCheck,
-        rootOnly: true,
-      },
-      {
-        title: 'Revisão por IA',
-        href: '/painel/administracao/revisao-ia',
-        icon: Sparkles,
-        // root ou papel com ai_review.review/manage (a página e as rotas /api/ai/* repetem o gate).
-        visibleIf: [
-          { rootOnly: true },
-          { permResource: 'ai_review', permAction: 'review' },
-          { permResource: 'ai_review', permAction: 'manage' },
-        ],
-      },
-      { title: 'Teste de funções', href: '/painel/funcoes', icon: FlaskConical, devOnly: true, rootOnly: true },
-    ],
-  },
-  {
-    title: 'Root',
-    items: [
-      { title: 'Plugins instalados', href: '/painel/root/plugins', icon: Blocks, rootOnly: true },
-      { title: 'Papéis e permissões', href: '/painel/root/papeis', icon: KeyRound, rootOnly: true },
-      {
-        title: 'Configurações',
-        href: '/painel/root/configuracoes',
-        icon: Settings,
-        rootOnly: true,
-      },
-      { title: 'Inteligência artificial', href: '/painel/root/ia', icon: Sparkles, rootOnly: true },
-      {
-        title: 'Log de acesso root',
-        href: '/painel/security/root-access-log',
-        icon: LockKeyhole,
-        rootOnly: true,
       },
     ],
   },
