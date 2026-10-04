@@ -1,5 +1,6 @@
 import { resolveRootScreen } from '@kizuna/core/client/components/root-screens/resolver';
 import { SystemConfigScreen } from '@kizuna/core/client/components/administracao/system-config-screen';
+import { panelMenuForRoles } from '@/components/panel-nav';
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -20,6 +21,9 @@ export default async function RootAdminScreenPage({ params }: Readonly<PageProps
   const { Component } = await resolveRootScreen('root', slug, {
     slotComponents: { configuracoes: SystemConfigScreen },
   });
+
+  // Papéis e permissões: mostra cada permissão com os nomes do menu do painel (mesma lista da barra lateral).
+  if (slug === 'papeis') return <Component menu={panelMenuForRoles()} />;
 
   return <Component />;
 }
