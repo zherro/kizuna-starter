@@ -8,7 +8,6 @@ import { HomeSlider, type HomeSlide } from './home/home-slider';
 import { CategoryRail } from './home/category-rail';
 import { NearbyGrid } from './home/nearby-grid';
 import { HowItWorks } from './home/how-it-works';
-import { JoinCta } from './home/join-cta';
 import { SocialInstallCards } from './home/social-install-cards';
 import {
   getHomeInkStyle,
@@ -106,7 +105,6 @@ export function HomeContent({
       {categoryRails}
       <NearbyGrid t={t} />
       <HowItWorks t={t} />
-      <JoinCta t={t} />
       <SocialInstallCards t={t} instagramUrl={instagramUrl} />
       {inkPicker ? (
         <HomeInkTonePicker level={inkLevel} onChange={handleInkLevelChange} />
