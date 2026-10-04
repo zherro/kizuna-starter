@@ -136,6 +136,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // O nível de conta ("contato verificado") lê auth.users.email_verified_at — o próprio usuário
+    // grava na sua linha; service_role só como reserva.
+    const markVerified = (authHeader: string | null) =>
+      fetch(`${POSTGREST_URL}/users?uid=eq.${encodeURIComponent(session.user_id)}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept-Profile': 'auth',
+          'Content-Profile': 'auth',
+          ...(authHeader ? { Authorization: authHeader } : {}),
+        },
+        body: JSON.stringify({ email_verified_at: new Date().toISOString() }),
+      });
+    let verifiedRes = await markVerified(userAuthHeader);
+    if (!verifiedRes.ok && serviceAuthHeader) verifiedRes = await markVerified(serviceAuthHeader);
+    if (!verifiedRes.ok) {
+      console.error('[email.verify-code] users_patch_failed', verifiedRes.status, await verifiedRes.text());
+    }
+
     const stepId =
       (await fetchSecondStepId('advertiser', userAuthHeader)) ||
       (serviceAuthHeader ? await fetchSecondStepId('advertiser', serviceAuthHeader) : null);
