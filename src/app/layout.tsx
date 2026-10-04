@@ -39,6 +39,9 @@ const headerVariant = headerCfg?.variant === 'compact' ? 'compact' : 'classic';
 // (lista de temas disponíveis no _comment de lá).
 const defaultThemeColor = isThemeColor(cfg.theme?.default) ? cfg.theme.default : 'blue';
 const themeColorSelectable = cfg.theme?.selectable !== false;
+// Botão flutuante de preferências (tema/cor/idioma) — chave "preferences.fab" (padrão: visível).
+const showPreferencesFab =
+  (cfg as { preferences?: { fab?: boolean } }).preferences?.fab !== false;
 
 // Fonte de títulos — chave "theme.displayFont" (lista em DISPLAY_FONTS). Sem ela, vale o default do
 // estilo (soft = Baloo 2, classic = Quicksand), definido em globals.css.
@@ -223,7 +226,7 @@ export default function RootLayout({
                 },
               ]}
             />
-            <PreferencesFab />
+            {showPreferencesFab ? <PreferencesFab /> : null}
             <Toaster richColors position="bottom-center" />
             </ViewingCityProvider>
           </AuthProvider>

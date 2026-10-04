@@ -28,6 +28,10 @@
     "_comment": "\"variant\": classic (padrão) | compact — layout do cabeçalho do site.",
     "variant": "classic"
   },
+  "preferences": {
+    "_comment": "Botão flutuante de preferências (tema claro/escuro, cor e idioma), no canto da tela em todas as páginas. \"fab\": false esconde o botão; o site segue o modo do sistema e o tema padrão (theme.default).",
+    "fab": false
+  },
   "location": {
     "_comment": "Seletor de local do header (plugin location). Lista só as cidades com location_city.search_city = true (seed em db/extras/location_seed_bora_cuiaba.sql). \"outsideList\": cidade detectada por GPS/IP fora da lista → prompt (abre o seletor) | default (seleciona \"defaultCityIbge\", código IBGE de 7 dígitos, que precisa estar marcada). Ver kizuna-core/docs/plugins/location.md.",
     "outsideList": "default",
