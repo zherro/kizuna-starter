@@ -179,7 +179,10 @@ export default function RootLayout({
               brandLogo={site?.logo ?? undefined}
               actions={
                 cfg.weather ? (
-                  <WeatherWidget forecastModal={cfg.weather.forecastModal !== false} />
+                  // Clima só a partir de tablet: no celular o header fica só com logo e conta.
+                  <div className="hidden md:flex">
+                    <WeatherWidget forecastModal={cfg.weather.forecastModal !== false} />
+                  </div>
                 ) : undefined
               }
               navLinks={[
