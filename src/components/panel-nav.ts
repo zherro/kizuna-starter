@@ -24,6 +24,7 @@ import {
   UserCircle,
   UserCog,
   HardDrive,
+  Sparkles,
 } from 'lucide-react';
 import { vocabulary } from '@/lib/vocabulary';
 import type { PanelNavGroup } from '@kizuna/core/client/components/panel-shell';
@@ -154,6 +155,12 @@ export const navigationGroups: PanelNavGroup[] = [
         icon: ClipboardCheck,
         rootOnly: true,
       },
+      {
+        title: 'Revisão por IA',
+        href: '/painel/administracao/revisao-ia',
+        icon: Sparkles,
+        rootOnly: true,
+      },
       { title: 'Teste de funções', href: '/painel/funcoes', icon: FlaskConical, devOnly: true, rootOnly: true },
     ],
   },
@@ -168,6 +175,7 @@ export const navigationGroups: PanelNavGroup[] = [
         icon: Settings,
         rootOnly: true,
       },
+      { title: 'Inteligência artificial', href: '/painel/root/ia', icon: Sparkles, rootOnly: true },
       { title: 'Storage e imagens', href: '/painel/root/storage', icon: HardDrive, rootOnly: true },
       {
         title: 'Log de acesso root',

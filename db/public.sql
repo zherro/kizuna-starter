@@ -3,15 +3,7 @@
 -- Aplicar DEPOIS do db/auth.sql, em base limpa:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/public.sql
 -- Ordem = kizuna.plugins.json (ordem de dependência).
-<<<<<<< HEAD
-<<<<<<< HEAD
--- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (2), onboarding (1), storage (6), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (3), services (8), reviews (1), analytics (1), search (3), swipe (2), messaging (1), ai_assistant (1), demandas (4), pedidos (4)
-=======
--- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (2), onboarding (1), storage (4), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (4), services (8), reviews (1), analytics (1), search (3), swipe (2), messaging (1), ai_assistant (1), ai_review (1), demandas (4), pedidos (4)
->>>>>>> 4f07107 (IA text review)
-=======
 -- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (2), onboarding (1), storage (6), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (4), services (8), reviews (1), analytics (1), search (3), swipe (2), messaging (1), ai_assistant (1), ai_review (1), demandas (4), pedidos (4)
->>>>>>> 4cadc1a (IA text review)
 
 
 -- ===============================================================================================
