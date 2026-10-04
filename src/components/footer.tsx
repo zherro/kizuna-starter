@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAppPreferences } from "@kizuna/core/client/providers/app-preferences-provider";
 import { Button } from "@kizuna/core/client/components/ui/button";
-import { GitBranchIcon, Moon, Sun } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import cfg from "@/../kizuna.config.json";
 
 // Versão do app (env APP_VERSION, incrementada por push) + versão do core — ver next.config.ts.
@@ -24,6 +24,26 @@ const AUTH_ROUTES = new Set(["/login", "/registre-se"]);
 // também não mostra cor, idioma e modo escuro.
 const showPreferences =
   (cfg as { preferences?: { fab?: boolean } }).preferences?.fab !== false;
+
+/** Ícone do Instagram (o lucide-react não traz mais ícones de marca). */
+function InstagramIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect x="2" y="2" width="20" height="20" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
 
 export function Footer() {
   const pathname = usePathname();
@@ -74,10 +94,11 @@ export function Footer() {
   ];
 
   const socialLinks = [
-    { href: "https://github.com", label: "GitHub", icon: GitBranchIcon },
-    { href: "https://twitter.com", label: "Twitter", icon: GitBranchIcon },
-    { href: "https://instagram.com", label: "Instagram", icon: GitBranchIcon },
-    { href: "https://linkedin.com", label: "LinkedIn", icon: GitBranchIcon },
+    {
+      href: "https://www.instagram.com/boracuiaba.ofc",
+      label: "Instagram",
+      icon: InstagramIcon,
+    },
   ];
 
   return (
