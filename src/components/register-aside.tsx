@@ -8,7 +8,7 @@ import { RegisterArt } from '@/components/register-art';
 export function RegisterAside() {
   return (
     <div className="flex flex-col gap-8">
-      <RegisterArt className="max-w-[16rem] md:max-w-[22rem]" />
+      <RegisterArt className="mx-auto block max-w-[16rem] md:mx-0 md:max-w-[22rem]" />
       <div className="space-y-3">
         <Typography.H1 size="5xl" font="display" weight="bold" className="leading-[1.1] tracking-tight">
           Conecte-se ao que acontece
