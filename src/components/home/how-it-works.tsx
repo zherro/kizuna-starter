@@ -1,15 +1,17 @@
-import { Handshake, MessageCircle, Search } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, Megaphone, PartyPopper, Search } from 'lucide-react';
 import type { AppMessages } from '@/i18n/messages';
 
 type HomeMessages = AppMessages['home'];
 
-const STEP_ICONS = [Search, MessageCircle, Handshake];
+const STEP_ICONS = [Search, PartyPopper, Megaphone];
 
 export function HowItWorks({ t }: { t: HomeMessages }) {
-  const steps = [
+  const steps: { n: number; title: string; text: string; cta?: { href: string; label: string } }[] = [
     { n: 1, title: t.step1Title, text: t.step1Text },
     { n: 2, title: t.step2Title, text: t.step2Text },
-    { n: 3, title: t.step3Title, text: t.step3Text },
+    // Chamada pra anunciar — visitante cai no login e volta (o proxy protege /painel).
+    { n: 3, title: t.step3Title, text: t.step3Text, cta: { href: '/painel/meus-servicos/novo', label: t.step3Cta } },
   ];
 
   return (
@@ -33,6 +35,14 @@ export function HowItWorks({ t }: { t: HomeMessages }) {
                 <h3 className="text-2xl font-light tracking-tight text-foreground">{step.title}</h3>
               </div>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">{step.text}</p>
+              {step.cta && (
+                <Link
+                  href={step.cta.href}
+                  className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+                >
+                  {step.cta.label} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+              )}
             </li>
           );
         })}

@@ -240,6 +240,7 @@ export type AppMessages = {
     step2Text: string;
     step3Title: string;
     step3Text: string;
+    step3Cta: string;
     joinKicker: string;
     joinTitle: string;
     joinText: string;
@@ -336,10 +337,11 @@ export const messages: Record<AppLanguage, AppMessages> = {
       howTitle: 'Como funciona',
       step1Title: 'Descubra',
       step1Text: 'Eventos, filmes em cartaz, lugares e serviços da sua cidade, tudo num só lugar.',
-      step2Title: 'Escolha',
-      step2Text: 'Veja data, local, fotos e detalhes. Compre o ingresso ou fale direto com o lugar.',
-      step3Title: 'Bora!',
-      step3Text: 'Chama a galera, compartilha o rolê e aproveita o melhor da cidade.',
+      step2Title: 'Bora!',
+      step2Text: 'Chama a galera, compartilha o rolê e aproveita o melhor da cidade.',
+      step3Title: 'Anuncie',
+      step3Text: 'Tem um evento ou negócio? Divulgue de graça e apareça para quem está procurando o que fazer.',
+      step3Cta: 'Anunciar meu evento ou negócio',
       joinKicker: 'Para quem oferece serviço',
       joinTitle: 'Você também faz?',
       joinText: 'Publique seu serviço de graça e apareça para quem procura na sua região.',
@@ -435,10 +437,11 @@ export const messages: Record<AppLanguage, AppMessages> = {
       howTitle: 'How it works',
       step1Title: 'Discover',
       step1Text: 'Events, movies now showing, places and services in your city, all in one place.',
-      step2Title: 'Choose',
-      step2Text: 'Check the date, venue, photos and details. Buy your ticket or contact the place directly.',
-      step3Title: "Let's go!",
-      step3Text: 'Call your friends, share the plan and enjoy the best of the city.',
+      step2Title: "Let's go!",
+      step2Text: 'Call your friends, share the plan and enjoy the best of the city.',
+      step3Title: 'Advertise',
+      step3Text: 'Have an event or a business? Promote it for free and reach people looking for things to do.',
+      step3Cta: 'Advertise my event or business',
       joinKicker: 'For service providers',
       joinTitle: 'You do this too?',
       joinText: 'Post your service for free and show up for people searching in your area.',
@@ -534,10 +537,11 @@ export const messages: Record<AppLanguage, AppMessages> = {
       howTitle: 'Cómo funciona',
       step1Title: 'Descubre',
       step1Text: 'Eventos, películas en cartelera, lugares y servicios de tu ciudad, todo en un solo lugar.',
-      step2Title: 'Elige',
-      step2Text: 'Mira fecha, lugar, fotos y detalles. Compra tu entrada o habla directo con el lugar.',
-      step3Title: '¡Vamos!',
-      step3Text: 'Llama a tus amigos, comparte el plan y disfruta lo mejor de la ciudad.',
+      step2Title: '¡Vamos!',
+      step2Text: 'Llama a tus amigos, comparte el plan y disfruta lo mejor de la ciudad.',
+      step3Title: 'Anuncia',
+      step3Text: '¿Tienes un evento o negocio? Publícalo gratis y llega a quien busca qué hacer.',
+      step3Cta: 'Anunciar mi evento o negocio',
       joinKicker: 'Para quienes ofrecen servicios',
       joinTitle: '¿Tú también lo haces?',
       joinText: 'Publica tu servicio gratis y aparece para quienes buscan en tu zona.',
