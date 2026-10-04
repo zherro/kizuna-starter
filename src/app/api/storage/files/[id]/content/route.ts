@@ -1,5 +1,5 @@
 import { getAuthHeaderFromCookies, getSession } from '@kizuna/core/server';
-import { getStorageService } from '@kizuna/core/server';
+import { fileContentSizeFromRequest, getStorageService } from '@kizuna/core/server';
 
 export const runtime = 'nodejs';
 
@@ -7,7 +7,7 @@ type Params = {
   params: Promise<{ id: string }>;
 };
 
-export async function GET(_request: Request, { params }: Params) {
+export async function GET(request: Request, { params }: Params) {
   const session = await getSession();
   if (!session) {
     return new Response('Sessao expirada. Faca login novamente.', { status: 401 });
@@ -25,6 +25,8 @@ export async function GET(_request: Request, { params }: Params) {
     authHeader,
     id,
     activeOnly: true,
+    // `?size=thumb` → miniatura (cards/galeria); sem ela, a imagem grande.
+    size: fileContentSizeFromRequest(request),
   });
 
   if (!found) {

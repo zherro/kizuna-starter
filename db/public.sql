@@ -3,7 +3,7 @@
 -- Aplicar DEPOIS do db/auth.sql, em base limpa:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/public.sql
 -- Ordem = kizuna.plugins.json (ordem de dependência).
--- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (2), onboarding (1), storage (4), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (3), services (8), reviews (1), analytics (1), search (3), swipe (2), messaging (1), ai_assistant (1), demandas (4), pedidos (4)
+-- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (2), onboarding (1), storage (6), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (3), services (8), reviews (1), analytics (1), search (3), swipe (2), messaging (1), ai_assistant (1), demandas (4), pedidos (4)
 
 
 -- ===============================================================================================
@@ -881,7 +881,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: storage  (4 arquivos)
+-- PLUGIN: storage  (6 arquivos)
 -- ===============================================================================================
 
 
@@ -1055,6 +1055,66 @@ ALTER TABLE public.files ADD CONSTRAINT files_purpose_check CHECK (purpose IN (
 
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('storage', '1.3.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/storage/0005_storage_thumbnails.sql
+-- ===============================================================================================
+
+-- plugins/storage/0005_storage_thumbnails.sql
+-- Miniatura das imagens, na mesma linha do arquivo: `content` continua sendo a versão grande
+-- (detalhe do anúncio, lightbox, swipe) e `thumb_content` guarda uma versão pequena (WebP, até
+-- 640px no maior lado, proporção mantida) para cards, busca, carrosséis e galeria do painel.
+-- O `id` é o mesmo — nenhuma referência (`extras.images`, `cover_file_id`, avatar…) muda; quem
+-- quer a miniatura pede `/content?size=thumb`. Sem miniatura (imagem já pequena, arquivo que não
+-- é imagem, ou gravado antes desta migration) a rota devolve `content` mesmo.
+--
+-- Preenchido no upload (`storage-service.ts` → `optimizeImageWithThumbnail`). O que já existia ou
+-- foi gravado direto no banco (ex.: importação por robô) fica sem miniatura até ser reotimizado.
+
+ALTER TABLE public.files ADD COLUMN IF NOT EXISTS thumb_content bytea;
+ALTER TABLE public.files ADD COLUMN IF NOT EXISTS thumb_size_bytes int;
+ALTER TABLE public.files ADD COLUMN IF NOT EXISTS thumb_width int;
+ALTER TABLE public.files ADD COLUMN IF NOT EXISTS thumb_height int;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('storage', '1.4.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/storage/0006_storage_optimize_admin.sql
+-- ===============================================================================================
+
+-- plugins/storage/0006_storage_optimize_admin.sql
+-- Tela de storage do root (`/painel/root/storage`): lista as imagens e reotimiza as existentes no
+-- próprio registro (mesmo `id`), gerando a miniatura de 0005.
+--
+-- 1) `optimized_at`: quando a imagem passou pelo otimizador (upload novo ou reotimização). `NULL`
+--    = pendente — é o filtro "não otimizadas" da tela. Imagens gravadas fora do upload (ex.:
+--    importação por robô direto no banco) nascem pendentes.
+-- 2) `service_role` (sql/0117, BYPASSRLS): o servidor lê e regrava arquivos de qualquer dono só
+--    nessa operação de root — a sessão do root não passa na policy de UPDATE (dono do arquivo).
+
+ALTER TABLE public.files ADD COLUMN IF NOT EXISTS optimized_at timestamptz;
+
+CREATE INDEX IF NOT EXISTS idx_files_pending_optimize ON public.files(created_at)
+  WHERE optimized_at IS NULL AND active;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    GRANT SELECT, UPDATE ON TABLE public.files TO service_role;
+  END IF;
+END $$;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('storage', '1.5.0')
 ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
 
 NOTIFY pgrst, 'reload schema';

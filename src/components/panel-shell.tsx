@@ -25,6 +25,7 @@ import {
   Star,
   UserCircle,
   UserCog,
+  HardDrive,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import cfg from '@/../kizuna.config.json';
@@ -178,6 +179,7 @@ const navigationGroups: PanelNavGroup[] = [
         icon: Settings,
         rootOnly: true,
       },
+      { title: 'Storage e imagens', href: '/painel/root/storage', icon: HardDrive, rootOnly: true },
       {
         title: 'Log de acesso root',
         href: '/painel/security/root-access-log',

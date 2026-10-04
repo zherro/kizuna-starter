@@ -1,4 +1,4 @@
-import { pgrstTable } from '@kizuna/core/server';
+import { fileContentSizeFromRequest, pgrstTable } from '@kizuna/core/server';
 
 export const runtime = 'nodejs';
 
@@ -10,7 +10,8 @@ type FileRow = {
   id: string;
   original_name: string;
   mime_type: string | null;
-  content: string | null; // bytea como hex (\xABCD...)
+  content?: string | null; // bytea como hex (\xABCD...)
+  thumb_content?: string | null;
   active: boolean;
 };
 
@@ -23,7 +24,23 @@ function fromPgBytea(value: unknown): Buffer | null {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export async function GET(_request: Request, { params }: Params) {
+/** Lê só a coluna pedida (`content` ou `thumb_content`) — não trafega as duas versões juntas. */
+async function fetchRow(id: string, column: 'content' | 'thumb_content'): Promise<FileRow | null> {
+  const response = await pgrstTable(
+    `/files?select=id,original_name,mime_type,${column},active&id=eq.${id}&active=eq.true&limit=1`,
+    // `public.files` — PostgREST's default schema is `auth`, so this must be explicit or the
+    // query resolves against `auth.files` (which doesn't exist) and 404s every time. `pgrstTable`
+    // (unlike `pgrstRpc`) has no `opts.schema` — it must go through `init.headers` directly, same
+    // as every other `pgrstTable` caller touching a non-default schema (see storage-service.ts).
+    { headers: { 'Accept-Profile': 'public' } },
+    { auth: null }
+  );
+  if (!response.ok) return null;
+  const rows = (await response.json().catch(() => [])) as FileRow[];
+  return rows[0] ?? null;
+}
+
+export async function GET(request: Request, { params }: Params) {
   const { id } = await params;
 
   // `files.id` is a uuid (see kizuna-core/plugins/storage/0001_storage.sql), not a numeric id.
@@ -32,32 +49,31 @@ export async function GET(_request: Request, { params }: Params) {
     return new Response('ID inválido.', { status: 400 });
   }
 
-  const response = await pgrstTable(
-    `/files?select=id,original_name,mime_type,content,active&id=eq.${cleanId}&active=eq.true&limit=1`,
-    // `public.files` — PostgREST's default schema is `auth`, so this must be explicit or the
-    // query resolves against `auth.files` (which doesn't exist) and 404s every time. `pgrstTable`
-    // (unlike `pgrstRpc`) has no `opts.schema` — it must go through `init.headers` directly, same
-    // as every other `pgrstTable` caller touching a non-default schema (see storage-service.ts).
-    { headers: { 'Accept-Profile': 'public' } },
-    { auth: null }
-  );
+  // `?size=thumb` → miniatura (cards, busca, carrosséis); sem miniatura gravada, a imagem grande.
+  const wantsThumb = fileContentSizeFromRequest(request) === 'thumb';
 
-  if (!response.ok) {
-    return new Response('Arquivo não encontrado.', { status: 404 });
+  let found: FileRow | null = null;
+  let content: Buffer | null = null;
+  let mimeOverride: string | null = null;
+
+  if (wantsThumb) {
+    found = await fetchRow(cleanId, 'thumb_content');
+    if (!found) return new Response('Arquivo não encontrado.', { status: 404 });
+    content = fromPgBytea(found.thumb_content);
+    if (content) mimeOverride = 'image/webp';
   }
 
-  const rows = (await response.json().catch(() => [])) as FileRow[];
-  const found = rows[0];
-  if (!found) {
-    return new Response('Arquivo não encontrado.', { status: 404 });
-  }
-
-  const content = fromPgBytea(found.content);
   if (!content) {
+    found = await fetchRow(cleanId, 'content');
+    if (!found) return new Response('Arquivo não encontrado.', { status: 404 });
+    content = fromPgBytea(found.content);
+  }
+
+  if (!found || !content) {
     return new Response('Conteúdo do arquivo indisponível.', { status: 404 });
   }
 
-  const mimeType = found.mime_type ?? 'application/octet-stream';
+  const mimeType = mimeOverride ?? found.mime_type ?? 'application/octet-stream';
   const safeName = (found.original_name ?? `file-${cleanId}`).replace(/"/g, '');
 
   return new Response(new Blob([new Uint8Array(content)]), {
