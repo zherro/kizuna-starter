@@ -29,7 +29,7 @@
     "variant": "classic"
   },
   "preferences": {
-    "_comment": "Botão flutuante de preferências (tema claro/escuro, cor e idioma), no canto da tela em todas as páginas. \"fab\": false esconde o botão; o site segue o modo do sistema e o tema padrão (theme.default).",
+    "_comment": "Preferências de tema claro/escuro, cor e idioma: o botão flutuante no canto da tela e os seletores do rodapé. \"fab\": false esconde os dois; o site segue o modo do sistema e o tema padrão (theme.default).",
     "fab": false
   },
   "location": {

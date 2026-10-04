@@ -20,6 +20,11 @@ const siteLogo = cfg.site?.logo ?? undefined;
 
 const AUTH_ROUTES = new Set(["/login", "/registre-se"]);
 
+// Mesma chave do botão flutuante (kizuna.config.json → preferences.fab): desligada, o rodapé
+// também não mostra cor, idioma e modo escuro.
+const showPreferences =
+  (cfg as { preferences?: { fab?: boolean } }).preferences?.fab !== false;
+
 export function Footer() {
   const pathname = usePathname();
   const isPainelRoute = pathname.startsWith("/painel");
@@ -102,52 +107,54 @@ export function Footer() {
               {messages.footer.tagline}
             </p>
 
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              {themeColorSelectable && (
+            {showPreferences ? (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                {themeColorSelectable && (
+                  <select
+                    value={themeColor}
+                    onChange={(e) =>
+                      setThemeColor(e.target.value as typeof themeColor)
+                    }
+                    aria-label={messages.nav.color}
+                    className="h-9 rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    {themeColors.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
                 <select
-                  value={themeColor}
-                  onChange={(e) =>
-                    setThemeColor(e.target.value as typeof themeColor)
-                  }
-                  aria-label={messages.nav.color}
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value as typeof language)}
+                  aria-label={messages.nav.language}
                   className="h-9 rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
                 >
-                  {themeColors.map((c) => (
-                    <option key={c.value} value={c.value}>
-                      {c.label}
+                  {languages.map((item) => (
+                    <option key={item} value={item}>
+                      {languageNames[item]}
                     </option>
                   ))}
                 </select>
-              )}
 
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as typeof language)}
-                aria-label={messages.nav.language}
-                className="h-9 rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-              >
-                {languages.map((item) => (
-                  <option key={item} value={item}>
-                    {languageNames[item]}
-                  </option>
-                ))}
-              </select>
-
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label={messages.nav.theme}
-                onClick={() =>
-                  setTheme(resolvedTheme === "dark" ? "light" : "dark")
-                }
-              >
-                {resolvedTheme === "dark" ? (
-                  <Sun className="h-4 w-4" />
-                ) : (
-                  <Moon className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label={messages.nav.theme}
+                  onClick={() =>
+                    setTheme(resolvedTheme === "dark" ? "light" : "dark")
+                  }
+                >
+                  {resolvedTheme === "dark" ? (
+                    <Sun className="h-4 w-4" />
+                  ) : (
+                    <Moon className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            ) : null}
           </div>
 
           {/* Col 2 — Navigation */}
