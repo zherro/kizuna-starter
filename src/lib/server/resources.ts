@@ -23,6 +23,7 @@ import {
 } from '@kizuna/core/client/components/screen-engine/resources/swipe';
 import { resourceAnalytics, rpcAnalytics } from '@kizuna/core/client/components/screen-engine/resources/analytics';
 import { resourceTickets } from '@kizuna/core/client/components/screen-engine/resources/tickets';
+import { resourceUserData } from '@kizuna/core/client/components/screen-engine/resources/user-data';
 import type { ResourceConfig, RpcConfig } from '@kizuna/core/types';
 
 export { parseActive, makeSlug } from '@kizuna/core/types';
@@ -46,6 +47,8 @@ export const postgrestResources: Record<string, ResourceConfig> = {
   ...(resourceTickets as Record<string, ResourceConfig>),
   // swipe plugin — reações do usuário (gostei/favorito) por anúncio; RLS por dono.
   ...(resourceServiceReactions as Record<string, ResourceConfig>),
+  // user_data plugin — perfil da conta (Minha conta); RLS limita à própria linha.
+  ...(resourceUserData as Record<string, ResourceConfig>),
   // ...spread aqui os recursos do seu app: ...resourceMeuDominio,
 };
 

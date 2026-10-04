@@ -27,7 +27,8 @@
     "onboarding": {
       "shellFiles": {
         "src/app/api/onboarding/progress/route.ts": "sha256:5e7d61d70db8ec408a547547e0823f0c77fb6ff023666544bc78c093ee5a9488",
-        "src/app/api/onboarding/email/verify-code/route.ts": "sha256:a1bdb8775925ce406318e7e143dc9c05c6c0542cac6b4f9a2b0e94799a761f5b"
+        "src/app/api/onboarding/email/verify-code/route.ts": "sha256:20bbf275b44c9bbe221654b8c811758aaf4cc8460e6149215d68eb1fe27a8984",
+        "src/app/api/onboarding/email/request-code/route.ts": "sha256:b176dadbbf20d7c2e64e3b1214773904bbc59cd2e80bb43c78e2424eb38ae4e2"
       },
       "migrations": 1
     },
@@ -168,6 +169,7 @@
     "src/app/api/location/ip/route.ts",
     "src/app/api/location/reverse/route.ts",
     "src/app/api/location/states/route.ts",
+    "src/app/api/onboarding/email/request-code/route.ts",
     "src/app/api/onboarding/email/verify-code/route.ts",
     "src/app/api/onboarding/progress/route.ts",
     "src/app/api/pages/revalidate/route.ts",
