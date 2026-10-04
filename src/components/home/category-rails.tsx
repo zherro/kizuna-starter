@@ -7,6 +7,8 @@
 // (`serviceDetail`: cinema sem preço, cor de acento...). Categoria inexistente/sem anúncio some.
 import { loadCategoryRail } from '@kizuna/core/server';
 import type { RoutableCity } from '@kizuna/core/shared/city-routing/city-slug';
+import { parseRegions, regionCitiesFor } from '@kizuna/core/shared/regions';
+import cfg from '@/../kizuna.config.json';
 import {
   ShuffledServiceCarouselSection,
   resolveCategoryHue,
@@ -22,7 +24,11 @@ export type CategoryRailConfig = {
   title?: string;
   /** máximo de cards (default 10); se vierem todos, a trilha termina com o card "Ver mais" */
   limit?: number;
+  /** "city" (padrão): só a cidade da página; "region": a cidade + vizinhas da região (`regions`). */
+  scope?: 'city' | 'region';
 };
+
+const regions = parseRegions((cfg as { regions?: unknown }).regions);
 
 export async function CategoryRails({
   rails,
@@ -37,7 +43,11 @@ export async function CategoryRails({
   const loaded = await Promise.all(
     rails.map((rail) => loadCategoryRail(
         rail.group ? { group: rail.group } : { slug: rail.slug ?? '' },
-        { limit: rail.limit, cityIbge: city?.ibge }
+        {
+          limit: rail.limit,
+          cityIbge: city?.ibge,
+          cityIbges: city && rail.scope === 'region' ? regionCitiesFor(regions, city.ibge) : undefined,
+        }
       ))
   );
   const cityQuery = city
@@ -61,7 +71,7 @@ export async function CategoryRails({
             detailConfig={detailConfig}
             className="mx-auto w-full max-w-[1600px] px-4 pb-8 sm:px-6"
             moreHref={hasMore ? `/busca?${searchFilter}${cityQuery}` : undefined}
-            showCity={!city}
+            showCity={!city || rails[index].scope === 'region'}
           />
         );
       })}

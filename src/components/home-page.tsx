@@ -19,7 +19,7 @@ const home = cfg.home as typeof cfg.home & {
 };
 const slider = home?.slider;
 const sliderSlides = slider?.enabled === false ? [] : (slider?.slides ?? []);
-const categoryRails = (home?.categoryRails ?? []).filter((rail) => rail?.slug);
+const categoryRails = ((home?.categoryRails ?? []) as CategoryRailConfig[]).filter((rail) => rail?.slug);
 const serviceDetailConfig = (cfg as { serviceDetail?: ServiceDetailConfig }).serviceDetail ?? null;
 const inkLevel = HOME_INK_LEVELS.includes(home?.inkLevel as HomeInkLevel)
   ? (home.inkLevel as HomeInkLevel)

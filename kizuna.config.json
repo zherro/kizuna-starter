@@ -32,6 +32,20 @@
     "_comment": "Preferências de tema claro/escuro, cor e idioma: o botão flutuante no canto da tela e os seletores do rodapé. \"fab\": false esconde os dois; o site segue o modo do sistema e o tema padrão (theme.default).",
     "fab": false
   },
+  "regions": [
+    {
+      "_comment": "Regiões: cidades vizinhas cujos anúncios são SUGERIDOS além da cidade selecionada (ela vem sempre primeiro; o seletor continua escolhendo uma cidade só). cities = códigos IBGE. suggestTo = regiões cujos visitantes também veem esta como sugestão. Usado pela busca (seções abaixo dos resultados) e pelos carrosséis da home com \"scope\": \"region\".",
+      "key": "grande-cuiaba",
+      "title": "Também na Grande Cuiabá",
+      "cities": ["5103403", "5108402"]
+    },
+    {
+      "key": "chapada",
+      "title": "Para o fim de semana em Chapada",
+      "cities": ["5103007"],
+      "suggestTo": ["grande-cuiaba"]
+    }
+  ],
   "location": {
     "_comment": "Seletor de local do header (plugin location). Lista só as cidades com location_city.search_city = true (seed em db/extras/location_seed_bora_cuiaba.sql). \"outsideList\": cidade detectada por GPS/IP fora da lista → prompt (abre o seletor) | default (seleciona \"defaultCityIbge\", código IBGE de 7 dígitos, que precisa estar marcada). Ver kizuna-core/docs/plugins/location.md.",
     "outsideList": "default",
@@ -144,9 +158,9 @@
     "_comment": "\"inkPicker\": mostra o seletor de intensidade do fundo escuro dos cards (false esconde). \"inkLevel\": intensidade padrão (1-7); com o seletor ativo, a escolha salva do usuário prevalece.",
     "inkPicker": false,
     "inkLevel": 6,
-    "_comment_categoryRails": "Carrosséis por categoria ou grupo na home (um por item, na ordem). slug = categories.slug OU group = categories_group.slug; mesma base da busca (só ativos e não expirados), ordem embaralhada a cada visita; title opcional (default = nome da categoria); limit opcional (default 10) — se houver mais que isso, a trilha termina com o card \"Ver mais\" (leva à busca da categoria). O estilo dos cards vem de serviceDetail. Categoria sem anúncios não aparece.",
+    "_comment_categoryRails": "Carrosséis por categoria ou grupo na home (um por item, na ordem). slug = categories.slug OU group = categories_group.slug; mesma base da busca (só ativos e não expirados), ordem embaralhada a cada visita; title opcional (default = nome da categoria); limit opcional (default 10) — se houver mais que isso, a trilha termina com o card \"Ver mais\" (leva à busca da categoria). scope: \"city\" (padrão, só a cidade da página) | \"region\" (a cidade + as vizinhas da mesma região em `regions`, com a cidade no card). O estilo dos cards vem de serviceDetail. Categoria sem anúncios não aparece.",
     "categoryRails": [
-      { "slug": "cinema", "title": "Cinema - em cartaz", "limit": 10 }
+      { "slug": "cinema", "title": "Cinema - em cartaz", "limit": 10, "scope": "region" }
     ]
   },
   "serviceDetail": {
