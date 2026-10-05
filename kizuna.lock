@@ -2,8 +2,8 @@
   "lockVersion": 1,
   "kizunaCore": {
     "version": "0.9.10",
-    "sha": "803a3b44d51adf612b9010e1b9faf3361b5790ca",
-    "syncedAt": "2026-10-04T16:10:58.444Z"
+    "sha": "faecfc7a3bf600a402cf64a05ba1fd95997f773d",
+    "syncedAt": "2026-10-05T20:45:34.687Z"
   },
   "template": {
     "version": "0.9.10",
@@ -57,7 +57,7 @@
       "src/lib/server/postgrest-crud.ts": "sha256:1071b9d4a24d4ac6b984e23e622ecbe2cb8d83c6a29f3634bd892df383d5a684"
     },
     "seeds": {
-      ".gitignore": "sha256:59f48c51a702f2d9cd736a2819102c027e2f76954b9d15f1b44134de71922a08",
+      ".gitignore": "sha256:f9583f39a199b3318badfb8f15cac264ce7272ec871580379c42ca9c5543bca2",
       "next.config.ts": "sha256:345cf035e06ae0522900aea450d405cf04e6f6794e0b85c9df99f43f6e346129",
       "postcss.config.mjs": "sha256:9ca55411b62b2c9cc5631a3e6c631d80c8b8171c7b9ea1e19f83400f4100e910",
       "public/sw.js": "sha256:d8f283da4ed47727c363c82e49c49b20785f0ced76143f4fa1f8f7b9cda859b9",
@@ -79,14 +79,14 @@
       "src/components/home/nearby-grid.tsx": "sha256:9e4e1e9cfbcb566d2a872b0d523451861d7b6cab5ef763b40dd6240fa43d8708",
       "src/components/onboarding-banner.tsx": "sha256:606bd28940429f4111d2d6c2066c01dbf1960f2ad8d0a786e5e0a57ac03b9ffa",
       "src/components/painel-wrapper.tsx": "sha256:b8e02840f129312c907009fd6e321c8ce5f729c08d382be40bad74f7ad22f9c1",
-      "src/components/panel-nav.ts": "sha256:fc8cfb7401fe6483d0680a9e9e182d0dfe2e7708c8b1b8cdf686e5903cf559ea",
+      "src/components/panel-nav.ts": "sha256:842e60d98f2f4693cf76cbbf9585ec78db97357fcd47da0ade6cd330af05e9da",
       "src/components/panel-shell.tsx": "sha256:f8d2d7075013cb363f908fbc5545a25d366a64609910933c76f545c82e69ff30",
       "src/lib/account-levels.ts": "sha256:35229ef32897f4397d28e8af3e695721a761131be9ddc2bad649e1e235f45cca",
       "src/lib/analytics.ts": "sha256:0a33305fefc8f93b3f9f93696543ff7a7f567932ce4eb295e7a98d0253a9bcd2",
       "src/lib/seo.ts": "sha256:54bc3278b4fffa22766b7d2064c90d10c9e8d198ee4b53f739106df9bff960b3",
       "src/lib/server/account-levels.ts": "sha256:3dba4ed8a870666e64b91d33561dcf6f39246b90c7bb4853ca1c692128726b4a",
       "src/lib/server/app-preferences-config.ts": "sha256:0169ab5bfd12c9704655be103b9667384ce1cedd3715961b8be1b65fa3261a75",
-      "src/lib/server/resources.ts": "sha256:05ca239b98c30d766a0c2d114e2e9b257024ea4a630a709d74e85e994a406afa",
+      "src/lib/server/resources.ts": "sha256:90c8e070a3d2b43e0c7dadac316dc6941c790f43e868bae3f482069bcc7ebc7e",
       "src/lib/server/user-data-fields-config.ts": "sha256:c8a7fa2f3f4575b0dd7308cfa8ab559d2e0010e35c969189d483ea9e997fcaff",
       "src/lib/vocabulary.ts": "sha256:f786af056fe65dbcfca85a4034f2846b8d4b51a2a2e997e0eec78db727aa5a61",
       "tsconfig.json": "sha256:0e5ca2fe48b532e89ee32244b0951a01f0ae7265d45c88481710c4ae0e357f91"
@@ -170,9 +170,10 @@
     "swipe": {
       "shellFiles": {
         "src/app/descobrir/page.tsx": "sha256:e3af5089b974a6ebbcd62eda1c194788e8d40d1f5d661f31c4e663e20e1019a3",
-        "src/app/curtidos/page.tsx": "sha256:e31226563533e928c2d0e9434812a1ef9026e038edc4e762c672b521710fa116"
+        "src/app/curtidos/page.tsx": "sha256:e31226563533e928c2d0e9434812a1ef9026e038edc4e762c672b521710fa116",
+        "src/app/painel/favoritos/page.tsx": "sha256:2ed4359c884229d44895aa39c7db41dd26711b502bb8538e2ca4d46d12796796"
       },
-      "migrations": 2
+      "migrations": 4
     },
     "tickets": {
       "shellFiles": {
@@ -191,7 +192,7 @@
         "src/app/painel/administracao/aprovacoes/page.tsx": "sha256:ce76e71d93620cb9b229d093890e7ed596b3de352d83858364dae046bd09eb9a",
         "src/app/painel/administracao/aprovacoes/[id]/page.tsx": "sha256:a50365c0f2e802c50c01b1d74c0a00fa0521e6f14c5aec06012ec3a54733c914"
       },
-      "migrations": 8
+      "migrations": 9
     },
     "forms": {
       "migrations": 1
@@ -352,6 +353,7 @@
     "src/app/painel/chamados/[id]/page.tsx",
     "src/app/painel/chamados/novo/page.tsx",
     "src/app/painel/chamados/page.tsx",
+    "src/app/painel/favoritos/page.tsx",
     "src/app/painel/layout.tsx",
     "src/app/painel/metricas/page.tsx",
     "src/app/painel/meus-servicos/[serviceId]/page.tsx",
