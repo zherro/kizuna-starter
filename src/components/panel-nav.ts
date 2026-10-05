@@ -20,6 +20,7 @@ import {
   PlusCircle,
   NotebookPen,
   Settings,
+  Heart,
   Star,
   UserCircle,
   UserCog,
@@ -61,6 +62,13 @@ export const navigationGroups: PanelNavGroup[] = [
         href: '/painel/administracao/avaliacoes',
         icon: Star,
         permResource: 'reviews',
+      },
+      {
+        // favorites/view (plugins/swipe/0004): mesma lista do /curtidos.
+        title: 'Favoritos',
+        href: '/painel/favoritos',
+        icon: Heart,
+        permResource: 'favorites',
       },
     ],
   },

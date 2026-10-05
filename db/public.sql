@@ -3,7 +3,7 @@
 -- Aplicar DEPOIS do db/auth.sql, em base limpa:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/public.sql
 -- Ordem = kizuna.plugins.json (ordem de dependência).
--- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (3), onboarding (1), storage (6), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (4), services (9), reviews (1), analytics (2), search (3), swipe (3), messaging (1), ai_assistant (1), ai_review (1), demandas (4), pedidos (4)
+-- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (3), onboarding (1), storage (6), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (4), services (9), reviews (1), analytics (2), search (3), swipe (4), messaging (1), ai_assistant (1), ai_review (1), demandas (4), pedidos (4)
 
 
 -- ===============================================================================================
@@ -5094,7 +5094,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: swipe  (3 arquivos)
+-- PLUGIN: swipe  (4 arquivos)
 -- ===============================================================================================
 
 
@@ -5225,6 +5225,29 @@ DROP FUNCTION IF EXISTS public.fn_swipe_deck(character varying, integer, charact
 
 -- O resource service_reactions grava por upsert (INSERT ... ON CONFLICT DO UPDATE), que exige
 -- UPDATE na tabela para o dono — já concedido em 0001 (GRANT SELECT, INSERT, UPDATE).
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/swipe/0004_swipe_favorites_permission.sql
+-- ===============================================================================================
+
+-- plugins/swipe/0004_swipe_favorites_permission.sql
+-- `favorites/view`: permissão própria do menu "Favoritos" do painel. Ninguém perde acesso:
+-- todo papel com `default/view` ganha `favorites/view`.
+
+INSERT INTO auth.permissions (resource, action, name)
+VALUES ('favorites', 'view', 'Ver e gerenciar os próprios favoritos')
+ON CONFLICT (resource, action) DO NOTHING;
+
+INSERT INTO auth.role_grants (role_id, permission_id)
+SELECT g.role_id, f.id
+  FROM auth.role_grants g
+  JOIN auth.permissions d ON d.id = g.permission_id AND d.resource = 'default' AND d.action = 'view'
+ CROSS JOIN auth.permissions f
+ WHERE f.resource = 'favorites' AND f.action = 'view'
+ON CONFLICT DO NOTHING;
 
 NOTIFY pgrst, 'reload schema';
 
