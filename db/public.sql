@@ -3,7 +3,7 @@
 -- Aplicar DEPOIS do db/auth.sql, em base limpa:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/public.sql
 -- Ordem = kizuna.plugins.json (ordem de dependência).
--- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (3), onboarding (1), storage (6), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (4), services (8), reviews (1), analytics (2), search (3), swipe (3), messaging (1), ai_assistant (1), ai_review (1), demandas (4), pedidos (4)
+-- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (3), onboarding (1), storage (6), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (4), services (9), reviews (1), analytics (2), search (3), swipe (3), messaging (1), ai_assistant (1), ai_review (1), demandas (4), pedidos (4)
 
 
 -- ===============================================================================================
@@ -3024,7 +3024,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: services  (8 arquivos)
+-- PLUGIN: services  (9 arquivos)
 -- ===============================================================================================
 
 
@@ -3561,6 +3561,34 @@ NOTIFY pgrst, 'reload schema';
 -- (public.service_user_favorites). Sem o plugin swipe a coluna fica em 0. Idempotente.
 
 ALTER TABLE public.services ADD COLUMN IF NOT EXISTS like_count integer NOT NULL DEFAULT 0;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/services/0009_services_view_permission.sql
+-- ===============================================================================================
+
+-- plugins/services/0009_services_view_permission.sql
+-- `services/view`: permissão própria do menu "Publicações" (criar e gerenciar os próprios anúncios).
+-- Antes usava `default/view` e não dava para liberar o painel sem liberar publicações.
+-- Ninguém perde acesso: todo papel com `default/view` ganha `services/view`.
+
+INSERT INTO auth.permissions (resource, action, name)
+VALUES ('services', 'view', 'Criar e gerenciar os próprios anúncios')
+ON CONFLICT (resource, action) DO NOTHING;
+
+INSERT INTO auth.role_grants (role_id, permission_id)
+SELECT g.role_id, s.id
+  FROM auth.role_grants g
+  JOIN auth.permissions d ON d.id = g.permission_id AND d.resource = 'default' AND d.action = 'view'
+ CROSS JOIN auth.permissions s
+ WHERE s.resource = 'services' AND s.action = 'view'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('services', '1.4.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
 
 NOTIFY pgrst, 'reload schema';
 

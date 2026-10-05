@@ -38,13 +38,13 @@ export const navigationGroups: PanelNavGroup[] = [
         title: vocabulary.phrases.new,
         href: '/painel/meus-servicos/novo',
         icon: PlusCircle,
-        permResource: 'default',
+        permResource: 'services',
       },
       {
         title: vocabulary.phrases.mine,
         href: '/painel/meus-servicos',
         icon: Briefcase,
-        permResource: 'default',
+        permResource: 'services',
       },
       {
         // analytics/view (plugins/analytics/0002): nenhum papel recebe por padrão — liberar em
