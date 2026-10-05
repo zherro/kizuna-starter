@@ -3,7 +3,7 @@
 -- Aplicar DEPOIS do db/auth.sql, em base limpa:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/public.sql
 -- Ordem = kizuna.plugins.json (ordem de dependência).
--- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (3), onboarding (1), storage (6), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (4), services (8), reviews (1), analytics (2), search (3), swipe (2), messaging (1), ai_assistant (1), ai_review (1), demandas (4), pedidos (4)
+-- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (3), onboarding (1), storage (6), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (4), services (8), reviews (1), analytics (2), search (3), swipe (3), messaging (1), ai_assistant (1), ai_review (1), demandas (4), pedidos (4)
 
 
 -- ===============================================================================================
@@ -5066,7 +5066,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: swipe  (2 arquivos)
+-- PLUGIN: swipe  (3 arquivos)
 -- ===============================================================================================
 
 
@@ -5079,15 +5079,10 @@ NOTIFY pgrst, 'reload schema';
 -- Optional. Swipe (curtir/passar) sobre os itens da busca, página /descobrir + /curtidos.
 -- Depende de (aplique DEPOIS): `search` (fn_search_services), `services`, `system_config`.
 --
---  * `service_user_favorites`: 1 linha por (usuário, item). Upsert a cada swipe; nunca DELETE físico —
---    "descurtir" (`fn_swipe_record(..., 'unlike')`) grava `skip` (o item volta ao deck depois do
---    TTL). Um `skip` comum nunca rebaixa um `like`.
---  * `fn_swipe_deck`: embrulha `fn_search_services` (mesmos filtros, página 0, até 1000
---    candidatos) e tira: curtidos, passados há menos de `swipe.skip_ttl_days` e `p_exclude`
---    (cards que o cliente já tem no buffer). Sempre página 0: o que já foi
---    decidido sai pelo anti-join, então offset não é necessário (e daria pulos/repetições).
---    `p_price_min/p_price_max` aplicam a faixa de preço que o /busca filtra no cliente.
---  * Usuário vem da sessão (`auth.fun_auth_user_id()`, NULL para anon), nunca de parâmetro.
+--  * `service_user_favorites`: 1 linha por (usuário, item), gravada por upsert pelo resource
+--    `service_reactions` (RLS por dono); nunca DELETE físico — "descurtir" grava `skip`.
+--  * O deck é a busca (`fn_search_services`) menos o que o usuário já decidiu, montado no cliente;
+--    os curtidos vêm do resource `liked_services` (esta tabela com o anúncio embutido).
 
 DO $$
 BEGIN
@@ -5134,161 +5129,8 @@ INSERT INTO auth.system_config (key, value)
 VALUES ('swipe.skip_ttl_days', '7'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
-DROP FUNCTION IF EXISTS public.fn_swipe_deck(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, text, uuid[]);
-DROP FUNCTION IF EXISTS public.fn_swipe_deck(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, text, uuid[], numeric, numeric);
-
-CREATE OR REPLACE FUNCTION public.fn_swipe_deck(
-  p_state character varying,
-  p_city_id integer,
-  p_group_category_slug character varying,
-  p_category_id bigint DEFAULT NULL::bigint,
-  p_subcategories jsonb DEFAULT NULL::jsonb,
-  p_query text DEFAULT NULL::text,
-  p_seed double precision DEFAULT NULL::double precision,
-  p_page_size integer DEFAULT 20,
-  p_city_ibge text DEFAULT NULL::text,
-  p_exclude uuid[] DEFAULT NULL::uuid[],
-  p_price_min numeric DEFAULT NULL::numeric,
-  p_price_max numeric DEFAULT NULL::numeric
-)
-RETURNS TABLE(
-  uid uuid,
-  title character varying,
-  price numeric,
-  price_type character varying,
-  category character varying,
-  subcategory character varying,
-  sponsored boolean,
-  cover_file_id character varying,
-  provider_name character varying,
-  provider_avatar character varying,
-  rating numeric,
-  reviews integer
-)
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $function$
-DECLARE
-  v_user uuid := auth.fun_auth_user_id();
-  v_ttl interval := make_interval(days => COALESCE(
-    NULLIF((SELECT value #>> '{}' FROM auth.system_config WHERE key = 'swipe.skip_ttl_days'), '')::integer,
-    7
-  ));
-BEGIN
-  RETURN QUERY
-  SELECT c.*
-  FROM public.fn_search_services(
-    p_state, p_city_id, p_group_category_slug, p_category_id, p_subcategories,
-    p_query, p_seed, 0, 1000, p_city_ibge
-  ) c
-  WHERE (p_exclude IS NULL OR NOT (c.uid = ANY(p_exclude)))
-    -- faixa de preço com a semântica do /busca (priceOf): sem preço ou <= 0 é "Sob consulta"
-    -- e passa por qualquer faixa.
-    AND (p_price_min IS NULL OR c.price IS NULL OR c.price <= 0 OR c.price >= p_price_min)
-    AND (p_price_max IS NULL OR c.price IS NULL OR c.price <= 0 OR c.price <= p_price_max)
-    AND (
-      v_user IS NULL
-      OR NOT EXISTS (
-        SELECT 1 FROM public.service_user_favorites sw
-        WHERE sw.user_id = v_user
-          AND sw.service_uid = c.uid
-          AND (sw.action = 'like' OR sw.updated_at > now() - v_ttl)
-      )
-    )
-  LIMIT LEAST(GREATEST(p_page_size, 1), 50);
-END;
-$function$;
-
-GRANT EXECUTE ON FUNCTION public.fn_swipe_deck(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, text, uuid[], numeric, numeric)
-  TO anon, auth_user;
-
-DROP FUNCTION IF EXISTS public.fn_swipe_record(uuid[], text);
-
-CREATE OR REPLACE FUNCTION public.fn_swipe_record(p_service_uids uuid[], p_action text)
-RETURNS integer
-LANGUAGE plpgsql
-SECURITY INVOKER
-SET search_path = public
-AS $function$
-DECLARE
-  v_user uuid := auth.fun_auth_user_id();
-  v_count integer;
-BEGIN
-  IF v_user IS NULL THEN
-    RAISE EXCEPTION 'login necessario' USING ERRCODE = 'insufficient_privilege';
-  END IF;
-  IF p_action IS NULL OR p_action NOT IN ('like', 'skip', 'unlike') THEN
-    RAISE EXCEPTION 'action invalida: %', p_action USING ERRCODE = 'invalid_parameter_value';
-  END IF;
-
-  -- 'unlike' (descurtir explícito) grava 'skip' e sempre sobrescreve; um 'skip' comum nunca
-  -- rebaixa um 'like' existente (ex.: passar de novo um card já curtido).
-  INSERT INTO public.service_user_favorites (user_id, service_uid, action, updated_at)
-  SELECT v_user, s.uid, CASE WHEN p_action = 'unlike' THEN 'skip' ELSE p_action END, now()
-  FROM public.services s
-  WHERE s.uid = ANY(p_service_uids)
-  ON CONFLICT (user_id, service_uid)
-  DO UPDATE SET action = EXCLUDED.action,
-    favorite = (EXCLUDED.action = 'like' AND public.service_user_favorites.favorite),
-    updated_at = EXCLUDED.updated_at
-  WHERE NOT (public.service_user_favorites.action = 'like' AND p_action = 'skip');
-
-  GET DIAGNOSTICS v_count = ROW_COUNT;
-  RETURN v_count;
-END;
-$function$;
-
-GRANT EXECUTE ON FUNCTION public.fn_swipe_record(uuid[], text) TO auth_user;
-
-DROP FUNCTION IF EXISTS public.fn_swipe_liked(integer, integer);
-DROP FUNCTION IF EXISTS public.fn_swipe_liked(timestamptz, integer);
-
-CREATE OR REPLACE FUNCTION public.fn_swipe_liked(p_before timestamptz DEFAULT NULL, p_page_size integer DEFAULT 24)
-RETURNS TABLE(
-  uid uuid,
-  title character varying,
-  price numeric,
-  price_type character varying,
-  category character varying,
-  cover_file_id character varying,
-  liked_at timestamptz
-)
-LANGUAGE plpgsql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $function$
-DECLARE
-  v_user uuid := auth.fun_auth_user_id();
-BEGIN
-  IF v_user IS NULL THEN
-    RAISE EXCEPTION 'login necessario' USING ERRCODE = 'insufficient_privilege';
-  END IF;
-
-  RETURN QUERY
-  SELECT
-    s.uid,
-    s.title::character varying,
-    s.starting_price::numeric,
-    s.price_unit::character varying,
-    c.name::character varying,
-    COALESCE(NULLIF(s.extras->>'coverFileId', ''), s.extras->'images'->>0)::character varying,
-    sw.updated_at
-  FROM public.service_user_favorites sw
-  JOIN public.services s ON s.uid = sw.service_uid
-  LEFT JOIN public.categories c ON c.id = s.category_id
-  WHERE sw.user_id = v_user
-    AND sw.action = 'like'
-    AND s.active = true
-    AND s.status = 'active'
-    AND (p_before IS NULL OR sw.updated_at < p_before)
-  ORDER BY sw.updated_at DESC
-  LIMIT LEAST(GREATEST(p_page_size, 1), 100);
-END;
-$function$;
-
-GRANT EXECUTE ON FUNCTION public.fn_swipe_liked(timestamptz, integer) TO auth_user;
+-- Deck, gravação e curtidos são feitos por resources (service_reactions / liked_services) e pela
+-- busca (fn_search_services) — sem funções próprias do swipe. Ver 0003_swipe_drop_functions.sql.
 
 -- Contador denormalizado services.like_count (coluna vem de services/0008). SECURITY DEFINER:
 -- auth_user não pode dar UPDATE em services de terceiros; função de trigger, não exposta na API.
@@ -5331,145 +5173,30 @@ NOTIFY pgrst, 'reload schema';
 -- ===============================================================================================
 
 -- plugins/swipe/0002_swipe_addresses.sql
--- Endereços do serviço no swipe: fn_swipe_deck herda de fn_search_services (search 0002) as colunas
--- city / state / address_count; fn_swipe_liked devolve as mesmas (endereço principal + contagem,
--- via LATERAL LIMIT 1, sem duplicar linhas). Nunca devolve rua/número.
--- Depende de `search` >= 1.1.0 e `services` >= 1.2.0.
+-- Antes recriava fn_swipe_deck / fn_swipe_liked com as colunas de endereço. As funções do swipe
+-- saíram (ver 0003_swipe_drop_functions.sql): o deck usa a própria busca, que já traz
+-- city / state / address_count. Mantido vazio para não quebrar a contagem de migrations.
+SELECT 1;
 
-DROP FUNCTION IF EXISTS public.fn_swipe_deck(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, text, uuid[], numeric, numeric);
 
-CREATE OR REPLACE FUNCTION public.fn_swipe_deck(
-  p_state character varying,
-  p_city_id integer,
-  p_group_category_slug character varying,
-  p_category_id bigint DEFAULT NULL::bigint,
-  p_subcategories jsonb DEFAULT NULL::jsonb,
-  p_query text DEFAULT NULL::text,
-  p_seed double precision DEFAULT NULL::double precision,
-  p_page_size integer DEFAULT 20,
-  p_city_ibge text DEFAULT NULL::text,
-  p_exclude uuid[] DEFAULT NULL::uuid[],
-  p_price_min numeric DEFAULT NULL::numeric,
-  p_price_max numeric DEFAULT NULL::numeric
-)
-RETURNS TABLE(
-  uid uuid,
-  title character varying,
-  price numeric,
-  price_type character varying,
-  category character varying,
-  subcategory character varying,
-  sponsored boolean,
-  cover_file_id character varying,
-  provider_name character varying,
-  provider_avatar character varying,
-  rating numeric,
-  reviews integer,
-  city text,
-  state text,
-  address_count integer
-)
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $function$
-DECLARE
-  v_user uuid := auth.fun_auth_user_id();
-  v_ttl interval := make_interval(days => COALESCE(
-    NULLIF((SELECT value #>> '{}' FROM auth.system_config WHERE key = 'swipe.skip_ttl_days'), '')::integer,
-    7
-  ));
-BEGIN
-  RETURN QUERY
-  SELECT c.*
-  FROM public.fn_search_services(
-    p_state, p_city_id, p_group_category_slug, p_category_id, p_subcategories,
-    p_query, p_seed, 0, 1000, p_city_ibge
-  ) c
-  WHERE (p_exclude IS NULL OR NOT (c.uid = ANY(p_exclude)))
-    AND (p_price_min IS NULL OR c.price IS NULL OR c.price <= 0 OR c.price >= p_price_min)
-    AND (p_price_max IS NULL OR c.price IS NULL OR c.price <= 0 OR c.price <= p_price_max)
-    AND (
-      v_user IS NULL
-      OR NOT EXISTS (
-        SELECT 1 FROM public.service_user_favorites sw
-        WHERE sw.user_id = v_user
-          AND sw.service_uid = c.uid
-          AND (sw.action = 'like' OR sw.updated_at > now() - v_ttl)
-      )
-    )
-  LIMIT LEAST(GREATEST(p_page_size, 1), 50);
-END;
-$function$;
+-- ===============================================================================================
+-- kizuna-core/plugins/swipe/0003_swipe_drop_functions.sql
+-- ===============================================================================================
 
-GRANT EXECUTE ON FUNCTION public.fn_swipe_deck(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, text, uuid[], numeric, numeric)
-  TO anon, auth_user;
+-- plugins/swipe/0003_swipe_drop_functions.sql
+-- Remove as funções do swipe: tudo passa por resources, sem lógica no banco.
+--  * gravar curtir/passar → POST /api/resources/service_reactions (upsert por usuário + anúncio);
+--  * curtidos             → GET  /api/resources/liked_services (esta tabela + o anúncio embutido);
+--  * deck                 → a busca (fn_search_services) menos o que o usuário já decidiu, no cliente.
 
+DROP FUNCTION IF EXISTS public.fn_swipe_record(uuid[], text);
 DROP FUNCTION IF EXISTS public.fn_swipe_liked(timestamptz, integer);
+DROP FUNCTION IF EXISTS public.fn_swipe_liked(integer, integer);
+DROP FUNCTION IF EXISTS public.fn_swipe_deck(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, text, uuid[], numeric, numeric);
+DROP FUNCTION IF EXISTS public.fn_swipe_deck(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, text, uuid[]);
 
-CREATE OR REPLACE FUNCTION public.fn_swipe_liked(p_before timestamptz DEFAULT NULL, p_page_size integer DEFAULT 24)
-RETURNS TABLE(
-  uid uuid,
-  title character varying,
-  price numeric,
-  price_type character varying,
-  category character varying,
-  cover_file_id character varying,
-  liked_at timestamptz,
-  city text,
-  state text,
-  address_count integer
-)
-LANGUAGE plpgsql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $function$
-DECLARE
-  v_user uuid := auth.fun_auth_user_id();
-BEGIN
-  IF v_user IS NULL THEN
-    RAISE EXCEPTION 'login necessario' USING ERRCODE = 'insufficient_privilege';
-  END IF;
-
-  RETURN QUERY
-  SELECT
-    s.uid,
-    s.title::character varying,
-    s.starting_price::numeric,
-    s.price_unit::character varying,
-    c.name::character varying,
-    COALESCE(NULLIF(s.extras->>'coverFileId', ''), s.extras->'images'->>0)::character varying,
-    sw.updated_at,
-    ad.a_city::text,
-    ad.a_state::text,
-    COALESCE(ad.cnt, 0)::integer
-  FROM public.service_user_favorites sw
-  JOIN public.services s ON s.uid = sw.service_uid
-  LEFT JOIN public.categories c ON c.id = s.category_id
-  LEFT JOIN LATERAL (
-    SELECT a.city AS a_city, a.state AS a_state, count(*) OVER () AS cnt
-    FROM public.service_addresses a
-    WHERE a.service_id = s.id
-      AND a.active
-    ORDER BY a.is_primary DESC, a.id
-    LIMIT 1
-  ) ad ON true
-  WHERE sw.user_id = v_user
-    AND sw.action = 'like'
-    AND s.active = true
-    AND s.status = 'active'
-    AND (p_before IS NULL OR sw.updated_at < p_before)
-  ORDER BY sw.updated_at DESC
-  LIMIT LEAST(GREATEST(p_page_size, 1), 100);
-END;
-$function$;
-
-GRANT EXECUTE ON FUNCTION public.fn_swipe_liked(timestamptz, integer) TO auth_user;
-
-INSERT INTO auth.plugin_registry (name, version)
-VALUES ('swipe', '1.1.0')
-ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+-- O resource service_reactions grava por upsert (INSERT ... ON CONFLICT DO UPDATE), que exige
+-- UPDATE na tabela para o dono — já concedido em 0001 (GRANT SELECT, INSERT, UPDATE).
 
 NOTIFY pgrst, 'reload schema';
 

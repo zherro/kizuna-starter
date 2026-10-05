@@ -17,10 +17,7 @@ import { resourceTaxonomy } from '@kizuna/core/client/components/screen-engine/r
 import { resourceReviews } from '@kizuna/core/client/components/screen-engine/resources/reviews';
 import { resourceServices } from '@kizuna/core/client/components/screen-engine/resources/services';
 import { rpcSearch } from '@kizuna/core/client/components/screen-engine/resources/search';
-import {
-  resourceServiceReactions,
-  rpcSwipe,
-} from '@kizuna/core/client/components/screen-engine/resources/swipe';
+import { resourceServiceReactions } from '@kizuna/core/client/components/screen-engine/resources/swipe';
 import { resourceAnalytics, rpcAnalytics } from '@kizuna/core/client/components/screen-engine/resources/analytics';
 import { resourceAiReview, rpcAiReview } from '@kizuna/core/client/components/screen-engine/resources/ai-review';
 import { resourceTickets } from '@kizuna/core/client/components/screen-engine/resources/tickets';
@@ -48,7 +45,7 @@ export const postgrestResources: Record<string, ResourceConfig> = {
   ...(resourceTickets as Record<string, ResourceConfig>),
   // ai_review plugin — revisão de textos por IA (credenciais sem cifra, prompts, revisões, execuções).
   ...(resourceAiReview as Record<string, ResourceConfig>),
-  // swipe plugin — reações do usuário (gostei/favorito) por anúncio; RLS por dono.
+  // swipe plugin — reações do usuário (gostei/favorito) e curtidos (liked_services); RLS por dono.
   ...(resourceServiceReactions as Record<string, ResourceConfig>),
   // user_data plugin — perfil da conta (Minha conta); RLS limita à própria linha.
   ...(resourceUserData as Record<string, ResourceConfig>),
@@ -74,8 +71,6 @@ export const postgrestRpcs: Record<string, RpcConfig> = {
   ...rpcAiReview,
   // search plugin — busca pública de serviços (/busca). Só relevante com o plugin `search` ativo.
   ...rpcSearch,
-  // swipe plugin — deck de descoberta com swipe (liking/disliking). Público + sessão opcional.
-  ...rpcSwipe,
   // analytics plugin — escrita anônima de eventos (views, cliques...). Pública + sessão opcional.
   ...rpcAnalytics,
   // messaging plugin — o chat usa rotas bespoke `/api/chat/*` que chamam
