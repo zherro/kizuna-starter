@@ -1,6 +1,7 @@
 node_modules/
 .next/
-.env
+.env*
+!.env.example
 dist/
 scrawler/
 next-env.d.ts
