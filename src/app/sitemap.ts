@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import cfg from '@/../kizuna.config.json';
 import { cityPath } from '@kizuna/core/shared/city-routing/city-slug';
-import { loadRoutableCities } from '@/lib/server/cities';
+import { loadRoutableCities } from '@kizuna/core/server/location/cities';
 
 // Páginas públicas. Adicione aqui as rotas públicas do seu app.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

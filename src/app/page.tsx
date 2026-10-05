@@ -8,7 +8,7 @@ import { redirect } from 'next/navigation';
 import { parseLocationConfig } from '@kizuna/core/server';
 import { CITY_COOKIE, cityPath } from '@kizuna/core/shared/city-routing/city-slug';
 import { HomePage } from '@/components/home-page';
-import { loadRoutableCities, resolveCitySlug } from '@/lib/server/cities';
+import { loadRoutableCities, resolveCitySlug } from '@kizuna/core/server/location/cities';
 import cfg from '@/../kizuna.config.json';
 
 const locationConfig = parseLocationConfig((cfg as { location?: unknown }).location);

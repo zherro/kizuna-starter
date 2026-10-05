@@ -2,7 +2,7 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { cityPath, citySlug } from '@kizuna/core/shared/city-routing/city-slug';
 import { AnuncioDetail, anuncioMetadata, loadAd } from '@/lib/anuncio-detail';
-import { CityRouteMarker } from '@/components/city-route-marker';
+import { CityRouteMarker } from '@kizuna/core/client/components/city/city-route-marker';
 
 type Props = { params: Promise<{ cidade: string; uid: string }> };
 

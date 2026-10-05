@@ -1,5 +1,5 @@
 {
-  "_comment": "Configuração do projeto (por cliente). Lida pelo app em runtime — ex.: createWizardFromJson(cfg.wizards.<nome>, registry). Passos são referenciados por chave do registry; componentes novos continuam sendo código. Ver kizuna-core/docs/WIZARD.md.",
+  "_comment": "Configuração do projeto (por cliente). Lida pelo app em runtime — ex.: createWizardFromJson(cfg.wizards.<nome>, registry). Passos são referenciados por chave do registry; componentes novos continuam sendo código. Ver kizuna-core/docs/comecando/configuracao.md e kizuna-core/docs/interface/wizard.md.",
   "site": {
     "_comment": "Identidade/SEO do site — usada no <title>, meta description, Open Graph, manifest do PWA, robots/sitemap e logo do header. \"url\" é a URL pública em produção (sem barra no final). \"logo\" é opcional (caminho em public/); sem ele o header mostra o nome.",
     "name": "Bora Cuiabá",

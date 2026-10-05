@@ -25,7 +25,7 @@ import { isDisplayFont } from '@kizuna/core/shared/display-fonts';
 import { AuthProvider } from '@kizuna/core/client/providers/auth-provider';
 import { KizunaHeader } from '@kizuna/core/client/components/kizuna-header';
 import { Footer } from '@/components/footer';
-import { CityCookieSync } from '@/components/city-cookie-sync';
+import { CityCookieSync } from '@kizuna/core/client/components/city/city-cookie-sync';
 import { ViewingCityProvider } from '@kizuna/core/client/components/viewing-city';
 import { WeatherWidget } from '@kizuna/core/client/components/weather/weather-widget';
 import { Toaster } from 'sonner';

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { StaticPage } from '@/components/static-page';
+import { StaticPage } from '@kizuna/core/client/components/pages/static-page';
 
 // Página ESTÁTICA (server component). Complete com a identificação de quem edita o site (nome,
 // empresa, e-mail de contato) — o revisor de anúncios valoriza saber quem está por trás do site.

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { StaticPage } from '@/components/static-page';
+import { StaticPage } from '@kizuna/core/client/components/pages/static-page';
 
 // Página ESTÁTICA (texto no código, sem banco). O formulário de cadastro aponta para /termos; esta
 // pasta existe para a rota estática vencer o `[cidade]`, senão "termos" seria lido como slug de

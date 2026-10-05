@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@kizuna/core/server';
 import { RegisterPageContent } from '@kizuna/core/client/components/register-page';
-import { AuthSplit } from '@/components/auth-split';
+import { AuthSplit } from '@kizuna/core/client/components/auth/auth-split';
 import { RegisterAside } from '@/components/register-aside';
 
 // Usuário já logado não fica aqui: vai direto para o painel (checado no servidor, sem cache).

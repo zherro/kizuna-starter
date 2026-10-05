@@ -3,9 +3,9 @@ import type { Metadata } from 'next';
 import { buildMetadata } from '@kizuna/core/server';
 import { cityPath } from '@kizuna/core/shared/city-routing/city-slug';
 import { HomePage } from '@/components/home-page';
-import { CityRouteMarker } from '@/components/city-route-marker';
+import { CityRouteMarker } from '@kizuna/core/client/components/city/city-route-marker';
 import { SEO_SITE } from '@/lib/seo';
-import { resolveCitySlug } from '@/lib/server/cities';
+import { resolveCitySlug } from '@kizuna/core/server/location/cities';
 
 type Props = { params: Promise<{ cidade: string }> };
 

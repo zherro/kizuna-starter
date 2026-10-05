@@ -19,3 +19,6 @@ redacao/
 .claude/skills/*
 !.claude/skills/criar-depara/
 skills-lock.json
+
+# cache do TypeScript
+*.tsbuildinfo

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getActiveReviewRun } from '@kizuna/core/server/ai';
-import { jsonError, requireAiRoot } from '@/lib/server/ai-gate';
+import { jsonError, requireAiRoot } from '@kizuna/core/server/ai/gate';
 
 export const runtime = 'nodejs';
 

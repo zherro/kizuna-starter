@@ -47,23 +47,20 @@ export const navigationGroups: PanelNavGroup[] = [
         permResource: 'default',
       },
       {
+        // analytics/view (plugins/analytics/0002): nenhum papel recebe por padrão — liberar em
+        // /painel/root/papeis. Sem a permissão o item some e a rota dá 404.
         title: 'Métricas',
         href: '/painel/metricas',
         icon: BarChart3,
-        permResource: 'default',
+        permResource: 'analytics',
       },
       {
+        // reviews/view (plugins/reviews/0001): nenhum papel recebe por padrão — liberar em
+        // /painel/root/papeis.
         title: 'Avaliação',
         href: '/painel/administracao/avaliacoes',
         icon: Star,
-        permResource: 'default',
-      },
-      {
-        // Plugin tickets. Contador de abertos ao lado (renderItemBadge abaixo).
-        title: 'Chamados',
-        href: '/painel/chamados',
-        icon: LifeBuoy,
-        permResource: 'default',
+        permResource: 'reviews',
       },
     ],
   },
@@ -182,6 +179,20 @@ export const navigationGroups: PanelNavGroup[] = [
         href: '/painel/security/root-access-log',
         icon: LockKeyhole,
         rootOnly: true,
+      },
+    ],
+  },
+  {
+    // Sempre o último grupo da barra lateral.
+    title: 'Suporte',
+    items: [
+      {
+        // Plugin tickets: permissão própria (tickets/view, plugins/tickets/0003). Contador de
+        // abertos ao lado (renderItemBadge em panel-shell.tsx).
+        title: 'Chamados',
+        href: '/painel/chamados',
+        icon: LifeBuoy,
+        permResource: 'tickets',
       },
     ],
   },

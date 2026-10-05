@@ -1,7 +1,7 @@
 // EXEMPLO — reescreva. Home do painel: nível da conta + hero em slides + resumo de métricas.
 import { getSession, isPhoneLoginEnabled, type OtpConfig } from '@kizuna/core/server';
 import { AccountLevelCard } from '@kizuna/core/client/components/account-levels';
-import { PainelHero, PainelStats } from '@/components/painel-home';
+import { PainelHero, PainelStats } from '@kizuna/core/client/components/analytics/painel-home';
 import cfg from '@/../kizuna.config.json';
 
 export default async function PainelPage() {

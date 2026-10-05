@@ -2,25 +2,94 @@
   "lockVersion": 1,
   "kizunaCore": {
     "version": "0.9.10",
-    "sha": "1f8609a7ebf54b8d982d067acc0ed94d66fe615d",
-    "syncedAt": "2026-09-19T13:49:35.616Z"
+    "sha": "803a3b44d51adf612b9010e1b9faf3361b5790ca",
+    "syncedAt": "2026-10-04T16:10:58.444Z"
   },
   "template": {
     "version": "0.9.10",
     "files": {
       "src/proxy.ts": "sha256:4f6620d9bf7929b2f28b78dcca64de02dd4c54edf83b6e86736c35a4c691d32a",
       "src/app/api/postgrest/rpc/route.ts": "sha256:90d2cb849519904efa22a7d35001c237f0b625c70a71597478d4b5b99e862269",
-      "src/app/api/resources/[resource]/route.ts": "sha256:b02ef337bd17fe870e03e3415c74cd9c08b99092415bddce227af6eb5c4247db",
+      "src/app/api/resources/[resource]/route.ts": "sha256:906127cdad0e794357897dc81f70e4dec056583c26169775af9e73411d052006",
       "src/app/api/resources/[resource]/[id]/route.ts": "sha256:51c07f2ea9a8f043bf78d93742c950733d06d3ac6376c97eca937b6c89494237",
       "src/app/api/auth/login/route.ts": "sha256:4bd70cb85df3781885a750dfbde8bac238539c29b5b0e6a4d9610461c1f02556",
       "src/app/api/auth/logout/route.ts": "sha256:cb58f75e0bb0bbb3bae946889110bbe9f624f7a5f944e830340d78ec0450196e",
       "src/app/api/auth/register/route.ts": "sha256:8bb001945acc2f51e448b3b8dd17bcd81b7a81a9252edc419814f98d4d0cc6a7",
       "src/app/painel/[...kizuna]/page.tsx": "sha256:68f16e0a77b0249d667c8b42e7dd982048a88f23801d65de0088c7101d73aacf",
-      "src/app/painel/root/[slug]/page.tsx": "sha256:cd99a30c0c2a8ffc49e5a36e0f1e3961ae211266937f405c610d08b77460e707",
+      "src/app/painel/root/[slug]/page.tsx": "sha256:207289dbe66f23145857ee517190b857eec744856dfe747e449d3449c75dfcd3",
       "src/app/painel/security/[slug]/page.tsx": "sha256:01c0aa1ea0aa8d22b10edfc4d508197a876ae17ce19aa0fb778fedb612711a24",
       "src/lib/kizuna/registry/index.ts": "sha256:bce97c555cd78c3b41ecf91eca4f57c327e8c67f4a3cbe751fbb7af2caad94b6",
       "tsconfig.kizuna.json": "sha256:1834ae1653940602bd6bb94d5df5d89b367f8d841e520f18d0550e84431ebc65",
-      "src/app/api/auth/me/route.ts": "sha256:1589670457f3520ed1ab8d77ed689fa103b403f7b43c8b6da69663acb4da4dbb"
+      "src/app/api/auth/me/route.ts": "sha256:84e7f2c8f08f1b1cb23e6f4d8f7c5b675841e9f7a81e550b463933b17b6bb1e8",
+      "src/app/[cidade]/anuncio/[uid]/page.tsx": "sha256:32627d8c72ae584743793309e7c829e0a11ffb46a80b2b0618d8dfd77bce0061",
+      "src/app/[cidade]/layout.tsx": "sha256:909d22559b5eda19b1619415bf1e2c4d2d7eb6351458d6babc3bf99aa9114db8",
+      "src/app/[cidade]/page.tsx": "sha256:628b58b4257d5dbeb76d207f243c28cca1dd9885074de8fa1d760cc369e6938f",
+      "src/app/anuncios/[uid]/page.tsx": "sha256:8f3ed138572cea681dcc1674a5c2511ef133937d30ece8496a76173bcf042217",
+      "src/app/api/account/delete/route.ts": "sha256:5a4867440d5a9c19323a992f65a9ecc3a7ca095b848730d1583ab84e28c7ea5f",
+      "src/app/api/account/level/route.ts": "sha256:8a5f5ca14a1123968e7ec4b5d03b41a219049150438c29257e3fc12001dfa0c7",
+      "src/app/api/ai/credentials/route.ts": "sha256:dda750ba5ac496f1c21e980f152754e5cf966d57b0d4efd404786fb3ba5fe14e",
+      "src/app/api/ai/prompts/test/route.ts": "sha256:8211afa7e84b4f6455004a574d337b4cd9e1b8b683afa415ee6060a6c92c5f11",
+      "src/app/api/ai/review/apply-bulk/route.ts": "sha256:d6023d9d7c8c91c933a3f3f6c91fda8ddad7d2a0dd084e1115b5dcea4d38583d",
+      "src/app/api/ai/review/revisions/[id]/apply/route.ts": "sha256:75b120116fdb344fe7bbaebb78a973b2bf68d21f89820d6c7d80ed1e8104239c",
+      "src/app/api/ai/review/revisions/[id]/reject/route.ts": "sha256:e1448748e0f77e97b4a2d7e4c35a8561439d7299809449c6ba913cfd6e85feb4",
+      "src/app/api/ai/review/run/route.ts": "sha256:f2ca47a6c49ff3af60ec92eff92f5e35a8340250addf945e9ac390e7decae568",
+      "src/app/api/ai/review/runs/[id]/cancel/route.ts": "sha256:c84d2b4cf88f9faa7eaf08e115b092d79f7e9f8e32298da1065c1cfe3685222b",
+      "src/app/api/ai/review/runs/[id]/route.ts": "sha256:94de5b3f9d36049bdc0222f5bf8b8d56532d30ffbfdb37a45558344a39ddaf67",
+      "src/app/api/ai/review/runs/[id]/step/route.ts": "sha256:7d944e07305f175e3bc11fd469cd99b9bcf79ef65ceac7250294cbdd90881282",
+      "src/app/api/ai/review/runs/active/route.ts": "sha256:a9f5cdc39705ab4b0eb2048ba7809e180f8625ccedd835c2111875b9945db94c",
+      "src/app/api/ai/status/route.ts": "sha256:21d491cd87ef8d82747eb7707a72a6313f19d4c6b1d64ec522d97864848f7b90",
+      "src/app/api/auth/forgot-password/route.ts": "sha256:8b1387a998947f02d138f3e26e4310b886a17a3f5659046e5d7a3a57d53d8455",
+      "src/app/api/auth/oauth/[provider]/callback/route.ts": "sha256:1256d08a25a523cf7410f5e2d53c6ed49cd28e4192571cbacb5a27ff994029c4",
+      "src/app/api/auth/oauth/[provider]/start/route.ts": "sha256:e283688351693060d8e90042a5f3e8cc351f3efedf8d1f3ac5b682ebebb466a5",
+      "src/app/api/auth/otp/request/route.ts": "sha256:510662c5f00ccc627e7e0ecccc31b06f11aea1438dec274bc0b03db29066e3b2",
+      "src/app/api/auth/otp/verify/route.ts": "sha256:b3c2c1aba863a2087805ef74cd29cb98a8130c77855164f98ad8685ecf6c06c9",
+      "src/app/api/auth/providers/route.ts": "sha256:fd91e28da3bb0b624e04f18d365b5629aa54d6a9a931f74917e273c6cfdc2929",
+      "src/app/api/auth/reset-password/route.ts": "sha256:70254306a6654aef87ac7ed43d95a1599cabb6d63b5930bd8eaa27de9504b66e",
+      "src/app/api/images/optimize/route.ts": "sha256:221ecdd494b62e27557d8e807077ae87aab64d42582baf59051034d1f8e49467",
+      "src/app/esqueci-senha/page.tsx": "sha256:705943015f7c223e7d884f491a7fc5de5f6fd8e284f04bb13f00e79651e6da12",
+      "src/app/painel/administracao/revisao-ia/page.tsx": "sha256:875bbc1ab3160d715580bf20be7b626178ada966e8dab94e29032ca8dc5531a0",
+      "src/app/painel/metricas/page.tsx": "sha256:1cfc32cd1b64d0591f4d2b3649bda86851eb068f68ab259cabcdfa9409c9918c",
+      "src/app/painel/onboarding/page.tsx": "sha256:72672de57c9c783066933fb6e58978a978e6be8de736126603ca2fc4afb70a51",
+      "src/app/painel/page.tsx": "sha256:c6b6ff3bcf2aca8f1263505a1043860a4addbe5f0b1859ca6109f05bb8873120",
+      "src/app/painel/verificar-email/page.tsx": "sha256:df440435fb4e48e86b42c86b3bd393ea6aa124b18739eb45a58483827b4b1cf7",
+      "src/app/redefinir-senha/page.tsx": "sha256:f900139e02da4c1bc74f00f05c515f75d7e515580ae4995f4ad2a200e86c220a",
+      "src/lib/anuncio-detail.tsx": "sha256:bf597344038e796e68932f048ecceae5c123ad1658d4cccfcdde068528ee876e",
+      "src/lib/server/postgrest-crud.ts": "sha256:1071b9d4a24d4ac6b984e23e622ecbe2cb8d83c6a29f3634bd892df383d5a684"
+    },
+    "seeds": {
+      ".gitignore": "sha256:59f48c51a702f2d9cd736a2819102c027e2f76954b9d15f1b44134de71922a08",
+      "next.config.ts": "sha256:345cf035e06ae0522900aea450d405cf04e6f6794e0b85c9df99f43f6e346129",
+      "postcss.config.mjs": "sha256:9ca55411b62b2c9cc5631a3e6c631d80c8b8171c7b9ea1e19f83400f4100e910",
+      "public/sw.js": "sha256:d8f283da4ed47727c363c82e49c49b20785f0ced76143f4fa1f8f7b9cda859b9",
+      "src/app/layout.tsx": "sha256:af0da240e3587a04df278d3d5a3dd3632cfcdf9d54703f84626e81b3c621c357",
+      "src/app/login/page.tsx": "sha256:c446f61307aed797d0a2bb0e7acb0dd3516a782b3fd5dfebbe2dd28d9660ee3f",
+      "src/app/manifest.ts": "sha256:90bcabd8ce1f2e848f0300f25d9b59377c853660ebeec405d7976fd5f7e9cfd3",
+      "src/app/painel/layout.tsx": "sha256:70ea1f29ab3cb3918eea619be5e2535a5713d6f691226b2f2a615f710ecabf46",
+      "src/app/registre-se/page.tsx": "sha256:72e0806f0c4b75b6b2074aa36d5c176b2fe6fb52a3748eaaf70459184db77e91",
+      "src/app/robots.ts": "sha256:6e5542c3620b73472f63fe4823070353196acaa83737021df63f4b763dd34f19",
+      "src/components/home-content.tsx": "sha256:99323d0c886b5a280ef21ff4821f93de4b1d72e8f1d519b08fbd673f87c73b11",
+      "src/components/home-page.tsx": "sha256:fe6e605d1cd93e8f2eee17c51f3ad332a0638866fdb56ccb8e413058a76ec1ae",
+      "src/components/home/category-rail.tsx": "sha256:4df65b93f98035adf3d269f56d46c92dc070283fff04f22393fe64fab7f05b87",
+      "src/components/home/category-rails.tsx": "sha256:4eb5b76be2127de770ccd95e0845e10b5158e2b4e10a4558c87718b4bdf7276f",
+      "src/components/home/home-hero.tsx": "sha256:0ec744b4fbf90d7a675eb296030cbb0ec464d49117c0f5bae984e3503d27f6c3",
+      "src/components/home/home-ink-config.ts": "sha256:fc72aa2eacec4d97e6d94ef6e4104f0052704a95d0305bed6322f99b180b5877",
+      "src/components/home/home-ink-tone-picker.tsx": "sha256:cd948be8ae27cc386b75642e1c604c50ba57eeeba16f2662932fcb613c6d703f",
+      "src/components/home/how-it-works.tsx": "sha256:6a0d1a8aae35c30dcfe11a3f90459568f9dc036ba2be481fe0b61395d5afd4f2",
+      "src/components/home/mock-data.ts": "sha256:373edfa8971b200625c8780dc05c750f7fe6b9779f71f41b6db8fb9bda11674a",
+      "src/components/home/nearby-grid.tsx": "sha256:9e4e1e9cfbcb566d2a872b0d523451861d7b6cab5ef763b40dd6240fa43d8708",
+      "src/components/onboarding-banner.tsx": "sha256:606bd28940429f4111d2d6c2066c01dbf1960f2ad8d0a786e5e0a57ac03b9ffa",
+      "src/components/painel-wrapper.tsx": "sha256:b8e02840f129312c907009fd6e321c8ce5f729c08d382be40bad74f7ad22f9c1",
+      "src/components/panel-nav.ts": "sha256:fc8cfb7401fe6483d0680a9e9e182d0dfe2e7708c8b1b8cdf686e5903cf559ea",
+      "src/components/panel-shell.tsx": "sha256:f8d2d7075013cb363f908fbc5545a25d366a64609910933c76f545c82e69ff30",
+      "src/lib/account-levels.ts": "sha256:35229ef32897f4397d28e8af3e695721a761131be9ddc2bad649e1e235f45cca",
+      "src/lib/analytics.ts": "sha256:0a33305fefc8f93b3f9f93696543ff7a7f567932ce4eb295e7a98d0253a9bcd2",
+      "src/lib/seo.ts": "sha256:54bc3278b4fffa22766b7d2064c90d10c9e8d198ee4b53f739106df9bff960b3",
+      "src/lib/server/account-levels.ts": "sha256:3dba4ed8a870666e64b91d33561dcf6f39246b90c7bb4853ca1c692128726b4a",
+      "src/lib/server/app-preferences-config.ts": "sha256:0169ab5bfd12c9704655be103b9667384ce1cedd3715961b8be1b65fa3261a75",
+      "src/lib/server/resources.ts": "sha256:05ca239b98c30d766a0c2d114e2e9b257024ea4a630a709d74e85e994a406afa",
+      "src/lib/server/user-data-fields-config.ts": "sha256:c8a7fa2f3f4575b0dd7308cfa8ab559d2e0010e35c969189d483ea9e997fcaff",
+      "src/lib/vocabulary.ts": "sha256:f786af056fe65dbcfca85a4034f2846b8d4b51a2a2e997e0eec78db727aa5a61",
+      "tsconfig.json": "sha256:0e5ca2fe48b532e89ee32244b0951a01f0ae7265d45c88481710c4ae0e357f91"
     }
   },
   "plugins": {
@@ -36,10 +105,11 @@
       "shellFiles": {
         "src/app/api/storage/files/route.ts": "sha256:074414bc72788c9555faa46f8d46bd7f891200ddd45e781bb70bc7c37330fae5",
         "src/app/api/storage/files/[id]/route.ts": "sha256:d580d9b3e7914fdc9ee77f83647679e43b34ded8d89e6fb2ed5c710d2f07dbdd",
-        "src/app/api/storage/files/[id]/content/route.ts": "sha256:abe373bb8b11e5f9b7178a7375b0a81d1d728ba53654d41f56abba8e2543e0f2",
-        "src/app/api/public/storage/files/[id]/content/route.ts": "sha256:23733a324087b2ef7ad0fb0df0e12074439b009216ac9cb0b2573cb2c7d84d80"
+        "src/app/api/storage/files/[id]/content/route.ts": "sha256:448ac50f4462ae18cc96b0c130a39c5614592ec44fc255ed6f1941d947362dac",
+        "src/app/api/public/storage/files/[id]/content/route.ts": "sha256:c3b927c252245ec1791d4eccbfdd8512704a00448ab341c61dd8306a1ef4870f",
+        "src/app/api/storage/admin/route.ts": "sha256:41970cf5f6da97f70883fc41e8d2a02f612aca61b5f5671371c42dcea507ca11"
       },
-      "migrations": 3
+      "migrations": 6
     },
     "location": {
       "shellFiles": {
@@ -47,10 +117,11 @@
         "src/app/api/location/reverse/route.ts": "sha256:db46c89c7c094235603e3354b80c03e4748094c92bc9ed7f700232925a8e647f",
         "src/app/api/location/address/search/route.ts": "sha256:ae4a14b2c83521c02383f13015d38c64261128a9e064df4caa25992d21c61d53",
         "src/app/api/location/states/route.ts": "sha256:b764ec8825ef1ff7e827de99e76caf771049697ffe74ef0acdcf24e82949c492",
-        "src/app/api/location/cities/route.ts": "sha256:4d5bb45769256d3d0beb36bd373cf3d4cb52021f72aafa240555b2fcb76234d9",
-        "src/app/api/location/ip/route.ts": "sha256:ba89017fa5a8f32190dbac47d34b97a44e148a3189393ab28748042ad323d66b"
+        "src/app/api/location/cities/route.ts": "sha256:92fe6212b70462427b8c9feca99b2292d04cb0ac674fe0e56442d16031f81253",
+        "src/app/api/location/ip/route.ts": "sha256:ba89017fa5a8f32190dbac47d34b97a44e148a3189393ab28748042ad323d66b",
+        "src/app/api/location/resolve/route.ts": "sha256:8e968f1671c3545effdf9832793b11fb3f84597112121e6863666ce53ecc80d1"
       },
-      "migrations": 1
+      "migrations": 2
     },
     "pages": {
       "shellFiles": {
@@ -75,13 +146,13 @@
       "migrations": 1
     },
     "notifications": {
-      "migrations": 2
+      "migrations": 3
     },
     "holidays": {
       "migrations": 1
     },
     "core": {
-      "migrations": 25
+      "migrations": 32
     },
     "weather": {
       "shellFiles": {
@@ -91,10 +162,10 @@
     },
     "search": {
       "shellFiles": {
-        "src/app/busca/page.tsx": "sha256:f725cc573a2d173d399f2fe4610e59fcfc63c8e080def077e30ed06fd1bb1a01",
+        "src/app/busca/page.tsx": "sha256:7ad4c3e6d6c71b787991d284a02964050b2c4cf61646c2a90219950a473d4bbe",
         "src/app/api/ai/search-chat/route.ts": "sha256:b7fd44bbb09e8f0c2412a3d74e2a0b909b11ba8741eac9d9e17f3e8689e8a1be"
       },
-      "migrations": 2
+      "migrations": 3
     },
     "swipe": {
       "shellFiles": {
@@ -102,6 +173,52 @@
         "src/app/curtidos/page.tsx": "sha256:e31226563533e928c2d0e9434812a1ef9026e038edc4e762c672b521710fa116"
       },
       "migrations": 2
+    },
+    "tickets": {
+      "shellFiles": {
+        "src/app/api/contact/route.ts": "sha256:b810dbf72d6001922fa5d1b697869a9cced1e8c4f23dc8cc903bab3ad0205357",
+        "src/app/contato/page.tsx": "sha256:851c95554549aecaae782b3e7136a5383eb14860f3f3576f17e9a19698c942b9",
+        "src/app/painel/chamados/page.tsx": "sha256:5448cc7d39dec40d7c324e792d42bbb448cb93492950dbe5912c4f08d9c3fdae",
+        "src/app/painel/chamados/novo/page.tsx": "sha256:e230810d7bd7c0d5020ea4c8dcca7b3d9741e37b5d328113e703a1d1d4e75ef3",
+        "src/app/painel/chamados/[id]/page.tsx": "sha256:06e8e63c766f337fd9e643052cd45428bfa3ef4a6025da20fe96b4a4267513ed"
+      },
+      "migrations": 3
+    },
+    "services": {
+      "shellFiles": {
+        "src/app/painel/meus-servicos/page.tsx": "sha256:9b67e1b3f0eda6572e6d4ab9f4c6455cabfcfd210554e17b580b1e3e5aaac71e",
+        "src/app/painel/meus-servicos/[serviceId]/page.tsx": "sha256:342cad1f0fdc8ca455df7f1ead696a2ac7dbfa7fb23bb1feadae80ed6f5ce308",
+        "src/app/painel/administracao/aprovacoes/page.tsx": "sha256:ce76e71d93620cb9b229d093890e7ed596b3de352d83858364dae046bd09eb9a",
+        "src/app/painel/administracao/aprovacoes/[id]/page.tsx": "sha256:a50365c0f2e802c50c01b1d74c0a00fa0521e6f14c5aec06012ec3a54733c914"
+      },
+      "migrations": 8
+    },
+    "forms": {
+      "migrations": 1
+    },
+    "taxonomy": {
+      "migrations": 4
+    },
+    "reviews": {
+      "migrations": 1
+    },
+    "analytics": {
+      "migrations": 2
+    },
+    "messaging": {
+      "migrations": 1
+    },
+    "ai_assistant": {
+      "migrations": 1
+    },
+    "ai_review": {
+      "migrations": 1
+    },
+    "demandas": {
+      "migrations": 4
+    },
+    "pedidos": {
+      "migrations": 4
     }
   },
   "packageJson": {
@@ -156,19 +273,51 @@
     ".gitignore",
     "next.config.ts",
     "postcss.config.mjs",
+    "public/brand/logo-stacked.png",
+    "public/brand/logo.png",
+    "public/icon/icon-192.png",
+    "public/icon/icon-512.png",
+    "public/icon/icon-maskable-512.png",
+    "public/sw.js",
+    "src/app/[cidade]/anuncio/[uid]/page.tsx",
+    "src/app/[cidade]/layout.tsx",
+    "src/app/[cidade]/page.tsx",
+    "src/app/anuncios/[uid]/page.tsx",
+    "src/app/api/account/delete/route.ts",
+    "src/app/api/account/level/route.ts",
     "src/app/api/agenda/cities/route.ts",
     "src/app/api/agenda/ufs/route.ts",
+    "src/app/api/ai/credentials/route.ts",
+    "src/app/api/ai/prompts/test/route.ts",
+    "src/app/api/ai/review/apply-bulk/route.ts",
+    "src/app/api/ai/review/revisions/[id]/apply/route.ts",
+    "src/app/api/ai/review/revisions/[id]/reject/route.ts",
+    "src/app/api/ai/review/run/route.ts",
+    "src/app/api/ai/review/runs/[id]/cancel/route.ts",
+    "src/app/api/ai/review/runs/[id]/route.ts",
+    "src/app/api/ai/review/runs/[id]/step/route.ts",
+    "src/app/api/ai/review/runs/active/route.ts",
     "src/app/api/ai/search-chat/route.ts",
+    "src/app/api/ai/status/route.ts",
+    "src/app/api/auth/forgot-password/route.ts",
     "src/app/api/auth/login/route.ts",
     "src/app/api/auth/logout/route.ts",
     "src/app/api/auth/me/route.ts",
+    "src/app/api/auth/oauth/[provider]/callback/route.ts",
+    "src/app/api/auth/oauth/[provider]/start/route.ts",
+    "src/app/api/auth/otp/request/route.ts",
+    "src/app/api/auth/otp/verify/route.ts",
+    "src/app/api/auth/providers/route.ts",
     "src/app/api/auth/register/route.ts",
+    "src/app/api/auth/reset-password/route.ts",
+    "src/app/api/contact/route.ts",
+    "src/app/api/images/optimize/route.ts",
     "src/app/api/location/address/search/route.ts",
     "src/app/api/location/cep/route.ts",
     "src/app/api/location/cities/route.ts",
     "src/app/api/location/ip/route.ts",
+    "src/app/api/location/resolve/route.ts",
     "src/app/api/location/reverse/route.ts",
-    "src/app/api/location/states/route.ts",
     "src/app/api/onboarding/email/request-code/route.ts",
     "src/app/api/onboarding/email/verify-code/route.ts",
     "src/app/api/onboarding/progress/route.ts",
@@ -177,41 +326,81 @@
     "src/app/api/public/storage/files/[id]/content/route.ts",
     "src/app/api/resources/[resource]/[id]/route.ts",
     "src/app/api/resources/[resource]/route.ts",
+    "src/app/api/storage/admin/route.ts",
     "src/app/api/storage/files/[id]/content/route.ts",
     "src/app/api/storage/files/[id]/route.ts",
     "src/app/api/storage/files/route.ts",
+    "src/app/api/weather/route.ts",
+    "src/app/apple-icon.png",
     "src/app/busca/page.tsx",
+    "src/app/contato/page.tsx",
     "src/app/curtidos/page.tsx",
     "src/app/descobrir/page.tsx",
+    "src/app/esqueci-senha/page.tsx",
+    "src/app/favicon.ico",
     "src/app/globals.css",
+    "src/app/icon.png",
     "src/app/layout.tsx",
     "src/app/login/page.tsx",
+    "src/app/manifest.ts",
+    "src/app/opengraph-image.png",
     "src/app/page.tsx",
     "src/app/painel/[...kizuna]/page.tsx",
+    "src/app/painel/administracao/aprovacoes/[id]/page.tsx",
+    "src/app/painel/administracao/aprovacoes/page.tsx",
+    "src/app/painel/administracao/revisao-ia/page.tsx",
+    "src/app/painel/chamados/[id]/page.tsx",
+    "src/app/painel/chamados/novo/page.tsx",
+    "src/app/painel/chamados/page.tsx",
     "src/app/painel/layout.tsx",
+    "src/app/painel/metricas/page.tsx",
+    "src/app/painel/meus-servicos/[serviceId]/page.tsx",
+    "src/app/painel/meus-servicos/page.tsx",
+    "src/app/painel/onboarding/page.tsx",
     "src/app/painel/page.tsx",
     "src/app/painel/root/[slug]/page.tsx",
     "src/app/painel/security/[slug]/page.tsx",
+    "src/app/painel/verificar-email/page.tsx",
+    "src/app/privacidade/page.tsx",
+    "src/app/redefinir-senha/page.tsx",
     "src/app/registre-se/page.tsx",
+    "src/app/robots.ts",
+    "src/app/sitemap.ts",
+    "src/app/sobre/page.tsx",
+    "src/app/termos/page.tsx",
     "src/components/footer.tsx",
     "src/components/home-content.tsx",
+    "src/components/home-page.tsx",
     "src/components/home/category-rail.tsx",
+    "src/components/home/category-rails.tsx",
     "src/components/home/home-hero.tsx",
     "src/components/home/home-ink-config.ts",
     "src/components/home/home-ink-tone-picker.tsx",
+    "src/components/home/home-slider.tsx",
     "src/components/home/how-it-works.tsx",
-    "src/components/home/join-cta.tsx",
     "src/components/home/mock-data.ts",
     "src/components/home/nearby-grid.tsx",
+    "src/components/home/social-install-cards.tsx",
+    "src/components/login-art.tsx",
+    "src/components/login-aside.tsx",
     "src/components/onboarding-banner.tsx",
     "src/components/painel-wrapper.tsx",
+    "src/components/panel-nav.ts",
     "src/components/panel-shell.tsx",
+    "src/components/register-art.tsx",
+    "src/components/register-aside.tsx",
     "src/i18n/messages.ts",
+    "src/lib/account-levels.ts",
+    "src/lib/analytics.ts",
+    "src/lib/anuncio-detail.tsx",
     "src/lib/kizuna/registry/index.ts",
+    "src/lib/seo.ts",
+    "src/lib/server/account-levels.ts",
     "src/lib/server/app-preferences-config.ts",
     "src/lib/server/postgrest-crud.ts",
     "src/lib/server/resources.ts",
     "src/lib/server/user-data-fields-config.ts",
+    "src/lib/vocabulary.ts",
     "src/proxy.ts",
     "tsconfig.json",
     "tsconfig.kizuna.json"

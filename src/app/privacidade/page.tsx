@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { StaticPage } from '@/components/static-page';
+import { StaticPage } from '@kizuna/core/client/components/pages/static-page';
 
 // Página ESTÁTICA (server component). Texto-modelo: revise com o responsável jurídico e preencha
 // o contato do controlador de dados antes de publicar/pedir aprovação de anúncios.

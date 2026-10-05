@@ -3,7 +3,7 @@
 -- Aplicar DEPOIS do db/auth.sql, em base limpa:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/public.sql
 -- Ordem = kizuna.plugins.json (ordem de dependência).
--- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (2), onboarding (1), storage (6), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (4), services (8), reviews (1), analytics (1), search (3), swipe (2), messaging (1), ai_assistant (1), ai_review (1), demandas (4), pedidos (4)
+-- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (3), onboarding (1), storage (6), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (4), services (8), reviews (1), analytics (2), search (3), swipe (2), messaging (1), ai_assistant (1), ai_review (1), demandas (4), pedidos (4)
 
 
 -- ===============================================================================================
@@ -440,7 +440,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: tickets  (2 arquivos)
+-- PLUGIN: tickets  (3 arquivos)
 -- ===============================================================================================
 
 
@@ -727,6 +727,38 @@ WITH CHECK (
 
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('tickets', '1.1.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/tickets/0003_tickets_view_permission.sql
+-- ===============================================================================================
+
+-- plugins/tickets/0003_tickets_view_permission.sql
+-- `tickets/view`: permissão própria do menu "Chamados" (abrir e acompanhar os próprios chamados).
+-- Antes o menu usava `default/view` e, na tela de papéis, aparecia misturado ao acesso básico do
+-- painel — não dava para liberar o painel sem liberar chamados, nem o contrário.
+--
+-- Para ninguém perder acesso, todo papel que hoje tem `default/view` ganha `tickets/view`.
+-- `tickets/manage` (ver todos, responder) continua separado. As policies de `tickets` não mudam:
+-- o dono sempre vê os próprios chamados; esta permissão só controla o menu e a rota.
+
+INSERT INTO auth.permissions (resource, action, name)
+VALUES ('tickets', 'view', 'Abrir e acompanhar os próprios chamados')
+ON CONFLICT (resource, action) DO NOTHING;
+
+INSERT INTO auth.role_grants (role_id, permission_id)
+SELECT g.role_id, t.id
+  FROM auth.role_grants g
+  JOIN auth.permissions d ON d.id = g.permission_id AND d.resource = 'default' AND d.action = 'view'
+ CROSS JOIN auth.permissions t
+ WHERE t.resource = 'tickets' AND t.action = 'view'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('tickets', '1.2.0')
 ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
 
 NOTIFY pgrst, 'reload schema';
@@ -4179,7 +4211,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: analytics  (1 arquivo)
+-- PLUGIN: analytics  (2 arquivos)
 -- ===============================================================================================
 
 
@@ -4308,6 +4340,26 @@ END $$;
 
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('analytics', '2.0.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/analytics/0002_analytics_view_permission.sql
+-- ===============================================================================================
+
+-- plugins/analytics/0002_analytics_view_permission.sql
+-- `analytics/view`: permissão própria do menu "Métricas" do painel, para liberá-lo por papel na tela
+-- de papéis. Só entra no catálogo — nenhum papel recebe por padrão (root passa sempre); quem for
+-- liberar concede em /painel/root/papeis. As policies das tabelas de analytics não mudam.
+
+INSERT INTO auth.permissions (resource, action, name)
+VALUES ('analytics', 'view', 'Ver as métricas das próprias publicações')
+ON CONFLICT (resource, action) DO NOTHING;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('analytics', '2.1.0')
 ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
 
 NOTIFY pgrst, 'reload schema';

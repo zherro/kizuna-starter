@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { aiRpc } from '@kizuna/core/server/ai';
-import { requireAiRoot } from '@/lib/server/ai-gate';
+import { requireAiRoot } from '@kizuna/core/server/ai/gate';
 
 export const runtime = 'nodejs';
 

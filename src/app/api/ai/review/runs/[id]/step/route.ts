@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ReviewRunNotFoundError, stepReviewRun } from '@kizuna/core/server/ai';
-import { jsonError, requireAiRoot } from '@/lib/server/ai-gate';
+import { jsonError, requireAiRoot } from '@kizuna/core/server/ai/gate';
 
 export const runtime = 'nodejs';
 // Um passo (até 5 anúncios, concorrência 3) só passa de 60 s com provider muito lento.
