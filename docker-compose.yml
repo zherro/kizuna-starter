@@ -19,18 +19,8 @@ services:
     # do container em runtime. Não coloque valores sensíveis aqui.
     env_file:
       - .env
-    environment:
-      # JSONs da eleição, gerados pelo stack eleicao-cron (somente leitura aqui).
-      ELEICAO_DATA_PATH: /data/eleicao
-    volumes:
-      - eleicao-data:/data/eleicao:ro
     # Mesma rede externa do stack postgres-postgrest, para chamar
     # http://postgrest:3000 (POSTGREST_URL) por nome de serviço.
-
-volumes:
-  # Mesmo `name` do stack eleicao-cron: é assim que os dois enxergam o mesmo volume.
-  eleicao-data:
-    name: eleicao-data
 
 networks:
   default:

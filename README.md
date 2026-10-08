@@ -16,12 +16,18 @@ git clone --recurse-submodules <este-repo> meu-app && cd meu-app
 node kizuna-core/cli install                    # materializa a casca + npm install
 cp .env.example .env                            # preencher PGRST_JWT_SECRET + POSTGREST_URL
 node kizuna-core/cli db install --db-url "postgresql://user:pass@host:5432/db"
-#   Windows:  --psql "C:\Program Files\PostgreSQL\17\bin\psql.exe"
-#   Docker:   --psql "docker exec -i <container> psql"
+#   conecta direto com o driver pg do CLI (JS puro, sem psql) — igual no Windows e no Linux.
+#   o banco precisa estar acessível na porta da URL (num container: publique a 5432 ou use túnel ssh).
 
 npm run dev                                     # /registre-se → 1º usuário vira root
-node kizuna-core/cli db install --db-url "..."  # re-rodar: seeds que dependem de tenant
+node kizuna-core/cli db run db/reseed.sql --db-url "postgresql://user:pass@host:5432/db"
+#   seeds do projeto que dependem do root: páginas, cidades, taxonomia, forms (cinema/eventos/noticias)
+#   aborta se não houver root, ou se já existir anúncio/demanda/resposta de formulário
 ```
+
+`db/auth.sql`, `db/public.sql` e `db/reseed.sql` são gerados por `node db/build.mjs` (regenere quando
+o core, `kizuna.plugins.json` ou `db/extras/` mudarem). `auth.sql` + `public.sql` = o mesmo que o
+`db install` aplica, para quem prefere rodar o SQL na mão.
 
 Commitar depois do install: `src/ package.json package-lock.json tsconfig*.json postcss.config.mjs next.config.ts next-env.d.ts kizuna.lock`.
 

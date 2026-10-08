@@ -9,7 +9,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const cities = await loadRoutableCities().catch(() => []);
   return [
     { url: `${url}/`, changeFrequency: 'daily', priority: 1 },
-    { url: `${url}/eleicao`, changeFrequency: 'hourly', priority: 0.6 },
     { url: `${url}/sobre`, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${url}/contato`, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${url}/privacidade`, changeFrequency: 'yearly', priority: 0.3 },

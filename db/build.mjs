@@ -1,10 +1,12 @@
-// Gera os dois scripts consolidados do banco deste projeto:
+// Gera os três scripts consolidados do banco deste projeto:
 //
 //   db/auth.sql    → schema do CORE (kizuna-core/sql/*.sql): auth, RBAC, plugin_registry,
 //                    login/signup, roles do PostgREST.
 //   db/public.sql  → migrations de TODOS os plugins de kizuna.plugins.json, na ordem da lista
 //                    (que já está em ordem de dependência), incluindo os seeds que os plugins
 //                    trazem (ex.: pages/0002_pages_seed.sql).
+//   db/reseed.sql  → seeds do projeto que dependem do root (páginas, cidades, taxonomia, forms);
+//                    rodar depois do 1º cadastro.
 //
 //   node db/build.mjs
 //
@@ -14,6 +16,8 @@
 // Aplicar em base LIMPA, nesta ordem:
 //   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/auth.sql
 //   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/public.sql
+//   (cadastrar o 1º usuário em /registre-se → vira root)
+//   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/reseed.sql
 // (nem todo .sql de origem é idempotente; numa base já provisionada use
 //  `node kizuna-core/cli db migrate`, que aplica só o que falta.)
 
@@ -83,5 +87,41 @@ writeFileSync(
   ]) + body
 );
 
+// --- reseed: dados que dependem do root -----------------------------------------------------
+// Os seeds abaixo resolvem tenant/created_by pelo primeiro root: rodados antes do cadastro dele
+// viram no-op. Ordem obrigatória: taxonomia antes dos formulários (o clear-all dela zera
+// categories.form_key, que os seeds de formulário preenchem).
+const reseedFiles = [
+  'kizuna-core/plugins/pages/0002_pages_seed.sql',
+  'db/extras/location_seed_bora_cuiaba.sql',
+  'db/extras/taxonomy_seed_bora_cuiaba.sql',
+  'kizuna-core/db/extras/forms_seed_cinema.sql',
+  'db/extras/forms_seed_eventos.sql',
+  'db/extras/forms_seed_noticias.sql',
+].map((f) => join(projectDir, f));
+
+writeFileSync(
+  join(dbDir, 'reseed.sql'),
+  header('Bora Cuiabá — seeds do projeto (rodar DEPOIS do 1º cadastro, que vira root)', [
+    'Aplicar depois de db/auth.sql + db/public.sql e do cadastro do root em /registre-se:',
+    '  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/reseed.sql',
+    'DESTRUTIVO: taxonomia e formulários são apagados e recriados; ABORTA se já existir',
+    'qualquer anúncio/demanda ou resposta de formulário (cada arquivo roda na sua transação).',
+    'Sem root cadastrado, ABORTA logo no início (nada é aplicado).',
+    `Arquivos: ${reseedFiles.map(rel).join(', ')}`,
+  ]) +
+    `
+DO $root$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE is_root = true) THEN
+    RAISE EXCEPTION 'nenhum usuario root: cadastre o 1o usuario em /registre-se antes do reseed';
+  END IF;
+END
+$root$;
+` +
+    concat(reseedFiles)
+);
+
 console.log(`db/auth.sql    — ${coreFiles.length} arquivos do core`);
 console.log(`db/public.sql  — ${count} arquivos de ${plugins.length} plugins`);
+console.log(`db/reseed.sql  — ${reseedFiles.length} seeds do projeto`);

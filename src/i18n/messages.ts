@@ -1,10 +1,3 @@
-import {
-  ELECTION_EN_US,
-  ELECTION_ES_ES,
-  ELECTION_PT_BR,
-  type ElectionMessages,
-} from './election-messages';
-
 export const languages = ['pt-BR', 'en-US', 'es-ES'] as const;
 export type AppLanguage = (typeof languages)[number];
 
@@ -291,7 +284,6 @@ export type AppMessages = {
   default: {
     dashboard: string;
   };
-  election: ElectionMessages;
 };
 
 export const messages: Record<AppLanguage, AppMessages> = {
@@ -393,7 +385,6 @@ export const messages: Record<AppLanguage, AppMessages> = {
     default: {
       dashboard: 'Meu Painel',
     },
-    election: ELECTION_PT_BR,
   },
   'en-US': {
     wizard: WIZARD_PT_BR,
@@ -493,7 +484,6 @@ export const messages: Record<AppLanguage, AppMessages> = {
     default: {
       dashboard: 'Dashboard',
     },
-    election: ELECTION_EN_US,
   },
   'es-ES': {
     wizard: WIZARD_PT_BR,
@@ -593,6 +583,5 @@ export const messages: Record<AppLanguage, AppMessages> = {
     default: {
       dashboard: 'Dashboard',
     },
-    election: ELECTION_ES_ES,
   },
 };

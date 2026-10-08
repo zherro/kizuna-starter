@@ -74,7 +74,6 @@ export function Footer() {
     { href: "/", label: messages.nav.home },
     { href: "/painel", label: messages.default.dashboard },
     { href: "/painel/taxonomia/categorias", label: messages.footer.categories },
-    { href: "/eleicao", label: messages.election.footerLink },
     { href: "/sobre", label: messages.footer.about },
     { href: "/contato", label: messages.nav.contact },
     { href: "/privacidade", label: messages.footer.privacy },
