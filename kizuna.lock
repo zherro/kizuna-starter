@@ -2,8 +2,8 @@
   "lockVersion": 1,
   "kizunaCore": {
     "version": "0.9.10",
-    "sha": "faecfc7a3bf600a402cf64a05ba1fd95997f773d",
-    "syncedAt": "2026-10-05T20:45:34.687Z"
+    "sha": "04a19e88cc9c0fd4b6bdfded299a130bcc745971",
+    "syncedAt": "2026-10-09T11:46:28.951Z"
   },
   "template": {
     "version": "0.9.10",
@@ -54,7 +54,8 @@
       "src/app/painel/verificar-email/page.tsx": "sha256:df440435fb4e48e86b42c86b3bd393ea6aa124b18739eb45a58483827b4b1cf7",
       "src/app/redefinir-senha/page.tsx": "sha256:f900139e02da4c1bc74f00f05c515f75d7e515580ae4995f4ad2a200e86c220a",
       "src/lib/anuncio-detail.tsx": "sha256:bf597344038e796e68932f048ecceae5c123ad1658d4cccfcdde068528ee876e",
-      "src/lib/server/postgrest-crud.ts": "sha256:1071b9d4a24d4ac6b984e23e622ecbe2cb8d83c6a29f3634bd892df383d5a684"
+      "src/lib/server/postgrest-crud.ts": "sha256:1071b9d4a24d4ac6b984e23e622ecbe2cb8d83c6a29f3634bd892df383d5a684",
+      "src/app/api/auth/oauth/[provider]/onetap/route.ts": "sha256:c0e34e6bcfa85dc2b7ea7c9ca4ae2b63fbdeee509053945f232331d28ccc8dff"
     },
     "seeds": {
       ".gitignore": "sha256:f9583f39a199b3318badfb8f15cac264ce7272ec871580379c42ca9c5543bca2",
@@ -89,7 +90,11 @@
       "src/lib/server/resources.ts": "sha256:90c8e070a3d2b43e0c7dadac316dc6941c790f43e868bae3f482069bcc7ebc7e",
       "src/lib/server/user-data-fields-config.ts": "sha256:c8a7fa2f3f4575b0dd7308cfa8ab559d2e0010e35c969189d483ea9e997fcaff",
       "src/lib/vocabulary.ts": "sha256:f786af056fe65dbcfca85a4034f2846b8d4b51a2a2e997e0eec78db727aa5a61",
-      "tsconfig.json": "sha256:0e5ca2fe48b532e89ee32244b0951a01f0ae7265d45c88481710c4ae0e357f91"
+      "tsconfig.json": "sha256:0e5ca2fe48b532e89ee32244b0951a01f0ae7265d45c88481710c4ae0e357f91",
+      "src/app/sitemap.ts": "sha256:448142db95c96dabb9900eaf2d214c09db7366a37341ba0f52c2e583bf4564fb",
+      "src/components/footer.tsx": "sha256:48cd2139c0d30ff16817fc8fd29a6ad2ff74d9f1142f975b60031cd5af230ffe",
+      "src/components/home/home-slider.tsx": "sha256:4e41602b63f4e9f329a9eb54180b46f2c45c9e587715423664ee0ae8bfaea23a",
+      "src/i18n/messages.ts": "sha256:c02d214456a8471b3c28aabbba5ec283b4eef1d57fcf2fd6ae338958883128ca"
     }
   },
   "plugins": {
@@ -305,6 +310,7 @@
     "src/app/api/auth/logout/route.ts",
     "src/app/api/auth/me/route.ts",
     "src/app/api/auth/oauth/[provider]/callback/route.ts",
+    "src/app/api/auth/oauth/[provider]/onetap/route.ts",
     "src/app/api/auth/oauth/[provider]/start/route.ts",
     "src/app/api/auth/otp/request/route.ts",
     "src/app/api/auth/otp/verify/route.ts",
