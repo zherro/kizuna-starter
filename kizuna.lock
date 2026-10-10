@@ -2,8 +2,8 @@
   "lockVersion": 1,
   "kizunaCore": {
     "version": "0.9.10",
-    "sha": "c419ca268ffe1cbcc58f2c59a0a69a451473388c",
-    "syncedAt": "2026-10-09T14:56:26.059Z"
+    "sha": "c2739bfbe3b6ec9fcb6f19b6bcfbb2a50b676bfc",
+    "syncedAt": "2026-10-10T11:36:42.834Z"
   },
   "template": {
     "version": "0.9.10",
@@ -59,7 +59,7 @@
     },
     "seeds": {
       ".gitignore": "sha256:f9583f39a199b3318badfb8f15cac264ce7272ec871580379c42ca9c5543bca2",
-      "next.config.ts": "sha256:345cf035e06ae0522900aea450d405cf04e6f6794e0b85c9df99f43f6e346129",
+      "next.config.ts": "sha256:d1f5697c938b6adacff3478b4ac226a5533dbaedf24892faebc427aa77a138fb",
       "postcss.config.mjs": "sha256:9ca55411b62b2c9cc5631a3e6c631d80c8b8171c7b9ea1e19f83400f4100e910",
       "public/sw.js": "sha256:d8f283da4ed47727c363c82e49c49b20785f0ced76143f4fa1f8f7b9cda859b9",
       "src/app/layout.tsx": "sha256:af0da240e3587a04df278d3d5a3dd3632cfcdf9d54703f84626e81b3c621c357",
@@ -81,7 +81,7 @@
       "src/components/onboarding-banner.tsx": "sha256:606bd28940429f4111d2d6c2066c01dbf1960f2ad8d0a786e5e0a57ac03b9ffa",
       "src/components/painel-wrapper.tsx": "sha256:b8e02840f129312c907009fd6e321c8ce5f729c08d382be40bad74f7ad22f9c1",
       "src/components/panel-nav.ts": "sha256:842e60d98f2f4693cf76cbbf9585ec78db97357fcd47da0ade6cd330af05e9da",
-      "src/components/panel-shell.tsx": "sha256:f8d2d7075013cb363f908fbc5545a25d366a64609910933c76f545c82e69ff30",
+      "src/components/panel-shell.tsx": "sha256:00dda5f02225e1769af5fbd1b7813826cb07ff673d2e51aa2079767c22f6aef8",
       "src/lib/account-levels.ts": "sha256:35229ef32897f4397d28e8af3e695721a761131be9ddc2bad649e1e235f45cca",
       "src/lib/analytics.ts": "sha256:0a33305fefc8f93b3f9f93696543ff7a7f567932ce4eb295e7a98d0253a9bcd2",
       "src/lib/seo.ts": "sha256:54bc3278b4fffa22766b7d2064c90d10c9e8d198ee4b53f739106df9bff960b3",
@@ -276,7 +276,11 @@
     }
   },
   "materialized": [
+    ".dockerignore",
     ".gitignore",
+    "Dockerfile",
+    "docker-compose.db.yml",
+    "docker-compose.yml",
     "next.config.ts",
     "postcss.config.mjs",
     "public/brand/logo-stacked.png",

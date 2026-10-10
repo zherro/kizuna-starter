@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
   // a env (--build-arg no Docker) sobrescreve; sem ela vale o "version" de cada package.json,
   // que o scripts/publish.sh incrementa a cada push.
   env: {
-    APP_VERSION: process.env.APP_VERSION || appPkg.version,
+    APP_VERSION: process.env.APP_VERSION || (appPkg as { version?: string }).version || '0.0.0',
     KIZUNA_CORE_VERSION: process.env.KIZUNA_CORE_VERSION || corePkg.version,
   },
 

@@ -1,0 +1,39 @@
+# Banco LOCAL de desenvolvimento: Postgres + PostgREST. Não é receita de produção (sem rede/backup).
+#   docker compose -f docker-compose.db.yml up -d
+# Lê POSTGRES_PASSWORD e PGRST_JWT_SECRET do .env (o mesmo do app).
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: app
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d app"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgrest:
+    image: postgrest/postgrest:v12.2.3
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/app
+      PGRST_DB_SCHEMAS: public,auth
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${PGRST_JWT_SECRET:?defina PGRST_JWT_SECRET no .env}
+      # As functions de auth do core leem request.jwt.claims como um JSON só (formato legado).
+      PGRST_DB_USE_LEGACY_GUCS: "true"
+    ports:
+      - "${PGRST_PORT:-3001}:3000"
+
+volumes:
+  pgdata:

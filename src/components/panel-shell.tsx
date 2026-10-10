@@ -17,7 +17,7 @@ import {
 import { navigationGroups } from './panel-nav';
 import { OpenTicketsBadge } from '@kizuna/core/client/components/tickets/open-tickets-badge';
 
-const site = (cfg as { site?: { name?: string; logo?: string } }).site;
+const site = (cfg as { site?: { name?: string; logo?: string | null } }).site;
 const siteName = site?.name ?? 'Kizuna';
 
 
