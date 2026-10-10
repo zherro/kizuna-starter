@@ -2,8 +2,8 @@
   "lockVersion": 1,
   "kizunaCore": {
     "version": "0.9.10",
-    "sha": "c2739bfbe3b6ec9fcb6f19b6bcfbb2a50b676bfc",
-    "syncedAt": "2026-10-10T11:36:42.834Z"
+    "sha": "721cfbd743a2c28590b91accee220ba4ff2092b2",
+    "syncedAt": "2026-10-10T22:39:48.238Z"
   },
   "template": {
     "version": "0.9.10",
@@ -170,7 +170,7 @@
         "src/app/busca/page.tsx": "sha256:7ad4c3e6d6c71b787991d284a02964050b2c4cf61646c2a90219950a473d4bbe",
         "src/app/api/ai/search-chat/route.ts": "sha256:b7fd44bbb09e8f0c2412a3d74e2a0b909b11ba8741eac9d9e17f3e8689e8a1be"
       },
-      "migrations": 3
+      "migrations": 4
     },
     "swipe": {
       "shellFiles": {

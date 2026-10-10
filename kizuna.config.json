@@ -34,7 +34,7 @@
   },
   "regions": [
     {
-      "_comment": "Regiões: cidades vizinhas cujos anúncios são SUGERIDOS além da cidade selecionada (ela vem sempre primeiro; o seletor continua escolhendo uma cidade só). cities = códigos IBGE. suggestTo = regiões cujos visitantes também veem esta como sugestão. Usado pela busca (seções abaixo dos resultados) e pelos carrosséis da home com \"scope\": \"region\".",
+      "_comment": "Regiões: cidades irmãs (códigos IBGE em cities) funcionam como UMA praça — todo filtro por uma delas inclui as outras (busca, swipe, carrosséis da home), com a cidade selecionada primeiro; o seletor continua escolhendo uma cidade só. suggestTo = regiões cujos visitantes veem esta como SUGESTÃO (seção à parte abaixo dos resultados da busca).",
       "key": "grande-cuiaba",
       "title": "Também na Grande Cuiabá",
       "cities": ["5103403", "5108402"]

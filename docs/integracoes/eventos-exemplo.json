@@ -1,0 +1,109 @@
+{
+  "versao": 1,
+  "categoria": "eventos",
+  "titulo": "Celebration Flashback",
+  "descricao": "Noite de flashback em Cuiabá no sábado, 10 de outubro de 2026. Ingressos de pista a partir de R$ 70 (meia), mesas para 3 e 4 pessoas e camarotes individuais ou para até 15 pessoas. Proibido para menores de 18 anos. Compra antecipada na Casa de Festas (Pantanal Shopping), online ou pelo WhatsApp.",
+  "descricao_revisada": null,
+  "moeda": "BRL",
+  "status": "ativo",
+  "preco": 70,
+  "gratuito": false,
+  "publicado_em": "2026-10-01T15:00:00Z",
+  "expira_em": null,
+  "taxonomia": {
+    "categoria": "festas-e-baladas",
+    "subcategorias": [
+      { "slug": "festas-tematicas", "nome": "Festas temáticas" }
+    ]
+  },
+  "local": {
+    "nome": "Lua Morena",
+    "endereco": "Av. Exemplo",
+    "numero": "1000",
+    "complemento": null,
+    "bairro": "Bairro Exemplo",
+    "cidade": "Cuiabá",
+    "uf": "MT",
+    "cep": "78000-000",
+    "latitude": -15.601411,
+    "longitude": -56.097892
+  },
+  "contato": {
+    "telefone": "(65) 9.9953-1935",
+    "whatsapp": "(65) 9.9953-1935",
+    "email": null,
+    "site": "https://exemplo.com.br/eventos/celebration-flashback",
+    "instagram": "https://instagram.com/exemplo",
+    "link_ingresso": "https://exemplo.com.br/eventos/celebration-flashback/ingressos"
+  },
+  "midia": {
+    "capa": "https://exemplo.com.br/img/celebration-flashback-capa.jpg",
+    "imagens": [
+      "https://exemplo.com.br/img/celebration-flashback-capa.jpg",
+      "https://exemplo.com.br/img/celebration-flashback-mapa.jpg"
+    ],
+    "capa_local": null,
+    "imagens_locais": [],
+    "video_url": null
+  },
+  "detalhes": {
+    "tipo_evento": "Festa",
+    "organizador": "Casa de Festas",
+    "classificacao_indicativa": "18",
+    "artistas": [],
+    "sessoes": [
+      {
+        "data": "2026-10-10",
+        "hora_inicio": "22:00",
+        "hora_fim": "04:00",
+        "abertura_portoes": "21:00"
+      }
+    ],
+    "ingressos": [
+      { "setor": "Camarote", "tipo": null, "pessoas": 15, "valor": 1600, "lote": null, "situacao": "Disponível", "link_compra": null, "descricao": null, "evidencia": "CAMAROTE\t15 PESSOAS\tR$1.600,00\tComprar ❯" },
+      { "setor": "Camarote", "tipo": null, "pessoas": 10, "valor": 1200, "lote": null, "situacao": "Disponível", "link_compra": null, "descricao": null, "evidencia": "CAMAROTE\t10 PESSOAS\tR$1.200,00\tComprar ❯" },
+      { "setor": "Camarote individual", "tipo": "Meia", "pessoas": 1, "valor": 80, "lote": null, "situacao": "Disponível", "link_compra": null, "descricao": null, "evidencia": "CAMAROTE INDIVIDUAL\tMEIA\tR$80,00\tComprar ❯" },
+      { "setor": "Camarote individual", "tipo": "Inteira", "pessoas": 1, "valor": 160, "lote": null, "situacao": "Disponível", "link_compra": null, "descricao": null, "evidencia": "CAMAROTE INDIVIDUAL\tINTEIRA\tR$160,00\tComprar ❯" },
+      { "setor": "Mesa Azul", "tipo": null, "pessoas": 4, "valor": 340, "lote": null, "situacao": "Disponível", "link_compra": null, "descricao": null, "evidencia": "MESA AZUL\t04 PESSOAS\tR$340,00\tComprar ❯" },
+      { "setor": "Mesa Lilás", "tipo": null, "pessoas": 4, "valor": 300, "lote": null, "situacao": "Disponível", "link_compra": null, "descricao": null, "evidencia": "MESA LILÁS\t04 PESSOAS\tR$300,00\tComprar ❯" },
+      { "setor": "Mesa Laranja", "tipo": null, "pessoas": 4, "valor": 280, "lote": null, "situacao": "Disponível", "link_compra": null, "descricao": null, "evidencia": "MESA LARANJA\t04 PESSOAS\tR$280,00\tComprar ❯" },
+      { "setor": "Bistrô", "tipo": null, "pessoas": 3, "valor": 240, "lote": null, "situacao": "Disponível", "link_compra": null, "descricao": null, "evidencia": "BISTRÔ\t03 PESSOAS\tR$240,00\tComprar ❯" },
+      { "setor": "Pista em pé", "tipo": "Meia", "pessoas": 1, "valor": 70, "lote": null, "situacao": "Disponível", "link_compra": null, "descricao": null, "evidencia": "PISTA EM PÉ\tMEIA\tR$70,00\tComprar ❯" },
+      { "setor": "Pista em pé", "tipo": "Social", "pessoas": 1, "valor": 80, "lote": null, "situacao": "Disponível", "link_compra": null, "descricao": "Meia-entrada social: consulte as regras no ponto de venda.", "evidencia": "PISTA EM PÉ\tSOCIAL\tR$80,00\tComprar ❯" },
+      { "setor": "Pista em pé", "tipo": "Inteira", "pessoas": 1, "valor": 140, "lote": null, "situacao": "Disponível", "link_compra": null, "descricao": null, "evidencia": "PISTA EM PÉ\tINTEIRA\tR$140,00\tComprar ❯" }
+    ],
+    "canais_venda": ["Ponto de venda", "Online", "WhatsApp", "Disk ingresso"],
+    "formas_pagamento": ["Dinheiro", "Pix", "Cartão de débito", "Cartão de crédito"],
+    "pagamento_observacao": "Acréscimo no cartão de débito e crédito (Lei 13.455/2017). Disk ingresso: consulte a taxa do motoboy. Online: ingresso por SMS e e-mail, pagamento via Pix.",
+    "pontos_de_venda": [
+      {
+        "nome": "Casa de Festas",
+        "endereco": "Pantanal Shopping, Piso 2, ao lado da Riachuelo — Av. Historiador Rubens de Mendonça, 3300, Jardim Aclimação, Cuiabá/MT",
+        "horario": "Segunda a sábado, 10h às 20h; domingo fechado",
+        "telefone": "(65) 9.9953-1935",
+        "link": null,
+        "evidencia": "CASA DE FESTAS\n\n Pantanal Shopping, Piso 2 ao lado da Riachuelo\natendimento 10h as 20h segunda a sábado, domingo fechado\nAv. Historiador Rubens de Mendonça. 3300\nJardim Aclimação\nCuiabá/MT"
+      }
+    ],
+    "meia_entrada": "Têm direito: estudantes; doadores de sangue ou medula (carteira de doador); professores (holerite ou carteira da associação ou sindicato); idosos de 60 a 65 anos; aposentados; jovens de baixa renda; portadores de câncer e doenças degenerativas; portadores do ID Jovem válido; radialistas e jornalistas (Lei Municipal 5.497/2011); PCD.",
+    "acessibilidade": "Gratuidade para pessoas com deficiência (Lei 5.634/2013, art. 2º), com carteira da entidade representativa; não aceita laudo nem carteirinha de ônibus. Direito a acompanhante: carteira com essa observação, deficientes visuais e cadeirantes. Cortesias retiradas no dia, na bilheteria da Lua Morena. Informações com Tania: (65) 9.9946-6305, das 9h às 18h.",
+    "observacoes": "Valores sujeitos a alteração sem aviso prévio.",
+    "texto_original": "10/10/2026\n Cuiabá - MT\n\nConvite\tDescrição\tValor\t\nCAMAROTE\t15 PESSOAS\tR$1.600,00\tComprar ❯\n(...texto bruto da página, sem alteração...)",
+    "alertas": []
+  },
+  "origem": {
+    "fonte": "assistente",
+    "id_evento": "celebration-flashback-2026-10-10",
+    "url": "https://exemplo.com.br/eventos/celebration-flashback",
+    "coletado_em": "2026-10-10T20:50:12Z"
+  },
+  "revisao": {
+    "modelo": "google/gemini-2.5-flash-lite",
+    "revisado_em": "2026-10-10T20:54:51Z",
+    "evidencias": [
+      { "caminho": "detalhes.sessoes[0]", "evidencia": "10/10/2026" },
+      { "caminho": "detalhes.classificacao_indicativa", "evidencia": "CLASSIFICAÇÃO 18+ – Proibido para menores de 18 anos" }
+    ],
+    "descartados": []
+  }
+}

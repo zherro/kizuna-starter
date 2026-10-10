@@ -5,6 +5,7 @@ Documentos que dizem a um robô (crawler + IA) onde gravar cada campo de um payl
 | Categoria | Documento | Fonte |
 |---|---|---|
 | Cinema | [cinema-depara.md](cinema-depara.md) | ingresso.com |
+| Eventos | [eventos-depara.md](eventos-depara.md) (exemplo: [eventos-exemplo.json](eventos-exemplo.json)) | crawler + assistente de IA |
 
 ## Manter atualizado
 

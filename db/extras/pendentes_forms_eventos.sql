@@ -1,53 +1,15 @@
--- db/extras/forms_seed_eventos.sql
+-- db/extras/pendentes_forms_eventos.sql
 --
--- Seed do formulario `eventos` (plugin forms). Um anuncio = um evento:
---   - Evento: data, realizador, link, endereco em texto, classificacao, gratuito e artistas.
---   - Sessoes (`list`): data e horarios de cada dia do evento.
---   - Ingressos (`list`): titulo, setor, tipo, pessoas, lote, valor (mascara R$), situacao, descricao e link.
---   - Onde comprar: link de ingressos, canais, formas de pagamento e pontos de venda (`list`).
---   - Contato e informacoes (meia-entrada, acessibilidade, observacoes).
--- Titulo, descricao, preco, imagens, endereco do local e validade ficam no anuncio (coluna/tabela propria).
--- Categoria/subcategoria e taxonomia, nao formulario.
---
--- O importador (docs/integracoes/eventos-depara.md) grava as respostas direto em public.form_results e pode
--- acrescentar opcoes novas aos campos `canais_venda`, `formas_pagamento` e `ingressos.tipo`.
---
--- DESTRUTIVO (recria): apaga e reinsere o formulario do tenant do root; ABORTA se ja houver respostas.
--- Banco que ja tem respostas: use db/extras/pendentes_forms_eventos.sql (atualiza o schema no lugar).
--- Vincula as categorias do grupo ao formulario (categories.form_key) sem sobrescrever um form_key existente.
--- Rode DEPOIS de db/extras/taxonomy_seed_bora_cuiaba.sql (o clear-all dele zera o form_key).
--- Aplicar: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/extras/forms_seed_eventos.sql
+-- Atualiza o formulario `eventos` de um banco existente para o schema de db/extras/forms_seed_eventos.sql
+-- (sessoes, ingressos com setor/tipo/pessoas/lote, onde comprar, contato e informacoes), sem apagar
+-- o formulario nem as respostas. As chaves antigas continuam iguais; as respostas ja gravadas seguem validas.
+-- O trigger do plugin forms incrementa `version`. Opcoes acrescentadas pelo importador sao substituidas
+-- pelas do seed (o importador as acrescenta de novo na proxima Fase 1).
+-- Gerado a partir do seed: ao mudar o seed, regenere este arquivo (mesmo conteudo, sem o bloco 0).
+-- Aplicar: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/extras/pendentes_forms_eventos.sql
 
 BEGIN;
 
--- 0) Remocao (sempre recria) — com guarda: so se o formulario nao tiver respostas ----------------
-DO $clear$
-DECLARE
-  v_tenant uuid;
-  v_n bigint;
-BEGIN
-  SELECT tn.uid INTO v_tenant
-  FROM auth.tenants tn
-  JOIN (SELECT uid FROM auth.users WHERE is_root = true ORDER BY created_at ASC LIMIT 1) u ON tn.owner_uid = u.uid
-  ORDER BY tn.created_at ASC LIMIT 1;
-
-  IF v_tenant IS NULL THEN
-    RAISE NOTICE 'sem root/tenant: remocao ignorada (o INSERT abaixo tambem sera no-op).';
-    RETURN;
-  END IF;
-
-  SELECT count(*) INTO v_n
-  FROM public.form_results r
-  JOIN public.forms f ON f.id = r.form_id
-  WHERE f.tenant_id = v_tenant AND f.form_key = 'eventos';
-
-  IF v_n > 0 THEN
-    RAISE EXCEPTION 'recriacao do formulario eventos abortada: ha % resposta(s) em public.form_results. Use db/extras/pendentes_forms_eventos.sql.', v_n;
-  END IF;
-
-  DELETE FROM public.forms WHERE tenant_id = v_tenant AND form_key = 'eventos';
-END
-$clear$;
 
 -- 1) Formulario -------------------------------------------------------------------------------------
 INSERT INTO public.forms (tenant_id, form_key, title, description, schema, active, created_by)
