@@ -2,8 +2,8 @@
   "lockVersion": 1,
   "kizunaCore": {
     "version": "0.9.10",
-    "sha": "721cfbd743a2c28590b91accee220ba4ff2092b2",
-    "syncedAt": "2026-10-10T22:39:48.238Z"
+    "sha": "b8605c72e1f22661fe13e363a3be77f70d4c25d2",
+    "syncedAt": "2026-10-11T12:15:49.240Z"
   },
   "template": {
     "version": "0.9.10",
@@ -101,8 +101,9 @@
     "onboarding": {
       "shellFiles": {
         "src/app/api/onboarding/progress/route.ts": "sha256:5e7d61d70db8ec408a547547e0823f0c77fb6ff023666544bc78c093ee5a9488",
-        "src/app/api/onboarding/email/verify-code/route.ts": "sha256:20bbf275b44c9bbe221654b8c811758aaf4cc8460e6149215d68eb1fe27a8984",
-        "src/app/api/onboarding/email/request-code/route.ts": "sha256:b176dadbbf20d7c2e64e3b1214773904bbc59cd2e80bb43c78e2424eb38ae4e2"
+        "src/app/api/onboarding/email/verify-code/route.ts": "sha256:b12e5d49216b5b2f4210749406e2652cfae58893c4ebdb33c3c52815e9e14019",
+        "src/app/api/onboarding/email/request-code/route.ts": "sha256:011b0359e0cfa0544e005723f0ce486a014e567672ac7317552bc62429349de2",
+        "src/app/verificar-email/page.tsx": "sha256:d13b82dfeb6c7416e007e2bff97b466ce96df9ec04206905b6dfdf5f5cc9c746"
       },
       "migrations": 1
     },
@@ -380,6 +381,7 @@
     "src/app/sitemap.ts",
     "src/app/sobre/page.tsx",
     "src/app/termos/page.tsx",
+    "src/app/verificar-email/page.tsx",
     "src/components/footer.tsx",
     "src/components/home-content.tsx",
     "src/components/home-page.tsx",

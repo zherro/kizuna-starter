@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthHeaderFromCookies, getServiceAuthHeader, getSession } from '@kizuna/core/server';
+import {
+  getAuthHeaderFromCookies,
+  getServiceAuthHeader,
+  getSession,
+  resolveEmailVerificationCode,
+} from '@kizuna/core/server';
 
 export const runtime = 'nodejs';
 
@@ -55,11 +60,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = (await request.json().catch(() => null)) as { code?: unknown } | null;
-    const code = String(body?.code ?? '').trim();
-    if (!/^\d{6}$/.test(code)) {
+    // `{ code }` digitado ou `{ token }` do link do e-mail (código criptografado, só do próprio usuário).
+    const body = await request.json().catch(() => null);
+    const code = resolveEmailVerificationCode(body, session.user_id);
+    if (!code) {
+      const fromLink = Boolean((body as { token?: unknown } | null)?.token);
       return NextResponse.json(
-        { error: 'Codigo invalido. Informe os 6 digitos.' },
+        {
+          error: fromLink
+            ? 'Link invalido ou expirado. Peca um novo codigo.'
+            : 'Codigo invalido. Informe os 6 digitos.',
+        },
         { status: 400 }
       );
     }
