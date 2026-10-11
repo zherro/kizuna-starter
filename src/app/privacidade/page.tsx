@@ -7,99 +7,113 @@ const TITLE = 'Política de privacidade';
 const DESCRIPTION =
   'Como o Bora Cuiabá coleta, usa e protege seus dados, e como lidamos com cookies e anúncios.';
 
-const PRIVACIDADE = `Esta política explica quais dados o **Bora Cuiabá** coleta, para que os usa, com quem os
-compartilha e quais são os seus direitos, conforme a Lei Geral de Proteção de Dados (Lei
-13.709/2018 — LGPD).
+const PRIVACIDADE = `# Política de Privacidade
 
-## 1. Dados que coletamos
+Esta Política de Privacidade explica como o **Bora Cuiabá** trata informações relacionadas aos usuários, incluindo a coleta, utilização, compartilhamento e proteção de dados pessoais, conforme a legislação aplicável, especialmente a Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018 — LGPD).
 
-- **Conta:** e-mail (ou telefone), nome de exibição e senha (guardada de forma criptografada).
-  Se você entrar com o Google, recebemos nome e e-mail da sua conta Google.
-- **Anúncios e perfil:** o que você publica (textos, fotos, preços, endereço e contatos que
-  escolher divulgar) e preferências da conta.
-- **Chamados e contato:** nome, e-mail, telefone (opcional), mensagem e imagens que você enviar
-  pelo formulário de contato ou pelos chamados.
-- **Localização aproximada:** a cidade que você escolhe no topo do site e, se não escolher, uma
-  estimativa pelo endereço IP. Não usamos GPS sem a sua autorização.
-- **Uso do site:** páginas visitadas, cliques e dados técnicos (navegador, dispositivo, IP),
-  para segurança, estatísticas e melhoria do serviço.
+## 1. Informações coletadas
 
-## 2. Para que usamos
+Podemos tratar informações fornecidas pelos usuários ou geradas durante a utilização da plataforma, incluindo:
 
-Criar e manter sua conta, exibir anúncios, responder chamados, prevenir fraudes e abuso, cumprir
-obrigações legais, medir o uso do site e melhorar a experiência. Não vendemos seus dados.
+- **Conta:** informações necessárias para cadastro, autenticação e gerenciamento da conta, incluindo dados de identificação e contato.
+- **Perfil e publicações:** conteúdos, imagens e demais informações que o usuário decidir cadastrar ou divulgar na plataforma.
+- **Contato e suporte:** informações enviadas por meio de formulários, solicitações ou canais de atendimento.
+- **Localização:** informações relacionadas à cidade selecionada pelo usuário ou estimativas de localização obtidas por meios técnicos, quando aplicável.
+- **Utilização da plataforma:** informações técnicas e dados de navegação necessários à segurança, ao funcionamento, à análise de uso e à melhoria dos serviços.
 
-## 3. Cookies e armazenamento local
+As informações efetivamente tratadas podem variar conforme os recursos utilizados pelo usuário.
 
-Usamos cookies e armazenamento do navegador para:
+## 2. Finalidade do tratamento
 
-- **Essenciais:** manter você logado (cookie de sessão) e proteger formulários.
-- **Preferências:** lembrar cidade, tema e idioma.
-- **Estatísticas:** entender como o site é usado.
-- **Publicidade:** quando houver anúncios, parceiros como o Google usam cookies para exibi-los.
+As informações podem ser utilizadas para:
 
-Você pode bloquear ou apagar cookies nas configurações do navegador; sem os essenciais, partes
-do site (como o login) deixam de funcionar.
+- Disponibilizar e manter as funcionalidades da plataforma.
+- Gerenciar contas e publicações.
+- Atender solicitações e prestar suporte.
+- Proteger a plataforma contra fraudes, abusos e atividades indevidas.
+- Cumprir obrigações legais e regulatórias.
+- Compreender a utilização dos serviços e aprimorar a experiência dos usuários.
+- Viabilizar funcionalidades de publicidade e outras atividades relacionadas ao funcionamento da plataforma, quando aplicável.
 
-## 4. Publicidade e Google AdSense
+O Bora Cuiabá não comercializa dados pessoais dos usuários.
 
-O Bora Cuiabá pode exibir anúncios do Google AdSense. O Google, como fornecedor terceiro, usa
-cookies para exibir anúncios com base em visitas anteriores a este e a outros sites. O uso de
-cookies de publicidade permite que o Google e seus parceiros exibam anúncios para você com base
-na sua navegação.
+## 3. Cookies e tecnologias semelhantes
 
-- Você pode desativar a publicidade personalizada em
-  [Configurações de anúncios do Google](https://adssettings.google.com).
-- Também pode optar por não receber anúncios personalizados de outros fornecedores em
-  [www.aboutads.info](https://www.aboutads.info/choices/).
-- Saiba como o Google usa dados de sites parceiros em
-  [policies.google.com/technologies/partner-sites](https://policies.google.com/technologies/partner-sites).
+A plataforma pode utilizar cookies e tecnologias semelhantes para viabilizar funcionalidades, preservar preferências, contribuir para a segurança, compreender a utilização dos serviços e oferecer publicidade, quando aplicável.
 
-## 5. Com quem compartilhamos
+O usuário pode gerenciar cookies por meio das configurações do navegador e dos mecanismos de preferência disponibilizados pela plataforma, quando existentes. A desativação de determinadas tecnologias pode afetar o funcionamento de algumas funcionalidades.
 
-Compartilhamos dados apenas com prestadores necessários ao serviço, sob dever de proteção:
+Quando necessário, o uso dessas tecnologias observará os requisitos legais aplicáveis.
 
-- hospedagem e infraestrutura do site;
-- **Google** (login com Google e, quando houver, publicidade);
-- **Cloudflare Turnstile** (verificação anti-robô em formulários);
-- serviço de previsão do tempo (Open-Meteo), que recebe apenas a cidade exibida;
-- serviço de otimização de imagens enviadas.
+## 4. Publicidade
 
-Também podemos divulgar dados por obrigação legal ou ordem de autoridade. As informações que
-você publica num anúncio ficam visíveis a qualquer visitante.
+O Bora Cuiabá poderá exibir anúncios próprios ou de terceiros, incluindo serviços de publicidade do Google, quando disponíveis.
 
-## 6. Por quanto tempo guardamos
+Esses fornecedores poderão utilizar tecnologias próprias para disponibilizar, mensurar e personalizar anúncios, conforme suas configurações, políticas e as opções de privacidade disponíveis ao usuário.
 
-Enquanto a conta existir e pelo prazo necessário para cumprir obrigações legais ou resolver
-disputas. Ao excluir a conta, ela é desativada e os dados de login são removidos; registros que a
-lei exige manter, e chamados de suporte, podem ser preservados pelo prazo legal.
+Para obter informações sobre as práticas do Google, consulte:
 
-## 7. Seus direitos (LGPD)
+- [Configurações de anúncios do Google](https://adssettings.google.com/)
+- [Opções de publicidade da AboutAds](https://www.aboutads.info/choices/)
+- [Como o Google utiliza dados de sites e aplicativos parceiros](https://policies.google.com/technologies/partner-sites)
 
-Você pode pedir: confirmação de que tratamos seus dados, acesso, correção, anonimização ou
-exclusão, portabilidade, informação sobre compartilhamento e revogação de consentimento. A
-exclusão da conta pode ser feita por você em **Minha conta**, no painel. Para os demais pedidos,
-use a página de [Contato](/contato).
+A disponibilidade e o funcionamento da publicidade poderão variar conforme a configuração da plataforma e os serviços utilizados.
 
-## 8. Segurança
+## 5. Compartilhamento de informações
 
-Adotamos medidas técnicas e organizacionais para proteger os dados: senhas criptografadas,
-conexão segura (HTTPS), controle de acesso por conta e bloqueio de tentativas abusivas de login.
-Nenhum sistema é totalmente invulnerável; avise-nos se suspeitar de uso indevido da sua conta.
+As informações poderão ser compartilhadas, quando necessário, com prestadores de serviços e parceiros envolvidos na operação da plataforma, incluindo serviços de hospedagem, infraestrutura, autenticação, segurança, processamento de imagens, análise de utilização, mapas, localização e publicidade.
 
-## 9. Menores de idade
+Também poderá ocorrer compartilhamento para cumprimento de obrigações legais, atendimento a solicitações legítimas de autoridades ou proteção de direitos, conforme a legislação aplicável.
 
-A plataforma é destinada a maiores de 18 anos ou a menores assistidos pelos responsáveis. Não
-coletamos dados de crianças de forma intencional; se identificarmos, removeremos.
+As informações inseridas em publicações e disponibilizadas publicamente pelo próprio usuário poderão ser visualizadas por terceiros. O usuário deve avaliar os dados que decide divulgar.
 
-## 10. Alterações
+## 6. Mapas e localização
 
-Podemos atualizar esta política para refletir mudanças no serviço ou na lei. A versão vigente
-fica sempre nesta página, com a data da última atualização abaixo.
+Algumas funcionalidades podem utilizar serviços externos de mapas, rotas, previsão do tempo ou recursos relacionados à localização.
 
-## 11. Contato
+Ao acessar esses recursos, determinadas informações técnicas poderão ser processadas pelos respectivos fornecedores, conforme suas políticas e configurações.
 
-Dúvidas ou pedidos sobre seus dados: [Entrar em Contato](/contato).
+Quando uma funcionalidade solicitar acesso à localização do dispositivo, o usuário poderá precisar conceder autorização ao navegador ou ao próprio dispositivo. A utilização dessas informações dependerá da funcionalidade acessada e das permissões concedidas.
+
+Ao acessar serviços externos, como Google Maps ou Waze, o usuário estará sujeito também às políticas e condições dos respectivos fornecedores.
+
+## 7. Armazenamento e conservação
+
+As informações serão mantidas pelo período necessário ao atendimento das finalidades do tratamento, à prestação dos serviços e ao cumprimento de obrigações legais ou regulatórias, observados os prazos e critérios previstos na legislação aplicável.
+
+A exclusão de uma conta poderá resultar na remoção ou desativação das informações associadas, ressalvadas as situações em que a conservação de determinados dados seja necessária ou legalmente permitida.
+
+## 8. Direitos dos titulares
+
+Nos termos da legislação aplicável, os titulares poderão exercer seus direitos relacionados aos dados pessoais, incluindo solicitar confirmação do tratamento, acesso, correção, informações sobre compartilhamento, anonimização, bloqueio, eliminação, portabilidade e revogação do consentimento, quando aplicáveis.
+
+A disponibilidade e o alcance de cada direito observarão os requisitos e as exceções previstos na legislação.
+
+Quando disponível, o usuário poderá gerenciar ou solicitar a exclusão de sua conta por meio da própria plataforma. Para outras solicitações relacionadas à privacidade, utilize a página de [Contato](/contato).
+
+## 9. Segurança das informações
+
+O Bora Cuiabá adota medidas técnicas e organizacionais destinadas a proteger as informações contra acessos não autorizados, perda, uso indevido, alteração ou divulgação indevida.
+
+São utilizados recursos de segurança e tecnologias apropriadas à natureza dos serviços e das informações tratadas. Apesar dessas medidas, nenhum ambiente tecnológico pode ter sua segurança garantida de forma absoluta.
+
+Caso identifique uma situação que possa comprometer sua conta ou suas informações, o usuário poderá entrar em contato pelos canais de atendimento da plataforma.
+
+## 10. Crianças e adolescentes
+
+A utilização da plataforma por crianças e adolescentes deverá observar a legislação aplicável e, quando necessário, as condições de participação e autorização dos responsáveis legais.
+
+O tratamento de dados pessoais de crianças e adolescentes observará os requisitos legais pertinentes, incluindo a consideração de seu melhor interesse.
+
+## 11. Alterações desta política
+
+Esta Política de Privacidade poderá ser atualizada para refletir alterações nos serviços, nas práticas de tratamento de dados ou na legislação aplicável.
+
+A versão vigente será disponibilizada nesta página, acompanhada da respectiva data de atualização.
+
+## 12. Contato
+
+Para dúvidas, solicitações ou assuntos relacionados à privacidade e aos dados pessoais, acesse a página de [Contato](/contato).
 
 *Última atualização: outubro de 2026.*
 `;

@@ -21,13 +21,13 @@ Instruções para o robô que lê os JSONs de eventos (crawler + IA) e grava os 
 
 | Caminho | Tipo | Obrigatório | Observação |
 |---|---|---|---|
-| `versao` | number | sim | `1` |
+| `versao` | number | sim | `1` (versão deste contrato; o assistente grava sempre `1`) |
 | `categoria` | text | sim | `eventos` |
 | `titulo` | text | sim | nome do evento |
 | `descricao` | text | sim | texto limpo do anúncio (não o texto bruto da página) |
 | `descricao_revisada` | text | não | reescrita aprovada pelo validador; tem prioridade sobre `descricao` |
 | `moeda` | text | sim | `BRL` |
-| `status` | text | sim | `ativo`, `pausado`, `cancelado` ou `encerrado` |
+| `status` | text | sim | `ativo`, `pausado`, `cancelado` ou `encerrado`. O assistente emite só os três primeiros: o encerramento vem de `expira_em` (`services.expires_at` já é vigiado pela plataforma); "esgotado" aparece em `ingressos[].situacao` |
 | `preco` | number | não | menor valor de ingresso; `null` = robô calcula |
 | `gratuito` | boolean | não | `true` = entrada franca |
 | `publicado_em` | ISO 8601 | não | data de publicação na fonte |
@@ -51,7 +51,7 @@ Instruções para o robô que lê os JSONs de eventos (crawler + IA) e grava os 
 | `detalhes.sessoes[].data` | `AAAA-MM-DD` | sim (≥ 1) | |
 | `detalhes.sessoes[].hora_inicio`, `.hora_fim`, `.abertura_portoes` | `HH:MM` | não | `hora_fim` menor que `hora_inicio` = termina no dia seguinte |
 | `detalhes.ingressos[].setor`, `.tipo`, `.lote`, `.descricao` | text | não | `tipo`: Inteira, Meia, Social… |
-| `detalhes.ingressos[].pessoas` | number | não | pessoas por ingresso (mesa, camarote) |
+| `detalhes.ingressos[].pessoas` | number | não | pessoas por ingresso (mesa, bistrô, camarote); é também a quantidade de pulseiras. `1` para ingresso individual |
 | `detalhes.ingressos[].valor` | number | não | em reais |
 | `detalhes.ingressos[].situacao` | text | não | Disponível, Últimas unidades, Esgotado, Em breve, Encerrado |
 | `detalhes.ingressos[].link_compra` | URL | não | |
@@ -63,7 +63,9 @@ Instruções para o robô que lê os JSONs de eventos (crawler + IA) e grava os 
 | `detalhes.texto_original`, `detalhes.alertas[]` | | não | ignorados |
 | `origem.fonte`, `origem.id_evento` | text | sim | chave do anúncio |
 | `origem.url`, `origem.coletado_em` | text | não | |
+| `origem.chave_dedup` | text | não | uso interno do assistente (título\|data\|local normalizados); ignorado |
 | `revisao.modelo`, `revisao.revisado_em` | text | não | |
+| `revisao_descricao.modelo`, `revisao_descricao.revisado_em` | text | não | metadados da reescrita de `descricao_revisada`; ignorados |
 | `revisao.evidencias[]`, `revisao.descartados[]` | | não | ignorados |
 
 ## Fase 1: verificação prévia (antes de inserir qualquer arquivo)
@@ -130,8 +132,9 @@ detalhes.canais_venda[] detalhes.formas_pagamento[] detalhes.pagamento_observaca
 detalhes.pontos_de_venda[].nome detalhes.pontos_de_venda[].endereco detalhes.pontos_de_venda[].horario
 detalhes.pontos_de_venda[].telefone detalhes.pontos_de_venda[].link detalhes.pontos_de_venda[].evidencia
 detalhes.meia_entrada detalhes.acessibilidade detalhes.observacoes detalhes.texto_original detalhes.alertas[]
-origem.fonte origem.id_evento origem.url origem.coletado_em
+origem.fonte origem.id_evento origem.url origem.coletado_em origem.chave_dedup
 revisao.modelo revisao.revisado_em revisao.evidencias[].caminho revisao.evidencias[].evidencia
+revisao_descricao.modelo revisao_descricao.revisado_em
 revisao.descartados[].caminho revisao.descartados[].motivo
 ```
 
@@ -290,7 +293,7 @@ Calcule:
 | `detalhes.acessibilidade` | `answers.acessibilidade` | direto |
 | `detalhes.observacoes` | `answers.observacoes` | direto |
 | `origem.*`, `revisao.modelo`, `revisao.revisado_em` | `extras.origem` | ver cálculo acima |
-| `detalhes.tipo_evento`, `detalhes.texto_original`, `detalhes.alertas[]`, `midia.video_url`, `*.evidencia`, `revisao.evidencias[]`, `revisao.descartados[]` | | ignorar |
+| `detalhes.tipo_evento`, `detalhes.texto_original`, `detalhes.alertas[]`, `midia.video_url`, `*.evidencia`, `origem.chave_dedup`, `revisao_descricao.*`, `revisao.evidencias[]`, `revisao.descartados[]` | | ignorar |
 | campo fora da lista da 1.2 | | não grava; reportar em `campos_nao_mapeados` |
 
 ### Formulário (`answers`)
@@ -445,6 +448,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS services_origem_eventos_uq ON public.services
 - `midia.video_url`: não há campo de vídeo no anúncio nem no formulário.
 - `detalhes.tipo_evento`: só orienta a escolha de `taxonomia`; não é gravado.
 - `detalhes.texto_original`, `detalhes.alertas[]`, `*.evidencia`, `revisao.evidencias[]`, `revisao.descartados[]`: rastreio da extração por IA, não gravado.
+- O assistente **não preenche** `contato.instagram`, `ingressos[].situacao`, `ingressos[].link_compra`, `canais_venda`, `formas_pagamento`, `pagamento_observacao`, `meia_entrada`, `acessibilidade` e `observacoes`: essas informações vão resumidas na descrição do anúncio (`descricao_revisada`). Os campos do formulário continuam existindo para outras fontes.
+- `origem.chave_dedup`, `revisao_descricao.modelo`, `revisao_descricao.revisado_em`: controle interno do assistente (deduplicação e reescrita da descrição), não gravado e **não** reportado como campo não mapeado.
 - Evento gratuito: `starting_price = 0` aparece no site como "Sob consulta" (não há rótulo "Gratuito" no preço); o formulário guarda `gratuito = true`.
 - `price_unit = 'unit'` aparece como "por unidade": não há unidade "por ingresso" nem "a partir de".
 - Endereço dos pontos de venda: fica só no texto de `answers.pontos_de_venda[].endereco`, não em `service_addresses` (que guarda o local do evento).

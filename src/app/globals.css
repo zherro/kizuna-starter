@@ -4,6 +4,11 @@
 @source "../app/**/*.{ts,tsx}";
 @source "../components/**/*.{ts,tsx}";
 
+/* Markdown de conteúdo e documentação não é fonte de classes: uma classe inválida num texto ou
+   plano quebraria o CSS do site. */
+@source not "../../content";
+@source not "../../docs";
+
 /* Usam --terracotta/--amber (definidos por tema — hoje: terracotta, bora_cuiaba),
    então se adaptam sozinhos à cor do tema ativo. Fora desses temas, essas vars não
    existem e os utilitários abaixo não têm efeito visível. */

@@ -47,6 +47,9 @@ RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
+# Conteúdo editorial em Markdown (content/lugares/...): o @kizuna/core/server/content lê do disco em
+# runtime, a partir de process.cwd(). Sem esta linha todo lugar vira 404 em produção.
+COPY --from=builder --chown=nextjs:nodejs /app/content ./content
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
