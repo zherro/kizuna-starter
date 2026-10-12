@@ -67,7 +67,10 @@ export async function CategoryRails({
             title={rails[index].title ?? category.name}
             services={items}
             limit={limit}
-            hue={resolveCategoryHue(category, detailConfig)}
+            hue={resolveCategoryHue(
+              kind === 'group' ? { groupSlug: category.slug } : { slug: category.slug },
+              detailConfig
+            )}
             detailConfig={detailConfig}
             className="mx-auto w-full max-w-[1600px] px-4 pb-8 sm:px-6"
             moreHref={hasMore ? `/busca?${searchFilter}${cityQuery}` : undefined}

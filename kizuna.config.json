@@ -148,14 +148,18 @@
     ]
   },
   "serviceDetail": {
-    "_comment": "Layout/cor da tela de detalhe do anúncio (/anuncios/[uid]) por categoria. \"variantByCategorySlug\": slug da categoria -> variant (\"service\" é o default, sempre disponível; \"cinema\" mostra sessões/gêneros/duração em vez da faixa de facts genérica, e some com o preço no card de resumo). Categoria sem entrada aqui cai em \"defaultVariant\". \"colors\": hue OKLCH (0-360) do acento (marcador de seção, faixa do hero); \"default\" vale pra categoria sem entrada própria. \"excludeFromMixedCategorySlugs\": slugs fora da busca/home quando não há filtro de categoria — a categoria continua acessível sozinha (ex. pelo carrossel). Vazio = nada escondido (comportamento atual). \"reactions\": botões Gostei/Favoritar do detalhe (plugin swipe) — icon (nome lucide-react), label, labelActive; remova um bloco para esconder o botão.",
+    "_comment": "Layout/cor da tela de detalhe do anúncio (/anuncios/[uid]) por categoria. \"variantByCategorySlug\": slug da categoria -> variant (\"service\" é o default, sempre disponível; \"cinema\" mostra sessões/gêneros/duração em vez da faixa de facts genérica, e some com o preço no card de resumo). \"variantByGroupSlug\": slug do grupo de categorias (categories_group.slug) -> variant, para todas as categorias do grupo sem entrada própria (a categoria tem precedência; ex. o grupo eventos usa o layout evento; requer search 0005, que devolve category_group_slug). Sem entrada de categoria nem de grupo cai em \"defaultVariant\". \"colors\": hue OKLCH (0-360) do acento (marcador de seção, faixa do hero), por slug da categoria e depois por slug do grupo; \"default\" vale pra quem não tem entrada própria. \"excludeFromMixedCategorySlugs\": slugs fora da busca/home quando não há filtro de categoria — a categoria continua acessível sozinha (ex. pelo carrossel). Vazio = nada escondido (comportamento atual). \"reactions\": botões Gostei/Favoritar do detalhe (plugin swipe) — icon (nome lucide-react), label, labelActive; remova um bloco para esconder o botão.",
     "defaultVariant": "service",
     "variantByCategorySlug": {
       "cinema": "cinema"
     },
+    "variantByGroupSlug": {
+      "eventos": "evento"
+    },
     "colors": {
       "default": { "hue": 230 },
-      "cinema": { "hue": 268 }
+      "cinema": { "hue": 268 },
+      "eventos": { "hue": 25 }
     },
     "excludeFromMixedCategorySlugs": [],
     "reactions": {
