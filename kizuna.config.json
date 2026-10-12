@@ -182,6 +182,14 @@
               { "value": "no_cliente", "model": "identifier", "icon": "Home" },
               { "value": "remoto", "model": "identifier", "icon": "Globe" }
             ]
+          },
+          "byGroup": {
+            "eventos": {
+              "options": [
+                { "value": "no_estabelecimento", "model": "addresses", "maxAddresses": 1, "icon": "MapPin" },
+                { "value": "remoto", "model": "identifier", "icon": "Globe" }
+              ]
+            }
           }
         },
         "price": {

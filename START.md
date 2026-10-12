@@ -70,6 +70,11 @@ Pronto: login funcionando, `/painel` com o menu de administração.
   depois commit de `kizuna-core` + `kizuna.lock`.
 - **Deploy:** o `Dockerfile` e o `docker-compose.yml` (app) vêm na casca. Em produção o Postgres e
   o PostgREST rodam em outro stack. O deste repositório está em `deploy/postgres-postgrest/`.
+- **`APP_ENCRYPTION_KEY` em produção:** o CLI só gera a chave no `.env` local. No servidor, gere
+  uma própria (`node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`,
+  43 caracteres) e cole na aba Environment. Chave em hex ou mal colada derruba o app com
+  "APP_ENCRYPTION_KEY precisa ter 32 bytes em base64url". Detalhes em
+  `kizuna-core/docs/comecando/README.md`.
 
 ## Caminho das pedras (o que quebrava, e como está agora)
 

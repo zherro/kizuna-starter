@@ -1974,14 +1974,16 @@ COMMIT;
 -- Seed do formulario `eventos` (plugin forms). Um anuncio = um evento:
 --   - Evento: data, realizador, link, endereco em texto, classificacao, gratuito e artistas.
 --   - Sessoes (`list`): data e horarios de cada dia do evento.
---   - Ingressos (`list`): titulo, setor, tipo, pessoas, lote, valor (mascara R$), situacao, descricao e link.
---   - Onde comprar: link de ingressos, canais, formas de pagamento e pontos de venda (`list`).
---   - Contato e informacoes (meia-entrada, acessibilidade, observacoes).
+--   - Ingressos (`list`): titulo, setor, tipo, pessoas (= pulseiras), lote, valor (mascara R$) e comprar (texto livre).
+--   - Onde comprar: link de ingressos e pontos de venda (`list` de um campo de texto livre, como artistas).
+--   - Contato: telefone, WhatsApp e e-mail.
+--   Meia-entrada, acessibilidade, formas de pagamento e observacoes NAO tem campo: o assistente as resume na
+--   descricao do anuncio ("Informacoes uteis").
 -- Titulo, descricao, preco, imagens, endereco do local e validade ficam no anuncio (coluna/tabela propria).
 -- Categoria/subcategoria e taxonomia, nao formulario.
 --
 -- O importador (docs/integracoes/eventos-depara.md) grava as respostas direto em public.form_results e pode
--- acrescentar opcoes novas aos campos `canais_venda`, `formas_pagamento` e `ingressos.tipo`.
+-- acrescentar opcoes novas ao campo `ingressos.tipo`.
 --
 -- DESTRUTIVO (recria): apaga e reinsere o formulario do tenant do root; ABORTA se ja houver respostas.
 -- Banco que ja tem respostas: use db/extras/pendentes_forms_eventos.sql (atualiza o schema no lugar).
@@ -2023,10 +2025,10 @@ $clear$;
 -- 1) Formulario -------------------------------------------------------------------------------------
 INSERT INTO public.forms (tenant_id, form_key, title, description, schema, active, created_by)
 SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
-       'Data, sessões, ingressos, onde comprar, contato e informações do evento.', $schema$
+       'Data, sessões, ingressos, onde comprar e contato do evento.', $schema$
 {
   "title": "Eventos — detalhes e ingressos",
-  "description": "Data, sessões, ingressos, onde comprar, contato e informações do evento.",
+  "description": "Data, sessões, ingressos, onde comprar e contato do evento.",
   "fields": [
     {
       "id": "evt_01_secao_evento", "key": "secao_evento", "name": "secao_evento", "type": "heading", "label": "Evento",
@@ -2171,26 +2173,9 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
           "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "R$ 0,00"
         },
         {
-          "id": "ing_situacao", "key": "situacao", "name": "situacao", "type": "select", "label": "Situação",
+          "id": "ing_comprar", "key": "comprar", "name": "comprar", "type": "text", "label": "Comprar",
           "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6, "2xl": 6 },
-          "behavior": {}, "validation": {}, "appearance": {},
-          "options": [
-            { "label": "Disponível", "value": "Disponível" },
-            { "label": "Últimas unidades", "value": "Últimas unidades" },
-            { "label": "Esgotado", "value": "Esgotado" },
-            { "label": "Em breve", "value": "Em breve" },
-            { "label": "Encerrado", "value": "Encerrado" }
-          ]
-        },
-        {
-          "id": "ing_descricao", "key": "descricao", "name": "descricao", "type": "textarea", "label": "Descrição",
-          "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-          "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "O que está incluso, regras de meia-entrada, idade mínima..."
-        },
-        {
-          "id": "ing_link", "key": "link", "name": "link", "type": "url", "label": "Link de compra",
-          "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-          "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "https://"
+          "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "Ex.: comprar no site, link ou ponto de venda"
         }
       ]
     },
@@ -2205,63 +2190,15 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
       "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "https://"
     },
     {
-      "id": "evt_17_canais_venda", "key": "canais_venda", "name": "canais_venda", "type": "multiselect", "label": "Canais de venda",
-      "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6, "2xl": 6 },
-      "behavior": {}, "validation": {}, "appearance": {},
-      "options": [
-        { "label": "Bilheteria", "value": "Bilheteria" },
-        { "label": "Ponto de venda", "value": "Ponto de venda" },
-        { "label": "Online", "value": "Online" },
-        { "label": "WhatsApp", "value": "WhatsApp" },
-        { "label": "Disk ingresso", "value": "Disk ingresso" }
-      ]
-    },
-    {
-      "id": "evt_18_formas_pagamento", "key": "formas_pagamento", "name": "formas_pagamento", "type": "multiselect", "label": "Formas de pagamento",
-      "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6, "2xl": 6 },
-      "behavior": {}, "validation": {}, "appearance": {},
-      "options": [
-        { "label": "Dinheiro", "value": "Dinheiro" },
-        { "label": "Pix", "value": "Pix" },
-        { "label": "Cartão de débito", "value": "Cartão de débito" },
-        { "label": "Cartão de crédito", "value": "Cartão de crédito" }
-      ]
-    },
-    {
-      "id": "evt_19_pagamento_observacao", "key": "pagamento_observacao", "name": "pagamento_observacao", "type": "textarea", "label": "Observações sobre pagamento",
-      "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-      "behavior": {}, "validation": {}, "appearance": {}
-    },
-    {
       "id": "evt_20_pontos_de_venda", "key": "pontos_de_venda", "name": "pontos_de_venda", "type": "list", "label": "Pontos de venda",
       "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
       "behavior": {}, "validation": {}, "appearance": {},
       "itemLabel": "Ponto de venda",
       "itemFields": [
         {
-          "id": "pdv_nome", "key": "nome", "name": "nome", "type": "text", "label": "Nome",
-          "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6, "2xl": 6 },
-          "behavior": { "required": true }, "validation": {}, "appearance": {}
-        },
-        {
-          "id": "pdv_telefone", "key": "telefone", "name": "telefone", "type": "phone", "label": "Telefone",
-          "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6, "2xl": 6 },
-          "behavior": {}, "validation": {}, "appearance": {}
-        },
-        {
-          "id": "pdv_endereco", "key": "endereco", "name": "endereco", "type": "text", "label": "Endereço",
+          "id": "pdv_nome", "key": "nome", "name": "nome", "type": "text", "label": "Ponto de venda",
           "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-          "behavior": {}, "validation": {}, "appearance": {}
-        },
-        {
-          "id": "pdv_horario", "key": "horario", "name": "horario", "type": "text", "label": "Horário de atendimento",
-          "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6, "2xl": 6 },
-          "behavior": {}, "validation": {}, "appearance": {}
-        },
-        {
-          "id": "pdv_link", "key": "link", "name": "link", "type": "url", "label": "Link",
-          "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6, "2xl": 6 },
-          "behavior": {}, "validation": {}, "appearance": {}
+          "behavior": { "required": true }, "validation": {}, "appearance": {}
         }
       ]
     },
@@ -2283,31 +2220,6 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
     {
       "id": "evt_24_contato_email", "key": "contato_email", "name": "contato_email", "type": "email", "label": "E-mail",
       "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6, "2xl": 6 },
-      "behavior": {}, "validation": {}, "appearance": {}
-    },
-    {
-      "id": "evt_25_contato_instagram", "key": "contato_instagram", "name": "contato_instagram", "type": "url", "label": "Instagram",
-      "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6, "2xl": 6 },
-      "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "https://instagram.com/..."
-    },
-    {
-      "id": "evt_26_secao_informacoes", "key": "secao_informacoes", "name": "secao_informacoes", "type": "heading", "label": "Informações",
-      "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-      "behavior": {}, "validation": {}, "appearance": {}
-    },
-    {
-      "id": "evt_27_meia_entrada", "key": "meia_entrada", "name": "meia_entrada", "type": "textarea", "label": "Meia-entrada",
-      "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-      "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "Quem tem direito e quais documentos apresentar"
-    },
-    {
-      "id": "evt_28_acessibilidade", "key": "acessibilidade", "name": "acessibilidade", "type": "textarea", "label": "Acessibilidade e PCD",
-      "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-      "behavior": {}, "validation": {}, "appearance": {}
-    },
-    {
-      "id": "evt_29_observacoes", "key": "observacoes", "name": "observacoes", "type": "textarea", "label": "Observações",
-      "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
       "behavior": {}, "validation": {}, "appearance": {}
     }
   ]
