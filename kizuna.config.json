@@ -166,10 +166,8 @@
     "variantByGroupSlug": {
       "eventos": "evento"
     },
-    "_comment_cardVariant": "cardVariantByCategorySlug: slug da categoria -> estilo só do CARD (busca e carrosséis), sem mudar a tela de detalhe. Ex.: teatro com card de cinema (capa em pé, sem preço) e detalhe de evento.",
-    "cardVariantByCategorySlug": {
-      "teatro": "cinema"
-    },
+    "_comment_cardVariant": "cardVariantByCategorySlug: slug da categoria -> estilo só do CARD (busca e carrosséis), sem mudar a tela de detalhe. Vazio = o card segue a mesma variant do detalhe (teatro usa o card de evento). Ex.: { \"teatro\": \"cinema\" } daria card de cinema (sem data) com detalhe de evento.",
+    "cardVariantByCategorySlug": {},
     "colors": {
       "default": { "hue": 230 },
       "cinema": { "hue": 268 },
