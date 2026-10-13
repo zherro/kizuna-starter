@@ -1,4 +1,11 @@
-import { defineCollection, type Entry, type EntryData } from '@kizuna/core/server/content';
+import {
+  defineCollection,
+  loadEntries,
+  type Entry,
+  type EntryData,
+  type LoadOptions,
+} from '@kizuna/core/server/content';
+import type { PlaceHighlightItem } from '@kizuna/core/client/components/home/place-highlights';
 
 /**
  * Coleção "lugares": artigos editoriais de lugares (casas noturnas, casas de festas, shoppings).
@@ -145,4 +152,49 @@ export function buildLugarView(entry: Entry, cityName: string): LugarView {
     facts,
     actions,
   };
+}
+
+export type LoadHomePlacesOptions = {
+  /** Nome da cidade (ex.: "Cuiabá"); vira o `meta` do card quando o lugar não tem endereço. */
+  cityName?: string;
+  /** Slug da cidade (ex.: "cuiaba-mt"); com ele, só entram os lugares dessa cidade. */
+  citySlug?: string;
+  /** Máximo de itens (o 1º vira o destaque). */
+  limit: number;
+  /** Raiz do conteúdo (testes). */
+  root?: LoadOptions['root'];
+};
+
+/**
+ * Lugares para o bloco "Lugares da cidade" da home (`PlaceHighlights`), já no contrato do core:
+ * só os publicados (`publishWhen`), da cidade quando houver `citySlug`, do mais recente
+ * (`atualizado_em`) para o mais antigo. A primeira foto vira a imagem do card.
+ */
+export function loadHomePlaces({
+  cityName,
+  citySlug,
+  limit,
+  root,
+}: LoadHomePlacesOptions): PlaceHighlightItem[] {
+  if (limit <= 0) return [];
+  const { entries } = loadEntries(LUGARES, root ? { root } : {});
+  return entries
+    .filter((e) => !citySlug || e.data.cidade === citySlug)
+    .sort((a, b) => {
+      const byDate = (text(b.data, 'atualizado_em') ?? '').localeCompare(text(a.data, 'atualizado_em') ?? '');
+      return byDate !== 0 ? byDate : a.slug.localeCompare(b.slug);
+    })
+    .slice(0, limit)
+    .map((e) => {
+      const summary = text(e.data, 'resumo');
+      const meta = text(e.data, 'endereco') ?? cityName;
+      return {
+        href: `/${String(e.data.cidade)}/lugares/${e.slug}`,
+        title: text(e.data, 'titulo') ?? e.slug,
+        kicker: text(e.data, 'categoria') ?? 'Lugar',
+        ...(summary ? { summary } : {}),
+        image: e.media[0] ?? null,
+        ...(meta ? { meta } : {}),
+      };
+    });
 }

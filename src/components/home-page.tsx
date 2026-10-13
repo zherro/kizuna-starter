@@ -5,6 +5,7 @@ import { HomeContent } from '@/components/home-content';
 import cfg from '@/../kizuna.config.json';
 import { HOME_INK_LEVELS, type HomeInkLevel } from '@/components/home/home-ink-config';
 import { CategoryRails, type CategoryRailConfig } from '@/components/home/category-rails';
+import { HomeNews, HomePlaces } from '@/components/home/home-engagement';
 import type { ServiceDetailConfig } from '@kizuna/core/client/components/services/detail';
 import type { RoutableCity } from '@kizuna/core/shared/city-routing/city-slug';
 
@@ -15,6 +16,8 @@ const home = cfg.home as typeof cfg.home & {
   categoryRails?: CategoryRailConfig[];
   instagramUrl?: string;
   showNearby?: boolean;
+  showPlaces?: boolean;
+  showNews?: boolean;
 };
 const categoryRails = ((home?.categoryRails ?? []) as CategoryRailConfig[]).filter((rail) => rail?.slug || rail?.group);
 const serviceDetailConfig = (cfg as { serviceDetail?: ServiceDetailConfig }).serviceDetail ?? null;
@@ -33,6 +36,8 @@ export function HomePage({ city }: { city: RoutableCity | null }) {
       inkLevel={inkLevel}
       instagramUrl={home?.instagramUrl || undefined}
       showNearby={home?.showNearby !== false}
+      placeHighlights={home?.showPlaces !== false ? <HomePlaces city={city} /> : null}
+      newsHighlights={home?.showNews !== false ? <HomeNews city={city} /> : null}
       categoryRails={
         categoryRails.length > 0 ? (
           <CategoryRails rails={categoryRails} detailConfig={serviceDetailConfig} city={city} />

@@ -33,6 +33,9 @@ type HomeContentProps = {
   inkLevel?: HomeInkLevel;
   /** carrosséis por categoria (Server Components montados na page) — vem de home.categoryRails */
   categoryRails?: ReactNode;
+  /** blocos de engajamento (Server Components montados na page): lugares da cidade e notícias — vêm de home.showPlaces / home.showNews */
+  placeHighlights?: ReactNode;
+  newsHighlights?: ReactNode;
   /** URL do perfil no Instagram — vem de home.instagramUrl (sem ela o card do Instagram não aparece) */
   instagramUrl?: string;
   /** mostra "Quem está por perto" (amostra de profissionais de exemplo) — vem de home.showNearby */
@@ -47,6 +50,8 @@ export function HomeContent({
   inkPicker = HOME_INK_TONE_PICKER_ENABLED,
   inkLevel: defaultInkLevel = HOME_INK_FIXED_LEVEL,
   categoryRails,
+  placeHighlights,
+  newsHighlights,
   instagramUrl,
   showNearby = true,
 }: HomeContentProps = {}) {
@@ -94,6 +99,8 @@ export function HomeContent({
         </div>
       ) : null}
       {categoryRails}
+      {placeHighlights}
+      {newsHighlights}
       {showNearby ? <NearbyGrid t={t} /> : null}
       <HowItWorks t={t} />
       <SocialInstallCards t={t} instagramUrl={instagramUrl} />

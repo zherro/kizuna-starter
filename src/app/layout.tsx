@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   LogIn,
   Megaphone,
-  PlusCircle,
   Search,
   UserCircle,
 } from 'lucide-react';
@@ -127,15 +126,15 @@ export const viewport: Viewport = {
   ],
 };
 
-// Primeiros 3 itens da barra inferior (mobile), iguais para logado e visitante. "Anunciar" é o CTA
+// Primeiros 3 itens da barra inferior (mobile), iguais para logado e visitante. "Divulgar" é o CTA
 // central — o visitante vai ao login e volta (requiresAuth).
 const tabsCommon: MobileTabItem[] = [
   { href: '/', label: 'Início', icon: <Home /> },
   { href: '/busca', label: 'Buscar', icon: <Search /> },
   {
     href: '/painel/meus-servicos/novo',
-    label: 'Anunciar',
-    icon: <PlusCircle />,
+    label: 'Divulgar',
+    icon: <Megaphone />,
     featured: true,
     requiresAuth: true,
   },
@@ -188,7 +187,7 @@ export default function RootLayout({
               }
               navLinks={[
                 { href: '/busca', label: 'Buscar', icon: <Search /> },
-                { href: '/painel', label: 'Anunciar', icon: <Megaphone /> },
+                { href: '/painel', label: 'Divulgar', icon: <Megaphone /> },
               ]}
             />
             {/* pb: reserva o espaço da barra inferior no mobile (--mobile-tab-h é publicado pelo MobileTabBar). */}

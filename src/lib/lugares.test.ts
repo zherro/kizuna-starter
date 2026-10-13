@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { loadEntries } from '@kizuna/core/server/content';
-import { LUGARES, buildLugarView } from './lugares';
+import { LUGARES, buildLugarView, loadHomePlaces } from './lugares';
 
 let root: string;
 function put(rel: string, content: string) {
@@ -134,5 +134,68 @@ telefone: "0800 123 4567"`);
     const v = view(`${BASE}\ncreditos: "Fotos: Fulano"`);
     expect(v.photos).toEqual(['/lugares/lua-morena/01.jpg', '/lugares/lua-morena/02.jpg']);
     expect(v.credits).toBe('Fotos: Fulano');
+  });
+});
+
+describe('loadHomePlaces', () => {
+  function lugar(slug: string, front: Record<string, string>) {
+    const data = {
+      titulo: slug,
+      categoria: 'Shopping',
+      cidade: 'cuiaba-mt',
+      resumo: `Resumo de ${slug}.`,
+      status: 'aprovado',
+      atualizado_em: '2026-10-01',
+      ...front,
+    };
+    const yaml = Object.entries(data)
+      .map(([k, v]) => `${k}: "${v}"`)
+      .join('\n');
+    put(`content/lugares/${slug}/index.md`, `---\n${yaml}\n---\n\nTexto.\n`);
+  }
+
+  it('só publicados, da cidade, do mais recente ao mais antigo, no contrato do card', () => {
+    lugar('antigo', { atualizado_em: '2026-09-01', categoria: 'Casa noturna' });
+    lugar('novo', { atualizado_em: '2026-10-11', endereco: 'Av. X, 100' });
+    lugar('rascunho', { status: 'rascunho', atualizado_em: '2026-12-01' });
+    lugar('outra-cidade', { cidade: 'varzea-grande-mt', atualizado_em: '2026-12-01' });
+    put('public/lugares/novo/02.jpg', 'x');
+    put('public/lugares/novo/01.jpg', 'x');
+
+    const items = loadHomePlaces({ citySlug: 'cuiaba-mt', cityName: 'Cuiabá', limit: 10, root });
+    expect(items).toEqual([
+      {
+        href: '/cuiaba-mt/lugares/novo',
+        title: 'novo',
+        kicker: 'Shopping',
+        summary: 'Resumo de novo.',
+        image: '/lugares/novo/01.jpg',
+        meta: 'Av. X, 100',
+      },
+      {
+        href: '/cuiaba-mt/lugares/antigo',
+        title: 'antigo',
+        kicker: 'Casa noturna',
+        summary: 'Resumo de antigo.',
+        image: null,
+        meta: 'Cuiabá',
+      },
+    ]);
+  });
+
+  it('sem cidade traz todas as cidades e respeita o limite', () => {
+    lugar('a', { atualizado_em: '2026-10-01' });
+    lugar('b', { cidade: 'varzea-grande-mt', atualizado_em: '2026-10-03' });
+    lugar('c', { atualizado_em: '2026-10-02' });
+    expect(loadHomePlaces({ limit: 2, root }).map((i) => i.href)).toEqual([
+      '/varzea-grande-mt/lugares/b',
+      '/cuiaba-mt/lugares/c',
+    ]);
+    expect(loadHomePlaces({ limit: 0, root })).toEqual([]);
+    expect(loadHomePlaces({ limit: 5, root })[0]).not.toHaveProperty('meta');
+  });
+
+  it('sem conteúdo devolve lista vazia', () => {
+    expect(loadHomePlaces({ citySlug: 'cuiaba-mt', limit: 6, root })).toEqual([]);
   });
 });
