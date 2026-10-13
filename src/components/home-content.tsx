@@ -35,6 +35,8 @@ type HomeContentProps = {
   categoryRails?: ReactNode;
   /** URL do perfil no Instagram — vem de home.instagramUrl (sem ela o card do Instagram não aparece) */
   instagramUrl?: string;
+  /** mostra "Quem está por perto" (amostra de profissionais de exemplo) — vem de home.showNearby */
+  showNearby?: boolean;
 };
 
 export function HomeContent({
@@ -46,6 +48,7 @@ export function HomeContent({
   inkLevel: defaultInkLevel = HOME_INK_FIXED_LEVEL,
   categoryRails,
   instagramUrl,
+  showNearby = true,
 }: HomeContentProps = {}) {
   const { messages } = useAppPreferences();
   const t = messages.home;
@@ -91,7 +94,7 @@ export function HomeContent({
         </div>
       ) : null}
       {categoryRails}
-      <NearbyGrid t={t} />
+      {showNearby ? <NearbyGrid t={t} /> : null}
       <HowItWorks t={t} />
       <SocialInstallCards t={t} instagramUrl={instagramUrl} />
       {inkPicker ? (

@@ -137,6 +137,8 @@
     "_comment_categorias": "\"categoriesOnlyWithListings\": true lista no carrossel só categorias com ao menos um anúncio publicado (requer plugin services).",
     "categoriesOnlyWithListings": true,
     "showDiscover": true,
+    "_comment_showNearby": "\"showNearby\": false esconde \"Quem está por perto\" (amostra de profissionais de exemplo, sem dado real). Omitido = aparece.",
+    "showNearby": false,
     "_comment_instagram": "URL do perfil do Instagram (ex.: https://instagram.com/seuperfil). Vazio = o card de Instagram nao aparece.",
     "instagramUrl": "",
     "_comment": "\"inkPicker\": mostra o seletor de intensidade do fundo escuro dos cards (false esconde). \"inkLevel\": intensidade padrão (1-7); com o seletor ativo, a escolha salva do usuário prevalece.",
@@ -144,6 +146,7 @@
     "inkLevel": 6,
     "_comment_categoryRails": "Carrosséis por categoria ou grupo na home (um por item, na ordem). slug = categories.slug OU group = categories_group.slug; mesma base da busca (só ativos e não expirados), ordem embaralhada a cada visita; title opcional (default = nome da categoria); limit opcional (default 10) — se houver mais que isso, a trilha termina com o card \"Ver mais\" (leva à busca da categoria). scope: \"city\" (padrão, só a cidade da página) | \"region\" (a cidade + as vizinhas da mesma região em `regions`, com a cidade no card). O estilo dos cards vem de serviceDetail. Categoria sem anúncios não aparece.",
     "categoryRails": [
+      { "group": "eventos", "title": "Eventos - o que rola", "limit": 10, "scope": "region" },
       { "slug": "cinema", "title": "Cinema - em cartaz", "limit": 10, "scope": "region" }
     ]
   },
@@ -151,7 +154,9 @@
     "_comment": "Layout/cor da tela de detalhe do anúncio (/anuncios/[uid]) por categoria. \"variantByCategorySlug\": slug da categoria -> variant (\"service\" é o default, sempre disponível; \"cinema\" mostra sessões/gêneros/duração em vez da faixa de facts genérica, e some com o preço no card de resumo). \"variantByGroupSlug\": slug do grupo de categorias (categories_group.slug) -> variant, para todas as categorias do grupo sem entrada própria (a categoria tem precedência; ex. o grupo eventos usa o layout evento; requer search 0005, que devolve category_group_slug). Sem entrada de categoria nem de grupo cai em \"defaultVariant\". \"colors\": hue OKLCH (0-360) do acento (marcador de seção, faixa do hero), por slug da categoria e depois por slug do grupo; \"default\" vale pra quem não tem entrada própria. \"excludeFromMixedCategorySlugs\": slugs fora da busca/home quando não há filtro de categoria — a categoria continua acessível sozinha (ex. pelo carrossel). Vazio = nada escondido (comportamento atual). \"reactions\": botões Gostei/Favoritar do detalhe (plugin swipe) — icon (nome lucide-react), label, labelActive; remova um bloco para esconder o botão. \"sectionTitles\": títulos das seções do detalhe por slug da categoria, depois do grupo, depois \"default\" (cada chave resolve sozinha): about (descrição, padrão \"Sobre o serviço\") e details (quadro de informações, padrão \"Detalhes do serviço\"); cinema mantém \"Sinopse\"/\"Onde assistir\".",
     "defaultVariant": "service",
     "variantByCategorySlug": {
-      "cinema": "cinema"
+      "cinema": "cinema",
+      "teatro": "evento",
+      "humor-e-espetaculos": "evento"
     },
     "variantByGroupSlug": {
       "eventos": "evento"
@@ -166,7 +171,14 @@
       "eventos": { "hue": 25 }
     },
     "sectionTitles": {
-      "eventos": { "about": "Sobre o evento", "details": "Informações do evento" }
+      "eventos": { "about": "Sobre o evento", "details": "Informações do evento" },
+      "shows-e-musica-ao-vivo": { "about": "Sobre o show", "details": "Informações do show" },
+      "festas-e-baladas": { "about": "Sobre a festa", "details": "Informações da festa" },
+      "festas-tradicionais-e-religiosas": { "about": "Sobre a festa", "details": "Informações da festa" },
+      "festivais-e-exposicoes": { "about": "Sobre o festival", "details": "Informações do festival" },
+      "palestras-e-encontros": { "about": "Sobre o encontro", "details": "Informações do encontro" },
+      "teatro": { "about": "Sobre o espetáculo", "details": "Informações do espetáculo" },
+      "humor-e-espetaculos": { "about": "Sobre o espetáculo", "details": "Informações do espetáculo" }
     },
     "excludeFromMixedCategorySlugs": [],
     "reactions": {

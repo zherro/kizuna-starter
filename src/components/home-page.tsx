@@ -14,6 +14,7 @@ const home = cfg.home as typeof cfg.home & {
   categoriesOnlyWithListings?: boolean;
   categoryRails?: CategoryRailConfig[];
   instagramUrl?: string;
+  showNearby?: boolean;
 };
 const categoryRails = ((home?.categoryRails ?? []) as CategoryRailConfig[]).filter((rail) => rail?.slug);
 const serviceDetailConfig = (cfg as { serviceDetail?: ServiceDetailConfig }).serviceDetail ?? null;
@@ -31,6 +32,7 @@ export function HomePage({ city }: { city: RoutableCity | null }) {
       inkPicker={home?.inkPicker !== false}
       inkLevel={inkLevel}
       instagramUrl={home?.instagramUrl || undefined}
+      showNearby={home?.showNearby !== false}
       categoryRails={
         categoryRails.length > 0 ? (
           <CategoryRails rails={categoryRails} detailConfig={serviceDetailConfig} city={city} />
