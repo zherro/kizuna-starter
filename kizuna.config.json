@@ -155,6 +155,7 @@
     "defaultVariant": "service",
     "variantByCategorySlug": {
       "cinema": "cinema",
+      "shoppings-e-lojas": "lugar",
       "teatro": "evento",
       "humor-e-espetaculos": "evento",
       "shows-e-musica-ao-vivo": "evento",
@@ -181,6 +182,7 @@
       "palestras-e-encontros": { "hue": 25 }
     },
     "sectionTitles": {
+      "shoppings-e-lojas": { "about": "Sobre o lugar", "details": "Informações do lugar" },
       "eventos": { "about": "Sobre o evento", "details": "Informações do evento" },
       "shows-e-musica-ao-vivo": { "about": "Sobre o show", "details": "Informações do show" },
       "festas-e-baladas": { "about": "Sobre a festa", "details": "Informações da festa" },

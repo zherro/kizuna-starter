@@ -11,6 +11,7 @@ import {
 } from '@kizuna/core/server';
 import {
   ServiceDetailPage,
+  resolveServiceDetailVariant,
   type ServiceDetailConfig,
 } from '@kizuna/core/client/components/services/detail';
 import { photosFor } from '@kizuna/core/client/components/services/service-helpers';
@@ -47,15 +48,22 @@ export function anuncioMetadata(data: ServiceDetailData, path: string): Metadata
 
 export function AnuncioDetail({ data, path }: { data: ServiceDetailData; path: string }) {
   const photos = photosFor(data.service);
+  // Lugar (shopping, loja, parque): o anúncio fala do lugar, não de uma oferta — sem preço nem
+  // prestador no JSON-LD, como na tela.
+  const isPlace =
+    resolveServiceDetailVariant(
+      { slug: data.service.category?.slug, groupSlug: data.service.categoryGroup?.slug },
+      serviceDetailConfig
+    ) === 'lugar';
 
   const serviceLd = serviceJsonLd(SEO_SITE, {
     name: data.service.title,
     description: stripHtml(data.service.description),
     path,
     image: photos[0] ?? null,
-    price: data.service.priceUnit !== 'quote' ? data.service.startingPrice : null,
+    price: !isPlace && data.service.priceUnit !== 'quote' ? data.service.startingPrice : null,
     category: data.service.category?.name ?? null,
-    providerName: data.provider?.full_name || data.provider?.display_name || null,
+    providerName: isPlace ? null : data.provider?.full_name || data.provider?.display_name || null,
   });
   const breadcrumbLd = breadcrumbJsonLd(SEO_SITE, [
     { name: 'Início', path: '/' },
