@@ -156,7 +156,12 @@
     "variantByCategorySlug": {
       "cinema": "cinema",
       "teatro": "evento",
-      "humor-e-espetaculos": "evento"
+      "humor-e-espetaculos": "evento",
+      "shows-e-musica-ao-vivo": "evento",
+      "festas-e-baladas": "evento",
+      "festas-tradicionais-e-religiosas": "evento",
+      "festivais-e-exposicoes": "evento",
+      "palestras-e-encontros": "evento"
     },
     "variantByGroupSlug": {
       "eventos": "evento"
@@ -168,7 +173,14 @@
     "colors": {
       "default": { "hue": 230 },
       "cinema": { "hue": 268 },
-      "eventos": { "hue": 25 }
+      "eventos": { "hue": 25 },
+      "teatro": { "hue": 25 },
+      "humor-e-espetaculos": { "hue": 25 },
+      "shows-e-musica-ao-vivo": { "hue": 25 },
+      "festas-e-baladas": { "hue": 25 },
+      "festas-tradicionais-e-religiosas": { "hue": 25 },
+      "festivais-e-exposicoes": { "hue": 25 },
+      "palestras-e-encontros": { "hue": 25 }
     },
     "sectionTitles": {
       "eventos": { "about": "Sobre o evento", "details": "Informações do evento" },
