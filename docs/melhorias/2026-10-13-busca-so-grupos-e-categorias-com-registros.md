@@ -1,6 +1,6 @@
 # Busca: mostrar só grupos e categorias que tenham registros
 
-Data: 2026-10-13 · Status: parte 1 implementada em 2026-10-13 (categorias e grupos); parte 2 (subcategorias) pendente de decisão · Escopo: `kizuna-core` (client + SQL do plugin `services`); o starter só liga a config.
+Data: 2026-10-13 · Status: parte 1 implementada em 2026-10-13 (categorias e grupos); parte 2 (subcategorias) implementada no código, migração 0013 ainda NÃO aplicada no banco · Escopo: `kizuna-core` (client + SQL do plugin `services`); o starter só liga a config.
 
 ## Problema
 
@@ -81,3 +81,10 @@ Todas as contagens são globais; a busca é filtrada pela cidade do topo. Uma ca
 
 - Estado vazio do painel só coberto em código, não exercitado no navegador.
 - Fora do escopo, vistos na revisão: mismatch de hidratação em `LocationGate` (`useUserLocation`) e botão "Fechar" do Sheet com 32px.
+
+## Implementação (parte 2 — variante: estender a view existente)
+
+Em vez da view nova `vw_subcategory_service_stats`, a `vw_category_service_stats` ganhou 3 colunas no fim (mesmo grão, 1 linha por categoria): `subcategory_ids`, `category_group_id`, `group_ids` (`kizuna-core/plugins/services/0013_*.sql`, plugin `services` 1.8.0). O resource `category_service_stats` expõe `subcategoryIds`, `categoryGroupId`, `groupIds`; `buildFilterTaxonomy` esconde subcategoria fora de `subcategoryIds` e usa os grupos da view quando `categories_public` falta. Categoria com anúncio e sem subcategoria marcada continua listada, sem chips.
+
+- `db/public.sql` regenerado. **Falta aplicar a 0013 no banco** (`node kizuna-core/cli db migrate`): até lá o `select` do resource falha e o filtro cai no comportamento sem contagem (nem a parte 1 filtra).
+- `kizuna.lock` não foi alterado manualmente.
