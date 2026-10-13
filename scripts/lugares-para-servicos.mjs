@@ -28,9 +28,10 @@ const STATUSES = ['pending', 'active', 'paused', 'archived'];
 const IMAGE_EXT = /\.(jpe?g|png|webp|gif|avif)$/i;
 
 // Mapeamento lugar → taxonomia (grupo / categoria / subcategorias). Justificativas no de-para.
+// `tag` (opcional): tag de agrupamento gravada em extras.tags; sem ela vale o slug da 1ª subcategoria.
 const TAXONOMIA = {
   'lua-morena': { grupo: 'bares-e-vida-noturna', categoria: 'baladas-e-casas-noturnas', subs: ['casas-noturnas', 'sertanejo-e-forro'] },
-  'arena-pantanal': { grupo: 'esportes-e-lazer', categoria: 'jogos-e-estadios', subs: ['futebol'] },
+  'arena-pantanal': { grupo: 'esportes-e-lazer', categoria: 'jogos-e-estadios', subs: ['futebol'], tag: 'estadios' },
   'goiabeiras-shopping': { grupo: 'compras-e-feiras', categoria: 'shoppings-e-lojas', subs: ['shoppings'] },
   'pantanal-shopping': { grupo: 'compras-e-feiras', categoria: 'shoppings-e-lojas', subs: ['shoppings'] },
   'shopping-estacao-cuiaba': { grupo: 'compras-e-feiras', categoria: 'shoppings-e-lojas', subs: ['shoppings'] },
@@ -215,6 +216,31 @@ const qnum = (v) => (typeof v === 'number' && Number.isFinite(v) ? String(Math.r
 const qjson = (obj) => `${q(JSON.stringify(obj))}::jsonb`;
 const qarr = (arr) => `ARRAY[${arr.map(q).join(', ')}]::text[]`;
 
+/** Tag no formato de services.extras.tags: minúsculas, sem acento, kebab-case; `:` separa prefixo. */
+function slugTag(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .split(':')
+    .map((part) => part.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''))
+    .filter(Boolean)
+    .join(':');
+}
+
+/** `extras.vinculosTitulo`: texto aparado, 1 a 60 caracteres; o resto vira `undefined` (não grava). */
+function vinculosTituloDe(value) {
+  const t = typeof value === 'string' ? value.trim() : '';
+  return t && t.length <= 60 ? t : undefined;
+}
+
+/** extras.tags do lugar: agrupamento (TAXONOMIA.tag ou 1ª subcategoria), `local:<slug>` e as do
+ * campo opcional `tags:` do frontmatter (lista ou texto separado por vírgula). Sem repetidas. */
+function tagsDoLugar(slug, tax, fmTags) {
+  const extra = Array.isArray(fmTags) ? fmTags : typeof fmTags === 'string' ? fmTags.split(',') : [];
+  return [...new Set([tax.tag ?? tax.subs[0], `local:${slug}`, ...extra].map(slugTag).filter(Boolean))];
+}
+
 function clean(obj) {
   if (Array.isArray(obj)) {
     const a = obj.map(clean).filter((v) => v !== undefined);
@@ -297,9 +323,23 @@ function readLugar(slug) {
     preco: d.preco,
     dicas_chegada: d.dicas_chegada,
     creditos: creditos || undefined,
+    tags: tagsDoLugar(slug, tax, d.tags),
+    // Código do lugar: outros anúncios (eventos) o citam em `tags` e a tela de detalhe linka/lista.
+    codigo: slug,
+    // Título opcional do carrossel dos anúncios vinculados (frontmatter `vinculos_titulo`; máx. 60).
+    vinculosTitulo: vinculosTituloDe(d.vinculos_titulo),
   });
 
-  const conhecidos = new Set(['titulo', 'categoria', 'cidade', 'resumo', 'status', 'atualizado_em', 'endereco', 'latitude', 'longitude', 'horario', 'telefone', 'instagram', 'site', 'preco', 'dicas_chegada', 'creditos']);
+  // O banco valida estas chaves (trigger do plugin services 0012): falhe aqui, antes do SQL.
+  const tagsOk = Array.isArray(extras.tags) ? extras.tags : [];
+  if (tagsOk.length > 10 || tagsOk.some((t) => !/^[a-z0-9][a-z0-9:._-]{0,59}$/.test(t))) {
+    throw new Error(`${rel}: tags fora do padrão do banco (até 10; ^[a-z0-9][a-z0-9:._-]{0,59}$): ${JSON.stringify(tagsOk)}`);
+  }
+  if (!/^[a-z0-9][a-z0-9._-]{0,59}$/.test(extras.codigo ?? '')) {
+    throw new Error(`${rel}: slug fora do padrão de codigo (^[a-z0-9][a-z0-9._-]{0,59}$): ${extras.codigo}`);
+  }
+
+  const conhecidos = new Set(['titulo', 'categoria', 'cidade', 'resumo', 'status', 'atualizado_em', 'endereco', 'latitude', 'longitude', 'horario', 'telefone', 'instagram', 'site', 'preco', 'dicas_chegada', 'creditos', 'tags', 'vinculos_titulo']);
   const naoMapeados = Object.keys(d).filter((k) => !conhecidos.has(k));
   if (naoMapeados.length) console.warn(`aviso: ${rel}: campos não mapeados (não gravados): ${naoMapeados.join(', ')}`);
 
@@ -396,7 +436,7 @@ ${files || '  -- (sem fotos)'}
                          THEN c_descricao ELSE description END,
       category_group_id = v_group, category_id = v_cat,
       extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - 'horario' - 'preco' - 'dicas_chegada'
-                       - 'creditos' - 'images' - 'coverFileId')
+                       - 'creditos' - 'tags' - 'codigo' - 'vinculosTitulo' - 'images' - 'coverFileId')
                || jsonb_set(c_extras, '{origem}', (c_extras->'origem')
                     || jsonb_build_object(
                          'titulo_md5', CASE WHEN v_old->'origem'->>'titulo_md5' IS NULL OR md5(v_old_titulo) = v_old->'origem'->>'titulo_md5'

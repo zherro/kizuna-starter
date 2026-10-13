@@ -54,6 +54,7 @@ Só os caminhos abaixo têm destino; qualquer outro vai em `campos_nao_mapeados`
 | `detalhes.pontos_de_venda[]` | text | não | um texto livre por ponto de venda |
 | `origem.fonte`, `origem.id_evento` | text | sim | chave do anúncio |
 | `origem.url`, `origem.coletado_em` | text | não | |
+| `tags[]` | text | não | tags de agrupamento do anúncio (ver "Tags"); ausente = nenhuma |
 
 **Ignorados** (não gravam e não vão para `campos_nao_mapeados`): `detalhes.nome_evento`, `detalhes.tipo_evento`, `detalhes.texto_original`, `detalhes.alertas[]`, `detalhes.ingressos[].evidencia`, `detalhes.ingressos[].taxa`, `origem.chave_dedup`, `revisao.*`, `revisao_descricao.*`.
 
@@ -113,6 +114,7 @@ detalhes.ingressos[].setor detalhes.ingressos[].tipo detalhes.ingressos[].lote d
 detalhes.ingressos[].valor detalhes.ingressos[].comprar
 detalhes.pontos_de_venda[]
 origem.fonte origem.id_evento origem.url origem.coletado_em
+tags[]
 ```
 
 Ignorados (não reportar): `detalhes.nome_evento`, `detalhes.tipo_evento`, `detalhes.texto_original`, `detalhes.alertas[]`, `detalhes.ingressos[].evidencia`, `detalhes.ingressos[].taxa`, `origem.chave_dedup`, `revisao.*`, `revisao_descricao.*`.
@@ -223,7 +225,32 @@ Calcule:
 - `status_servico`: `ativo` → `active`; `pausado` → `paused`; `cancelado` e `encerrado` → `archived`.
 - `descricao`: `descricao_revisada` se presente, senão `descricao` (`trim()`).
 - `answers` (ver "Formulário").
-- `extras` = `{"origem": {"fonte": origem.fonte, "id_evento": origem.id_evento, "url": origem.url, "coletado_em": origem.coletado_em, "cidade_ibge": <cidade_ibge>}}`, omitindo chaves `null`; some `"images": [ids]` e `"coverFileId": id` só se alguma imagem foi gravada ou reaproveitada.
+- `tags`: ver "Tags" abaixo.
+- `extras` = `{"origem": {"fonte": origem.fonte, "id_evento": origem.id_evento, "url": origem.url, "coletado_em": origem.coletado_em, "cidade_ibge": <cidade_ibge>}}`, omitindo chaves `null`; some `"images": [ids]` e `"coverFileId": id` só se alguma imagem foi gravada ou reaproveitada, e `"tags": [...]` só se a lista calculada não for vazia.
+
+### Tags
+
+`services.extras.tags` é um array de strings que agrupa anúncios além da taxonomia (convenção: minúsculas, sem acento, kebab-case, `:` separando prefixo). A busca filtra por elas e a tela de detalhe mostra carrosséis por tag.
+
+- Cada item de `tags[]` do payload: sem acento, minúsculas, o que não for letra/dígito vira `-` (o `:` fica), sem `-` nas pontas; vazio é descartado; sem repetir.
+- **Local cadastrado:** se o local do evento for um lugar já cadastrado (anúncio com `extras.codigo`), entra em `tags` o código dele. Assim o evento aparece como vinculado na página da casa (carrossel "Vinculados") e a página do evento mostra "Organizado por <casa>". Sem linha: nenhuma tag de local.
+
+```sql
+SELECT s.extras->>'codigo' AS tag
+FROM public.services s
+WHERE s.active AND s.status = 'active'
+  AND NULLIF(btrim(s.extras->>'codigo'), '') IS NOT NULL
+  AND (lower(unaccent(s.title)) = lower(unaccent(%(local_nome)s))
+       OR EXISTS (SELECT 1 FROM public.service_addresses a
+                  WHERE a.service_id = s.id AND a.active AND a.city_ibge = %(cidade_ibge)s
+                    AND lower(unaccent(a.label)) = lower(unaccent(%(local_nome)s))))
+ORDER BY s.created_at, s.id
+LIMIT 1;
+```
+
+- No UPDATE (passo 5), `"tags"` presente substitui a lista inteira; ausente (lista calculada vazia) mantém a que já estava no anúncio.
+- **Organizado por a casa:** basta o evento ter, em `tags[]`, o código da casa (o slug dela, por exemplo `"espaco-art-festas-e-eventos"`); nada mais é necessário. A casa é o anúncio ativo cujo `extras.codigo` é esse código (os lugares importados já o gravam, ver [lugares-depara.md](lugares-depara.md)). A página do evento mostra "Organizado por <casa>" com link e a página da casa lista o evento em "Vinculados" (ou no título de `extras.vinculosTitulo`, se a casa o definir). Sem casa para nenhuma das tags, a página segue mostrando `detalhes.organizador` como texto. Detalhes em [services.md](../../kizuna-core/docs/plugins/services.md).
+- **Formato e permissão de `tags[]` (obrigatório):** o robô DEVE mandar no máximo 10 tags, cada uma minúscula e no padrão `[a-z0-9][a-z0-9:._-]{0,59}` (sem acento, até 60 caracteres), descartando ou truncando as que não couberem ANTES do insert; senão o INSERT/UPDATE falha com erro `22023` e aborta. O robô conecta sem JWT (sessão de sistema), então não precisa da permissão `services.link`. Usuários comuns só editam `tags` se tiverem essa permissão.
 
 ### De-para
 
@@ -263,6 +290,7 @@ Calcule:
 | `detalhes.ingressos[]` | `answers.ingressos[]` | ver "Formulário" |
 | `detalhes.pontos_de_venda[]` | `answers.pontos_de_venda[].nome` | um item por texto |
 | `origem.*` | `extras.origem` | ver cálculo acima |
+| `tags[]` + local cadastrado | `extras.tags` | ver "Tags" |
 | campos ignorados (ver "Contrato do payload") | | não grava |
 | campo fora da lista da 1.2 | | não grava; reportar em `campos_nao_mapeados` |
 

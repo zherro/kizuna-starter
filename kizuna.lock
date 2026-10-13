@@ -2,8 +2,8 @@
   "lockVersion": 1,
   "kizunaCore": {
     "version": "0.9.10",
-    "sha": "baea5c81e41ab06b502ef094c574da5c30ee66d3",
-    "syncedAt": "2026-10-11T19:16:44.870Z"
+    "sha": "3ccc3aea2e53466637ae8449af3503314b4b8419",
+    "syncedAt": "2026-10-13T19:31:59.541Z"
   },
   "template": {
     "version": "0.9.10",

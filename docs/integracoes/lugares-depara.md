@@ -43,6 +43,7 @@ Arquivo `content/lugares/<slug>/index.md`: frontmatter YAML (subconjunto: `chave
 | `preco` | text | não | texto livre (não é número) |
 | `dicas_chegada` | text | não | |
 | `creditos` | text | não | créditos das fotos (`Fotos: …`) |
+| `tags` | lista ou text | não | tags de agrupamento a mais (lista com hífen ou texto separado por vírgula); somam às geradas (ver "Tags") |
 | corpo | Markdown | sim | texto do artigo |
 | fotos | jpg/png/webp/gif | não | `public/lugares/<slug>/*` |
 
@@ -55,7 +56,7 @@ O mapeamento fica na constante `TAXONOMIA` do script. Lugar novo sem entrada lá
 | Lugar | Grupo / Categoria / Subcategorias | Por quê |
 |---|---|---|
 | `lua-morena` | `bares-e-vida-noturna` / `baladas-e-casas-noturnas` / `casas-noturnas`, `sertanejo-e-forro` | casa noturna com bailes de forró e sertanejo, como o artigo descreve |
-| `arena-pantanal` | `esportes-e-lazer` / `jogos-e-estadios` / `futebol` | é o estádio; "Jogos & Estádios" é a categoria de estádios e "Futebol" cita a própria Arena nas tags |
+| `arena-pantanal` | `esportes-e-lazer` / `jogos-e-estadios` / `futebol` (tag de agrupamento: `estadios`) | é o estádio; "Jogos & Estádios" é a categoria de estádios e "Futebol" cita a própria Arena nas tags |
 | `goiabeiras-shopping`, `pantanal-shopping`, `shopping-estacao-cuiaba`, `shopping-tres-americas` | `compras-e-feiras` / `shoppings-e-lojas` / `shoppings` | a subcategoria Shoppings já existe |
 | `buffet-infantil-mundo-magico` | `familia-e-criancas` / `programacao-infantil` / `festas-e-buffets-infantis` | buffet infantil; a subcategoria existente é exatamente essa |
 | `espaco-art-festas-e-eventos` | `familia-e-criancas` / `passeios-em-familia` / `casas-de-festas` (**nova**) | locação para aniversários, casamentos e encontros de família, não só festa infantil; o grupo Eventos foi evitado porque as categorias dele usam o formulário e o card de evento (com data) |
@@ -67,6 +68,22 @@ O mapeamento fica na constante `TAXONOMIA` do script. Lugar novo sem entrada lá
 | `passeios-em-familia` | Casas de festas | `casas-de-festas` | `false` (pendente) |
 
 O anúncio do Espaço Art é vinculado a ela mesmo pendente (o anúncio também nasce `pending`). Enquanto ela não for ativada, a busca não a considera.
+
+## Tags (`extras.tags`)
+
+Cada lugar grava `services.extras.tags` (array de strings; convenção do core em `kizuna-core/docs/plugins/services.md`): minúsculas, sem acento, kebab-case, `:` separando prefixo.
+
+1. **Agrupamento:** o campo `tag` da entrada em `TAXONOMIA`, se houver; senão o slug da 1ª subcategoria (`casas-de-festas`, `shoppings`, `casas-noturnas`, `festas-e-buffets-infantis`; a Arena usa `estadios`).
+2. **Local:** `local:<slug>` (ex.: `local:espaco-art-festas-e-eventos`), convenção anterior: a tela de detalhe mostra o carrossel "Neste local" com os anúncios que têm a mesma tag. O vínculo novo é pelo `codigo` (abaixo): eventos citam só `<slug>`.
+3. **Frontmatter `tags`** (opcional): cada item normalizado do mesmo jeito, somado aos dois acima, sem repetir.
+
+**Código (`extras.codigo`):** cada lugar grava `extras.codigo = <slug>` (o slug do arquivo, sem prefixo). Outros anúncios (eventos) o citam em `extras.tags`: a página do evento mostra "Organizado por <lugar>" com link, e a página do lugar lista os anúncios vinculados em um carrossel "Vinculados". Opcionalmente o frontmatter `vinculos_titulo` (texto de até 60 caracteres) vira `extras.vinculosTitulo`, o título desse carrossel. A regra é genérica (ver "Código, organizador e vinculados" em `kizuna-core/docs/plugins/services.md`); o link não usa `origem.slug`.
+
+O banco valida o formato dessas chaves (até 10 tags; tag e código com `[a-z0-9][a-z0-9:._-]{0,59}`, código sem dois-pontos; título até 60 caracteres) e o script falha antes de gerar o SQL se algum valor não couber. O import roda sem JWT (superusuário), que é sessão de sistema e dispensa a permissão `services.link`.
+
+**Cada execução do import sobrescreve `tags`, `codigo` e `vinculosTitulo`:** o que foi editado no painel nessas três chaves é perdido na próxima execução (ponha no frontmatter).
+
+`tags`, `codigo` e `vinculosTitulo` são **do import**: o UPDATE remove as três chaves de `extras` e regrava as geradas (`extras - 'tags' - 'codigo' - 'vinculosTitulo'`). Consequência: `vinculosTitulo` posto à mão no banco some no próximo import se o frontmatter não tiver `vinculos_titulo`, e o `codigo` é sempre o slug do arquivo."
 
 ## Fase 1: verificação prévia (antes de qualquer lugar)
 
@@ -138,6 +155,8 @@ Calcule:
   "contato": { "telefone": "(65) 3315-2300", "instagram": "@goiabeirasshopping", "site": "https://…" },
   "horario": ["Lojas: seg a sáb, 10h às 22h; dom, 14h às 20h", "…"],
   "preco": "…", "dicas_chegada": "…", "creditos": "Fotos: …",
+  "tags": ["shoppings", "local:goiabeiras-shopping"],
+  "codigo": "goiabeiras-shopping",
   "images": ["<file_id>", "…"], "coverFileId": "<file_id>"
 }
 ```
@@ -147,6 +166,8 @@ Calcule:
 | Campo do artigo | Destino | Conversão |
 |---|---|---|
 | `<slug>` | `extras.origem.slug` | chave do anúncio |
+| `<slug>` | `extras.codigo` | o próprio slug; os eventos o citam em `tags` |
+| `vinculos_titulo` | `extras.vinculosTitulo` | opcional; `trim()`, 1 a 60 caracteres, senão não grava |
 | `titulo` | `services.title`, `service_addresses.label` | `trim()`; no UPDATE só se não foi editado |
 | corpo + `creditos` | `services.description` | ver cálculo; no UPDATE só se não foi editada |
 | `categoria` | `extras.origem.categoria_artigo` | só rastreio; a taxonomia vem da tabela "Taxonomia" |
@@ -163,6 +184,7 @@ Calcule:
 | `preco` | `extras.preco` | texto; `starting_price = 0`, `price_unit = 'quote'` |
 | `dicas_chegada` | `extras.dicas_chegada` | direto |
 | `creditos` | `extras.creditos` e fim da `description` | direto |
+| (taxonomia) + `<slug>` + `tags` | `extras.tags` | ver "Tags" |
 | fotos | `public.files` + `extras.images` / `extras.coverFileId` / `extras.origem.fotos` | passos 2 e 3 |
 | (fixo) | `services.service_location` | `'no_estabelecimento'` |
 | chave fora do contrato | | não grava; aviso no console |
@@ -211,7 +233,7 @@ UPDATE public.services SET
                      THEN %(descricao)s ELSE description END,
   category_group_id = %(group_id)s, category_id = %(category_id)s,
   extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - 'horario' - 'preco' - 'dicas_chegada'
-                   - 'creditos' - 'images' - 'coverFileId') || %(extras)s::jsonb,
+                   - 'creditos' - 'tags' - 'images' - 'coverFileId') || %(extras)s::jsonb,
   updated_at = now()
 WHERE id = %(service_id)s;
 ```

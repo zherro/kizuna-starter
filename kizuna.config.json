@@ -202,7 +202,7 @@
       "layout": "stepper",
       "lockLayout": true,
       "assistant": false,
-      "steps": [ "category", "start", "location", "price", "images", "description", "dynamic-form", "moderation"],
+      "steps": [ "category", "start", "location", "price", "images", "description", "dynamic-form", "links", "moderation"],
       "disable": [],
       "skipStepsByGroup": {
         "location": ["noticias"]
