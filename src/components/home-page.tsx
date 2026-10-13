@@ -16,7 +16,7 @@ const home = cfg.home as typeof cfg.home & {
   instagramUrl?: string;
   showNearby?: boolean;
 };
-const categoryRails = ((home?.categoryRails ?? []) as CategoryRailConfig[]).filter((rail) => rail?.slug);
+const categoryRails = ((home?.categoryRails ?? []) as CategoryRailConfig[]).filter((rail) => rail?.slug || rail?.group);
 const serviceDetailConfig = (cfg as { serviceDetail?: ServiceDetailConfig }).serviceDetail ?? null;
 const inkLevel = HOME_INK_LEVELS.includes(home?.inkLevel as HomeInkLevel)
   ? (home.inkLevel as HomeInkLevel)
