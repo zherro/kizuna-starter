@@ -17,6 +17,8 @@ import {
   type HomeInkLevel,
 } from './home/home-ink-config';
 import { HomeInkTonePicker } from './home/home-ink-tone-picker';
+import { AdSlot } from '@kizuna/core/client/ads';
+import { adsConfig } from '@/lib/ads';
 
 type HomeContentProps = {
   /** mostra a seção hero (default true) — vem de home.showHero no kizuna.config.json */
@@ -40,6 +42,8 @@ type HomeContentProps = {
   instagramUrl?: string;
   /** mostra "Quem está por perto" (amostra de profissionais de exemplo) — vem de home.showNearby */
   showNearby?: boolean;
+  /** nome da cidade da home (segmenta os anúncios por cidade) — vazio na home global */
+  cityName?: string;
 };
 
 export function HomeContent({
@@ -54,6 +58,7 @@ export function HomeContent({
   newsHighlights,
   instagramUrl,
   showNearby = true,
+  cityName,
 }: HomeContentProps = {}) {
   const { messages } = useAppPreferences();
   const t = messages.home;
@@ -88,6 +93,7 @@ export function HomeContent({
       style={getHomeInkStyle(inkLevel)}
     >
       {showHero ? <HomeHero t={t} /> : null}
+      <AdSlot slot="home-destaque" city={cityName} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} />
       <CategoryRail
         t={t}
         variant={categoriesVariant}
@@ -99,6 +105,7 @@ export function HomeContent({
         </div>
       ) : null}
       {categoryRails}
+      <AdSlot slot="home-meio" city={cityName} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} />
       {placeHighlights}
       {newsHighlights}
       {showNearby ? <NearbyGrid t={t} /> : null}

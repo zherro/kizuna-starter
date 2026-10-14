@@ -36,6 +36,7 @@ export function HomePage({ city }: { city: RoutableCity | null }) {
       inkLevel={inkLevel}
       instagramUrl={home?.instagramUrl || undefined}
       showNearby={home?.showNearby !== false}
+      cityName={city?.name}
       placeHighlights={home?.showPlaces !== false ? <HomePlaces city={city} /> : null}
       newsHighlights={home?.showNews !== false ? <HomeNews city={city} /> : null}
       categoryRails={

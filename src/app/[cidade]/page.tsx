@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { buildMetadata } from '@kizuna/core/server';
 import { cityPath } from '@kizuna/core/shared/city-routing/city-slug';
 import { HomePage } from '@/components/home-page';
+import { AdSlot } from '@kizuna/core/client/ads';
+import { adsConfig } from '@/lib/ads';
 import { CityRouteMarker } from '@kizuna/core/client/components/city/city-route-marker';
 import { SEO_SITE } from '@/lib/seo';
 import { resolveCitySlug } from '@kizuna/core/server/location/cities';
@@ -41,6 +43,7 @@ export default async function CityHomePage({ params }: Props) {
   return (
     <>
       <CityRouteMarker city={city} />
+      <AdSlot slot="cidade-topo" city={city.name} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} />
       <HomePage city={city} />
     </>
   );

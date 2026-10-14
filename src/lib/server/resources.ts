@@ -19,6 +19,7 @@ import { resourceServices } from '@kizuna/core/client/components/screen-engine/r
 import { rpcSearch } from '@kizuna/core/client/components/screen-engine/resources/search';
 import { resourceServiceReactions } from '@kizuna/core/client/components/screen-engine/resources/swipe';
 import { resourceAnalytics, rpcAnalytics } from '@kizuna/core/client/components/screen-engine/resources/analytics';
+import { resourceAds, rpcAds } from '@kizuna/core/client/components/screen-engine/resources/ads';
 import { resourceAiReview, rpcAiReview } from '@kizuna/core/client/components/screen-engine/resources/ai-review';
 import { resourceTickets } from '@kizuna/core/client/components/screen-engine/resources/tickets';
 import { resourceUserData } from '@kizuna/core/client/components/screen-engine/resources/user-data';
@@ -41,6 +42,8 @@ export const postgrestResources: Record<string, ResourceConfig> = {
   ...(resourceReviews as Record<string, ResourceConfig>),
   ...(resourceServices as Record<string, ResourceConfig>),
   ...(resourceAnalytics as Record<string, ResourceConfig>),
+  // ads plugin — slots, criativos e estatísticas diárias (leitura pública; escrita exige ads/manage).
+  ...(resourceAds as Record<string, ResourceConfig>),
   // tickets plugin — chamados e comentários (RLS decide o escopo: usuário x staff).
   ...(resourceTickets as Record<string, ResourceConfig>),
   // ai_review plugin — revisão de textos por IA (credenciais sem cifra, prompts, revisões, execuções).
@@ -73,6 +76,8 @@ export const postgrestRpcs: Record<string, RpcConfig> = {
   ...rpcSearch,
   // analytics plugin — escrita anônima de eventos (views, cliques...). Pública + sessão opcional.
   ...rpcAnalytics,
+  // ads plugin — registro público de impressão/clique (sessão opcional).
+  ...rpcAds,
   // messaging plugin — o chat usa rotas bespoke `/api/chat/*` que chamam
   // `fn_msg_*` direto (cursor + delta sync não cabem na rota genérica). Se quiser
   // expô-las aqui: fn_msg_start_conversation / fn_msg_send_message / fn_msg_mark_read

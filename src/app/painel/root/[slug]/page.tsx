@@ -2,6 +2,7 @@ import { resolveRootScreen } from '@kizuna/core/client/components/root-screens/r
 import { AiAdminScreen } from '@kizuna/core/client/components/ai-review';
 import { SystemConfigScreen } from '@kizuna/core/client/components/administracao/system-config-screen';
 import { panelMenuForRoles } from '@/components/panel-nav';
+import { adsConfig } from '@/lib/ads';
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -25,6 +26,9 @@ export default async function RootAdminScreenPage({ params }: Readonly<PageProps
 
   // Papéis e permissões: mostra cada permissão com os nomes do menu do painel (mesma lista da barra lateral).
   if (slug === 'papeis') return <Component menu={panelMenuForRoles()} />;
+
+  // Publicidade: a tela mostra se o Google AdSense está configurado (kizuna.config.json → ads).
+  if (slug === 'ads') return <Component adsenseConfigured={Boolean(adsConfig.adsenseClient)} />;
 
   return <Component />;
 }

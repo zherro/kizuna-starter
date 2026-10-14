@@ -9,6 +9,9 @@ import { loadCategoryRail } from '@kizuna/core/server';
 import type { RoutableCity } from '@kizuna/core/shared/city-routing/city-slug';
 import { parseRegions, regionCitiesFor } from '@kizuna/core/shared/regions';
 import cfg from '@/../kizuna.config.json';
+import { trackRule } from '@/lib/analytics';
+import { AdSlot } from '@kizuna/core/client/ads';
+import { adsConfig } from '@/lib/ads';
 import {
   ShuffledServiceCarouselSection,
   resolveCategoryHue,
@@ -75,6 +78,17 @@ export async function CategoryRails({
             className="mx-auto w-full max-w-[1600px] px-4 pb-8 sm:px-6"
             moreHref={hasMore ? `/busca?${searchFilter}${cityQuery}` : undefined}
             showCity={!city || rails[index].scope === 'region'}
+            impressionRule={trackRule('service', 'impression')}
+            source="home"
+            adSlot={
+              <AdSlot
+                slot="trilho-card"
+                inline
+                city={city?.name}
+                adsenseClient={adsConfig.adsenseClient}
+                maxPerPage={adsConfig.maxSlotsPerPage}
+              />
+            }
           />
         );
       })}

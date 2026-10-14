@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { SearchPage } from '@kizuna/core/client/components/search/search-page';
 import type { ServiceDetailConfig } from '@kizuna/core/client/components/services/detail';
 import { trackRule } from '@/lib/analytics';
+import { AdSlot } from '@kizuna/core/client/ads';
+import { adsConfig } from '@/lib/ads';
 import { parseRegions } from '@kizuna/core/shared/regions';
 import cfg from '@/../kizuna.config.json';
 
@@ -74,6 +76,14 @@ export default function BuscaPage() {
         aiEnabled={aiEnabled}
         regions={regions}
         impressionRule={trackRule('service', 'impression')}
+        sponsoredSlot={
+          <AdSlot
+            slot="busca-patrocinado"
+            inline
+            adsenseClient={adsConfig.adsenseClient}
+            maxPerPage={adsConfig.maxSlotsPerPage}
+          />
+        }
       />
     </Suspense>
   );

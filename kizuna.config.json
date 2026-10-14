@@ -212,6 +212,10 @@
       "skipStepsByGroup": {
         "location": ["noticias"]
       },
+      "creatable": {
+        "groups": ["eventos", "turismo"],
+        "categories": ["hoteis-e-pousadas", "trilhas", "bares", "restaurantes"]
+      },
       "stepProfiles": {
         "location": {
           "default": {
@@ -248,6 +252,11 @@
         "review": "/painel/administracao/aprovacoes"
       }
     }
+  },
+  "ads": {
+    "_comment": "Publicidade (slots). adsenseClient = ID do editor Google (ca-pub-...); vazio = só criativos próprios. maxSlotsPerPage = teto de slots por página (1..10).",
+    "adsenseClient": "",
+    "maxSlotsPerPage": 3
   },
   "analytics": {
     "_comment": "Plugin analytics (métricas do anunciante). events = só os listados ligam. minVisibleMs = tempo contínuo em tela, em milissegundos, antes de contar (piso: view 500, impression 200; teto 60000). minVisibleRatio = fração do elemento visível (0..1). oncePerSession = conta no máximo 1x por sessão do navegador. 0 ms = conta na hora (cliques de ação). entities.<tipo>.events sobrescreve por tipo de entidade. enabled:false desliga; remova o bloco para usar os defaults.",

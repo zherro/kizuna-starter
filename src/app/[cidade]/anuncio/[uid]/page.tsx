@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { cityPath, citySlug } from '@kizuna/core/shared/city-routing/city-slug';
 import { AnuncioDetail, anuncioMetadata, loadAd } from '@/lib/anuncio-detail';
 import { CityRouteMarker } from '@kizuna/core/client/components/city/city-route-marker';
+import { AdSlot } from '@kizuna/core/client/ads';
+import { adsConfig } from '@/lib/ads';
 
 type Props = { params: Promise<{ cidade: string; uid: string }> };
 
@@ -41,6 +43,7 @@ export default async function CityAnuncioPage({ params }: Props) {
     <>
       <CityRouteMarker city={data.city} />
       <AnuncioDetail data={data} path={cityPath(data.city, `/anuncio/${data.service.uid}`)} />
+      <AdSlot slot="anuncio-rodape" city={data.city.name} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} />
     </>
   );
 }
