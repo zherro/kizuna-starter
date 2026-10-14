@@ -91,10 +91,10 @@ function InstallCard({ t }: { t: HomeMessages }) {
   }
 
   return (
-    <div className="home-ink relative flex flex-col justify-between gap-6 overflow-hidden rounded-3xl border border-white/10 p-6 sm:p-8">
-      <Download className="h-10 w-10" />
+    <div className="home-ink relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-white/10 p-5 sm:p-6">
+      <Download className="h-7 w-7" />
       <div>
-        <h3 className="font-display text-2xl font-extrabold leading-tight tracking-tight">{t.installTitle}</h3>
+        <h3 className="font-display text-xl font-extrabold leading-tight tracking-tight">{t.installTitle}</h3>
         <p className="mt-2 max-w-[40ch] text-sm text-white/70">{t.installText}</p>
         {ios && !prompt ? (
           <p className="mt-3 flex flex-wrap items-center gap-1.5 text-sm text-white/85">
@@ -107,7 +107,7 @@ function InstallCard({ t }: { t: HomeMessages }) {
         <button
           type="button"
           onClick={install}
-          className="w-fit rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-neutral-900 transition hover:bg-white/90"
+          className="w-fit rounded-xl bg-white px-4 py-2 text-sm font-bold text-neutral-900 transition hover:bg-white/90"
         >
           {t.installCta}
         </button>
