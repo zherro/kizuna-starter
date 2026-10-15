@@ -10,6 +10,7 @@ export const SEO_SITE: SeoSite = {
   name: cfg.site.name,
   url: cfg.site.url.replace(/\/$/, ''),
   defaultDescription: cfg.site.description,
-  defaultOgImage: cfg.site.logo || '/icon.png',
+  // Arte 1200×630 (src/app/opengraph-image.png) pra páginas sem imagem própria; o logo é quadrado/pequeno.
+  defaultOgImage: '/opengraph-image.png',
   locale: 'pt_BR',
 };

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Download, Share, SquarePlus } from 'lucide-react';
+import { ArrowUpRight, Download, Share, SquarePlus } from 'lucide-react';
 import type { AppMessages } from '@/i18n/messages';
 
 type HomeMessages = AppMessages['home'];
@@ -30,30 +30,8 @@ function InstagramGlyph({ className }: { className?: string }) {
   );
 }
 
-function InstagramCard({ t, url }: { t: HomeMessages; url: string }) {
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group relative flex flex-col justify-between gap-6 overflow-hidden rounded-3xl p-6 text-white sm:p-8"
-      style={{
-        backgroundImage: 'linear-gradient(135deg, #f58529 0%, #dd2a7b 45%, #8134af 75%, #515bd4 100%)',
-      }}
-    >
-      <InstagramGlyph className="h-10 w-10" />
-      <div>
-        <h3 className="font-display text-2xl font-extrabold leading-tight tracking-tight">{t.instagramTitle}</h3>
-        <p className="mt-2 max-w-[40ch] text-sm text-white/85">{t.instagramText}</p>
-      </div>
-      <span className="inline-flex w-fit items-center rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-neutral-900 transition group-hover:bg-white/90">
-        {t.instagramCta}
-      </span>
-    </a>
-  );
-}
-
-function InstallCard({ t }: { t: HomeMessages }) {
+/** Estado do PWA: instalado (standalone), evento de instalação disponível e iOS (sem evento). */
+function useInstallPrompt() {
   const [prompt, setPrompt] = useState<InstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
   const [ios, setIos] = useState(false);
@@ -80,8 +58,6 @@ function InstallCard({ t }: { t: HomeMessages }) {
     };
   }, []);
 
-  if (installed) return null;
-
   async function install() {
     if (!prompt) return;
     await prompt.prompt();
@@ -90,40 +66,79 @@ function InstallCard({ t }: { t: HomeMessages }) {
     setPrompt(null);
   }
 
+  return { prompt, installed, ios, install };
+}
+
+const CARD = 'flex items-center gap-4 rounded-2xl p-4';
+
+function InstagramCard({ t, url }: { t: HomeMessages; url: string }) {
   return (
-    <div className="home-ink relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-white/10 p-5 sm:p-6">
-      <Download className="h-7 w-7" />
-      <div>
-        <h3 className="font-display text-xl font-extrabold leading-tight tracking-tight">{t.installTitle}</h3>
-        <p className="mt-2 max-w-[40ch] text-sm text-white/70">{t.installText}</p>
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`group ${CARD} text-white transition-transform active:scale-[0.99]`}
+      style={{
+        backgroundImage: 'linear-gradient(135deg, #f58529 0%, #dd2a7b 45%, #8134af 75%, #515bd4 100%)',
+      }}
+    >
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15">
+        <InstagramGlyph className="h-6 w-6" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold leading-tight">{t.instagramCta}</span>
+        <span className="mt-0.5 block text-sm text-white/85">{t.instagramText}</span>
+      </span>
+      <ArrowUpRight className="h-5 w-5 shrink-0 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+    </a>
+  );
+}
+
+function InstallCard({ t, state }: { t: HomeMessages; state: ReturnType<typeof useInstallPrompt> }) {
+  const { prompt, ios, install } = state;
+  return (
+    <div className={`home-ink ${CARD} border border-white/10`}>
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10">
+        <Download className="h-5 w-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-semibold leading-tight">{t.installTitle}</p>
         {ios && !prompt ? (
-          <p className="mt-3 flex flex-wrap items-center gap-1.5 text-sm text-white/85">
-            {t.installIosPre} <Share className="h-4 w-4" /> {t.installIosMid} <SquarePlus className="h-4 w-4" />{' '}
+          <p className="mt-0.5 flex flex-wrap items-center gap-1 text-sm text-white/75">
+            {t.installIosPre} <Share className="h-3.5 w-3.5" /> {t.installIosMid} <SquarePlus className="h-3.5 w-3.5" />{' '}
             <strong>{t.installIosPost}</strong>
           </p>
-        ) : null}
+        ) : (
+          <p className="mt-0.5 text-sm text-white/70">{prompt ? t.installText : t.installHint}</p>
+        )}
       </div>
       {prompt ? (
         <button
           type="button"
           onClick={install}
-          className="w-fit rounded-xl bg-white px-4 py-2 text-sm font-bold text-neutral-900 transition hover:bg-white/90"
+          className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-neutral-900 transition hover:bg-white/90"
         >
           {t.installCta}
         </button>
-      ) : !ios ? (
-        <p className="text-xs text-white/60">{t.installHint}</p>
       ) : null}
     </div>
   );
 }
 
-/** Dois cards lado a lado (empilham no mobile): seguir no Instagram e instalar o app (PWA). */
+/** "Fique atento": título + dois cards compactos (Instagram e instalar o app/PWA), lado a lado no desktop. */
 export function SocialInstallCards({ t, instagramUrl }: { t: HomeMessages; instagramUrl?: string }) {
+  const installState = useInstallPrompt();
+  const showInstall = !installState.installed;
+  if (!instagramUrl && !showInstall) return null;
+
   return (
-    <section className="mx-auto grid w-full max-w-[1600px] gap-4 px-4 pb-16 sm:px-6 md:grid-cols-2">
-      {instagramUrl ? <InstagramCard t={t} url={instagramUrl} /> : null}
-      <InstallCard t={t} />
+    <section className="mx-auto w-full max-w-[1600px] px-4 pb-16 sm:px-6">
+      <h2 className="text-center font-display text-xl font-bold tracking-tight text-foreground-display">{t.followTitle}</h2>
+      <p className="mt-1 text-center text-sm text-muted-foreground">{t.followText}</p>
+      <div className={`mx-auto mt-5 grid gap-3 ${instagramUrl && showInstall ? 'max-w-4xl md:grid-cols-2' : 'max-w-md'}`}>
+        {instagramUrl ? <InstagramCard t={t} url={instagramUrl} /> : null}
+        {showInstall ? <InstallCard t={t} state={installState} /> : null}
+      </div>
     </section>
   );
 }

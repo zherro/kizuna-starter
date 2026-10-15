@@ -237,6 +237,8 @@ export type AppMessages = {
     joinTitle: string;
     joinText: string;
     joinCta: string;
+    followTitle: string;
+    followText: string;
     instagramTitle: string;
     instagramText: string;
     instagramCta: string;
@@ -336,6 +338,8 @@ export const messages: Record<AppLanguage, AppMessages> = {
       joinTitle: 'Você também faz?',
       joinText: 'Publique seu serviço de graça e apareça para quem procura na sua região.',
       joinCta: 'Anunciar meu serviço',
+      followTitle: 'Fique atento às novidades e ao que acontece',
+      followText: 'Siga a gente e tenha a cidade sempre à mão.',
       instagramTitle: 'Siga a gente no Instagram',
       instagramText: 'Estreias, programação e novidades da cidade direto no seu feed.',
       instagramCta: 'Seguir no Instagram',
@@ -434,6 +438,8 @@ export const messages: Record<AppLanguage, AppMessages> = {
       joinTitle: 'You do this too?',
       joinText: 'Post your service for free and show up for people searching in your area.',
       joinCta: 'List my service',
+      followTitle: "Stay on top of what's new and what's on",
+      followText: 'Follow us and keep the city at hand.',
       instagramTitle: 'Follow us on Instagram',
       instagramText: 'Premieres, listings and city news right in your feed.',
       instagramCta: 'Follow on Instagram',
@@ -532,6 +538,8 @@ export const messages: Record<AppLanguage, AppMessages> = {
       joinTitle: '¿Tú también lo haces?',
       joinText: 'Publica tu servicio gratis y aparece para quienes buscan en tu zona.',
       joinCta: 'Publicar mi servicio',
+      followTitle: 'Entérate de las novedades y de lo que pasa',
+      followText: 'Síguenos y ten la ciudad siempre a mano.',
       instagramTitle: 'Síguenos en Instagram',
       instagramText: 'Estrenos, cartelera y novedades de la ciudad en tu feed.',
       instagramCta: 'Seguir en Instagram',

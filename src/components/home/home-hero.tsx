@@ -2,11 +2,9 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { MapPin, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Button } from '@kizuna/core/client/components/ui/button';
 import type { AppMessages } from '@/i18n/messages';
-import { HOME_PROS } from './mock-data';
 
 type HomeMessages = AppMessages['home'];
 
@@ -111,61 +109,7 @@ export function HomeHero({ t }: { t: HomeMessages }) {
             ))}
           </div>
         </div>
-
-        <HeroLivePros />
       </div>
     </section>
-  );
-}
-
-/* Decorative-but-real-feeling: a small stack of active listings, hinting the
-   marketplace is live. Hidden below lg to keep the mobile hero focused. */
-function HeroLivePros() {
-  const pros = HOME_PROS.slice(0, 3);
-  const rotations = ['-rotate-2', 'rotate-1', '-rotate-1'];
-
-  return (
-    <div className="relative hidden lg:block" aria-hidden="true">
-      <div className="flex flex-col gap-3">
-        {pros.map((pro, i) => (
-          <article
-            key={pro.name}
-            className={`${rotations[i]} rounded-2xl border border-white/15 bg-white/[0.07] p-4 transition-transform hover:rotate-0`}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 font-display text-sm font-bold text-white">
-                  {pro.name
-                    .split(' ')
-                    .map((w) => w[0])
-                    .join('')}
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-white">{pro.name}</p>
-                  <p className="text-xs text-white/60">{pro.trade}</p>
-                </div>
-              </div>
-              {pro.availableToday ? (
-                <span className="flex items-center gap-1 rounded-full bg-accent/20 px-2 py-1 text-[0.7rem] font-medium text-accent">
-                  <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-                  livre hoje
-                </span>
-              ) : null}
-            </div>
-            <p className="mt-3 flex items-center gap-1.5 font-mono text-xs text-white/55">
-              <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
-              {pro.area}
-            </p>
-          </article>
-        ))}
-      </div>
-
-      <Link
-        href="/busca"
-        className="mt-4 inline-block text-sm text-white/60 underline-offset-4 hover:text-white hover:underline"
-      >
-        ver quem está perto de você
-      </Link>
-    </div>
   );
 }

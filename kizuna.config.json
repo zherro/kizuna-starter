@@ -4,7 +4,7 @@
     "_comment": "Identidade/SEO do site — usada no <title>, meta description, Open Graph, manifest do PWA, robots/sitemap e logo do header. \"url\" é a URL pública em produção (sem barra no final). \"logo\" é opcional (caminho em public/); sem ele o header mostra o nome.",
     "name": "Bora Cuiabá",
     "shortName": "Bora Cuiabá",
-    "description": "Os eventos mais badalados, lugares, dicas de lazer e muita cultura!s",
+    "description": "Os eventos mais badalados, lugares para ir, dicas de lazer e muita cultura em Cuiabá e região.",
     "url": "https://boracuiaba.com",
     "lang": "pt-BR",
     "logo": "/brand/logo.png"
@@ -140,7 +140,7 @@
     "_comment_showNearby": "\"showNearby\": false esconde \"Quem está por perto\" (amostra de profissionais de exemplo, sem dado real). Omitido = aparece.",
     "showNearby": false,
     "_comment_instagram": "URL do perfil do Instagram (ex.: https://instagram.com/seuperfil). Vazio = o card de Instagram nao aparece.",
-    "instagramUrl": "",
+    "instagramUrl": "https://www.instagram.com/boracuiaba.ofc",
     "_comment_engajamento": "\"showPlaces\" (Lugares da cidade, de content/lugares — só os com status aprovado) e \"showNews\" (Notícias, do grupo noticias). Omitido = aparece; cada bloco some sozinho sem conteúdo.",
     "showPlaces": true,
     "showNews": true,

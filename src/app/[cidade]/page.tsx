@@ -28,8 +28,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const city = await resolveCitySlug(cidade);
   if (!city) return { title: 'Cidade não encontrada' };
   return buildMetadata(SEO_SITE, {
-    title: `Serviços em ${city.name}, ${city.state}`,
-    description: `Encontre e contrate prestadores de serviço em ${city.name}, com filtros por categoria e preço.`,
+    title: `O que fazer em ${city.name}, ${city.state}: eventos, lugares e lazer`,
+    description: `Eventos, shows, lugares para ir e dicas de lazer e cultura em ${city.name}. Veja o que rola hoje, no fim de semana e onde curtir.`,
     path: cityPath(city),
     image: null,
   });

@@ -42,18 +42,25 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const query = firstValue(params.q);
   const cityName = firstValue(params.cityName);
 
-  const subject = query || 'Prestadores de serviço';
-  const title = cityName ? `${subject} em ${cityName}` : subject;
-  const description = cityName
-    ? `Encontre e contrate ${subject.toLowerCase()} em ${cityName}, com filtros por categoria e preço.`
-    : 'Encontre prestadores de serviço perto de você, com filtros por categoria, cidade e preço.';
+  const subject = query || 'O que fazer';
+  const title = cityName ? `${subject} em ${cityName}` : query || 'Buscar eventos, lugares e lazer';
+  const description = query
+    ? `Resultados para “${query}”${cityName ? ` em ${cityName}` : ''}: eventos, lugares e dicas de lazer, com filtros por categoria e preço.`
+    : `Eventos, lugares e dicas de lazer${cityName ? ` em ${cityName}` : ' perto de você'}, com filtros por categoria e preço.`;
 
   const qs = new URLSearchParams();
   if (query) qs.set('q', query);
   if (cityName) qs.set('cityName', cityName);
   const path = qs.toString() ? `/busca?${qs.toString()}` : '/busca';
 
-  return { title, description, alternates: { canonical: path } };
+  return {
+    title,
+    description,
+    alternates: { canonical: path },
+    // Next substitui (não mescla) o openGraph/twitter do layout: a imagem precisa vir junto.
+    openGraph: { title, description, url: path, images: ['/opengraph-image.png'] },
+    twitter: { card: 'summary_large_image', title, description, images: ['/opengraph-image.png'] },
+  };
 }
 
 export default function BuscaPage() {

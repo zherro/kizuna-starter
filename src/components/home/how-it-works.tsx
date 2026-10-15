@@ -22,15 +22,17 @@ export function HowItWorks({ t }: { t: HomeMessages }) {
         {steps.map((step, i) => {
           const Icon = STEP_ICONS[i];
           return (
-            <li key={step.n}>
-              <span className="relative mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <li key={step.n} className="mx-auto flex w-full max-w-xs items-start gap-4 text-left lg:gap-5">
+              <span className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                 <Icon className="h-6 w-6" strokeWidth={1.5} aria-hidden="true" />
                 <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
                   {step.n}
                 </span>
               </span>
-              <h3 className="mt-4 text-2xl font-light tracking-tight text-foreground">{step.title}</h3>
-              <p className="mx-auto mt-2 max-w-[36ch] text-sm leading-6 text-muted-foreground">{step.text}</p>
+              <div className="min-w-0">
+                <h3 className="text-2xl font-light leading-tight tracking-tight text-foreground">{step.title}</h3>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">{step.text}</p>
+              </div>
             </li>
           );
         })}
