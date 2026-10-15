@@ -46,7 +46,7 @@ export function LugarPage({ view }: { view: LugarView }) {
         <LocationMap lat={view.destination.lat} lng={view.destination.lng} title={view.title} />
       ) : null}
       <div id="como-chegar" className="scroll-mt-24">
-        <DirectionsCard destination={view.destination} address={view.address} tips={view.tips} />
+        <DirectionsCard destination={view.destination} address={view.address} tips={view.tips} measure={!view.destination} />
       </div>
     </>
   );

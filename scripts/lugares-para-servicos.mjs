@@ -30,26 +30,19 @@ const IMAGE_EXT = /\.(jpe?g|png|webp|gif|avif)$/i;
 // Mapeamento lugar → taxonomia (grupo / categoria / subcategorias). Justificativas no de-para.
 // `tag` (opcional): tag de agrupamento gravada em extras.tags; sem ela vale o slug da 1ª subcategoria.
 const TAXONOMIA = {
-  'lua-morena': { grupo: 'bares-e-vida-noturna', categoria: 'baladas-e-casas-noturnas', subs: ['casas-noturnas', 'sertanejo-e-forro'] },
-  'arena-pantanal': { grupo: 'esportes-e-lazer', categoria: 'jogos-e-estadios', subs: ['futebol'], tag: 'estadios' },
-  'goiabeiras-shopping': { grupo: 'compras-e-feiras', categoria: 'shoppings-e-lojas', subs: ['shoppings'] },
-  'pantanal-shopping': { grupo: 'compras-e-feiras', categoria: 'shoppings-e-lojas', subs: ['shoppings'] },
-  'shopping-estacao-cuiaba': { grupo: 'compras-e-feiras', categoria: 'shoppings-e-lojas', subs: ['shoppings'] },
-  'shopping-tres-americas': { grupo: 'compras-e-feiras', categoria: 'shoppings-e-lojas', subs: ['shoppings'] },
-  'buffet-infantil-mundo-magico': { grupo: 'familia-e-criancas', categoria: 'programacao-infantil', subs: ['festas-e-buffets-infantis'] },
-  'espaco-art-festas-e-eventos': { grupo: 'familia-e-criancas', categoria: 'passeios-em-familia', subs: ['casas-de-festas'] },
+  'lua-morena': { grupo: 'lugares', categoria: 'vida-noturna', subs: ['casas-noturnas'] },
+  'arena-pantanal': { grupo: 'lugares', categoria: 'esporte', subs: ['estadios-e-arenas'] },
+  'goiabeiras-shopping': { grupo: 'lugares', categoria: 'compras', subs: ['shoppings'] },
+  'pantanal-shopping': { grupo: 'lugares', categoria: 'compras', subs: ['shoppings'] },
+  'shopping-estacao-cuiaba': { grupo: 'lugares', categoria: 'compras', subs: ['shoppings'] },
+  'shopping-tres-americas': { grupo: 'lugares', categoria: 'compras', subs: ['shoppings'] },
+  'buffet-infantil-mundo-magico': { grupo: 'lugares', categoria: 'festas-e-eventos', subs: ['buffets-infantis'] },
+  'espaco-art-festas-e-eventos': { grupo: 'lugares', categoria: 'festas-e-eventos', subs: ['casas-de-festas'] },
 };
 
-// Subcategorias que este import cria se faltarem (sempre active = false: quem ativa é a pessoa, na UI).
-const SUBS_NOVAS = [
-  {
-    categoria: 'passeios-em-familia',
-    nome: 'Casas de festas',
-    slug: 'casas-de-festas',
-    descricao: 'Espaços para alugar: aniversários, casamentos, encontros de família e confraternizações.',
-    tags: 'casa de festas, salão de festas, locação de espaço, aniversário, casamento, confraternização',
-  },
-];
+// Chaves do formulário `lugares` (db/extras/forms_seed_lugares.sql): gravadas em form_results.answers e
+// repetidas em services.extras. O UPDATE remove todas antes de regravar (campo que saiu do artigo some).
+const FORM_KEYS = ['horario', 'preco', 'gratuito', 'dicas_chegada', 'contato_telefone', 'contato_whatsapp', 'contato_instagram', 'site'];
 
 // ---------------------------------------------------------------------------------------------
 // Argumentos
@@ -303,6 +296,18 @@ function readLugar(slug) {
   const titulo = String(d.titulo).trim();
   const endereco = parseEndereco(typeof d.endereco === 'string' ? d.endereco : null);
 
+  // Respostas do formulário `lugares`: chaves planas; horário = lista de { texto }; gratuito só quando true.
+  const answers = clean({
+    horario: Array.isArray(d.horario) ? d.horario.map((h) => ({ texto: String(h) })) : undefined,
+    preco: d.preco,
+    gratuito: d.gratuito === true ? true : undefined,
+    dicas_chegada: d.dicas_chegada,
+    contato_telefone: d.telefone,
+    contato_whatsapp: d.whatsapp,
+    contato_instagram: d.instagram,
+    site: d.site,
+  }) ?? {};
+
   const extras = clean({
     origem: {
       fonte: FONTE,
@@ -318,10 +323,7 @@ function readLugar(slug) {
     },
     resumo: d.resumo,
     endereco_texto: d.endereco,
-    contato: { telefone: d.telefone, instagram: d.instagram, site: d.site },
-    horario: Array.isArray(d.horario) ? d.horario.map(String) : undefined,
-    preco: d.preco,
-    dicas_chegada: d.dicas_chegada,
+    ...answers,
     creditos: creditos || undefined,
     tags: tagsDoLugar(slug, tax, d.tags),
     // Código do lugar: outros anúncios (eventos) o citam em `tags` e a tela de detalhe linka/lista.
@@ -339,11 +341,11 @@ function readLugar(slug) {
     throw new Error(`${rel}: slug fora do padrão de codigo (^[a-z0-9][a-z0-9._-]{0,59}$): ${extras.codigo}`);
   }
 
-  const conhecidos = new Set(['titulo', 'categoria', 'cidade', 'resumo', 'status', 'atualizado_em', 'endereco', 'latitude', 'longitude', 'horario', 'telefone', 'instagram', 'site', 'preco', 'dicas_chegada', 'creditos', 'tags', 'vinculos_titulo']);
+  const conhecidos = new Set(['titulo', 'categoria', 'cidade', 'resumo', 'status', 'atualizado_em', 'endereco', 'latitude', 'longitude', 'horario', 'telefone', 'instagram', 'site', 'preco', 'dicas_chegada', 'creditos', 'tags', 'vinculos_titulo', 'whatsapp', 'gratuito']);
   const naoMapeados = Object.keys(d).filter((k) => !conhecidos.has(k));
   if (naoMapeados.length) console.warn(`aviso: ${rel}: campos não mapeados (não gravados): ${naoMapeados.join(', ')}`);
 
-  return { slug, rel, titulo, descricao, endereco, lat: d.latitude, lng: d.longitude, imagens, extras, tax };
+  return { slug, rel, titulo, descricao, endereco, lat: d.latitude, lng: d.longitude, imagens, extras, answers, tax };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -371,7 +373,9 @@ DECLARE
   c_descricao constant text   := ${q(l.descricao)};
   c_images    constant text[] := ${qarr(l.imagens.map((i) => i.id))};
   c_subs      constant text[] := ${qarr(l.tax.subs)};
-  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text;
+  c_answers   constant jsonb  := ${qjson(l.answers)};
+  c_form_keys constant text[] := ${qarr(FORM_KEYS)};
+  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text; v_form_id bigint; v_form_ver int; v_form_schema jsonb;
   v_sid bigint; v_old jsonb; v_old_titulo text; v_old_desc text;
   v_old_import text[]; v_kept text[]; v_images jsonb; v_cover text; v_ibge text; v_missing text[];
 BEGIN
@@ -384,8 +388,12 @@ BEGIN
   FROM public.categories c JOIN public.categories_group g ON g.id = c.category_group_id
   WHERE g.slug = ${q(l.tax.grupo)} AND c.slug = ${q(l.tax.categoria)};
   IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares/%: categoria ${l.tax.grupo}/${l.tax.categoria} não existe (rode o seed de taxonomia)', c_slug; END IF;
-  IF v_form IS NOT NULL THEN
-    RAISE NOTICE 'lugares/%: a categoria tem form_key=%; contato/horário continuam em services.extras (sem form_results)', c_slug, v_form;
+  IF v_form IS NULL THEN
+    RAISE NOTICE 'lugares/%: a categoria não tem form_key (rode db/extras/forms_seed_lugares.sql); horário/contato só em services.extras', c_slug;
+  ELSE
+    SELECT id, version, schema INTO v_form_id, v_form_ver, v_form_schema
+    FROM public.forms WHERE tenant_id = v_tenant AND form_key = v_form AND active;
+    IF v_form_id IS NULL THEN RAISE EXCEPTION 'lugares/%: formulário % não existe no tenant', c_slug, v_form; END IF;
   END IF;
 
   SELECT array_agg(s) INTO v_missing FROM unnest(c_subs) s
@@ -435,7 +443,7 @@ ${files || '  -- (sem fotos)'}
       description = CASE WHEN v_old->'origem'->>'descricao_md5' IS NULL OR md5(coalesce(v_old_desc, '')) = v_old->'origem'->>'descricao_md5'
                          THEN c_descricao ELSE description END,
       category_group_id = v_group, category_id = v_cat,
-      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - 'horario' - 'preco' - 'dicas_chegada'
+      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - c_form_keys
                        - 'creditos' - 'tags' - 'codigo' - 'vinculosTitulo' - 'images' - 'coverFileId')
                || jsonb_set(c_extras, '{origem}', (c_extras->'origem')
                     || jsonb_build_object(
@@ -467,6 +475,16 @@ ${
     : `  -- (artigo sem endereço)`
 }
 
+  -- Respostas do formulário (mesmas chaves de extras)
+  IF v_form_id IS NOT NULL THEN
+    INSERT INTO public.form_results
+      (form_id, form_key, reference_id, domain, version, schema_snapshot, answers, submitted_by, tenant_id)
+    VALUES (v_form_id, v_form, v_sid::text, 'service', v_form_ver, v_form_schema, c_answers, v_root, v_tenant)
+    ON CONFLICT (tenant_id, domain, reference_id) DO UPDATE SET
+      answers = EXCLUDED.answers, version = EXCLUDED.version, schema_snapshot = EXCLUDED.schema_snapshot,
+      form_id = EXCLUDED.form_id, form_key = EXCLUDED.form_key, updated_at = now();
+  END IF;
+
   -- Subcategorias
   DELETE FROM public.service_categories_sub scs USING public.categories_sub cs
   WHERE scs.service_id = v_sid AND cs.id = scs.category_sub_id
@@ -482,31 +500,6 @@ ${tag};
   return block;
 }
 
-function sqlSubsNovas() {
-  return SUBS_NOVAS.map(
-    (s) => `
--- Subcategoria "${s.nome}" (${s.categoria}): criada PENDENTE (active = false) se faltar; ativar em /painel/taxonomia/arvore
-DO $sub$
-DECLARE v_root uuid; v_tenant uuid; v_cat bigint; v_outro text;
-BEGIN
-  SELECT u.uid, t.uid INTO v_root, v_tenant
-  FROM (SELECT uid FROM auth.users WHERE is_root = true ORDER BY created_at LIMIT 1) u
-  JOIN LATERAL (SELECT tn.uid FROM auth.tenants tn WHERE tn.owner_uid = u.uid ORDER BY tn.created_at LIMIT 1) t ON true;
-  IF v_tenant IS NULL THEN RAISE EXCEPTION 'lugares: sem usuário root/tenant'; END IF;
-  SELECT id INTO v_cat FROM public.categories WHERE slug = ${q(s.categoria)};
-  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares: categoria ${s.categoria} não existe (rode o seed de taxonomia)'; END IF;
-  INSERT INTO public.categories_sub (category_id, name, slug, description, tags, active, tenant_id, created_by)
-  VALUES (v_cat, ${q(s.nome)}, ${q(s.slug)}, ${q(s.descricao)}, ${q(s.tags)}, false, v_tenant, v_root)
-  ON CONFLICT (slug) DO NOTHING;
-  SELECT c.slug INTO v_outro FROM public.categories_sub cs JOIN public.categories c ON c.id = cs.category_id
-  WHERE cs.slug = ${q(s.slug)} AND cs.category_id <> v_cat;
-  IF v_outro IS NOT NULL THEN RAISE EXCEPTION 'lugares: slug ${s.slug} já existe sob a categoria %', v_outro; END IF;
-END
-$sub$;
-`
-  ).join('');
-}
-
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   let slugs = fs
@@ -519,7 +512,6 @@ function main() {
     slugs = [opts.only];
   }
   const lugares = slugs.map(readLugar);
-  const precisaSubNova = lugares.some((l) => l.tax.subs.some((s) => SUBS_NOVAS.some((n) => n.slug === s)));
   const totalFotos = lugares.reduce((n, l) => n + l.imagens.length, 0);
 
   const header = `-- db/extras/lugares_import.sql
@@ -532,8 +524,9 @@ function main() {
 -- atualiza, não duplica. Fotos têm id determinístico pelo conteúdo (sha256).
 -- Uma transação só: qualquer erro desfaz tudo.
 --
--- Pré-requisitos: core + plugins instalados, root cadastrado, seed de taxonomia aplicado
--- (db/extras/taxonomy_seed_bora_cuiaba.sql) e, para o código IBGE, db/extras/location_seed_bora_cuiaba.sql.
+-- Pré-requisitos: core + plugins instalados, root cadastrado, grupo "lugares" na taxonomia
+-- (db/extras/taxonomy_seed_bora_cuiaba.sql ou, em banco com anúncios, db/extras/lugares_grupo_migracao.sql),
+-- formulário db/extras/forms_seed_lugares.sql e, para o código IBGE, db/extras/location_seed_bora_cuiaba.sql.
 -- Atenção: depois deste import existem serviços, e o seed de taxonomia (destrutivo) passa a abortar.
 --
 -- Aplicar:
@@ -542,7 +535,7 @@ function main() {
 
 BEGIN;
 `;
-  const body = (precisaSubNova ? sqlSubsNovas() : '') + lugares.map((l, i) => sqlLugar(l, i + 1, opts.status)).join('');
+  const body = lugares.map((l, i) => sqlLugar(l, i + 1, opts.status)).join('');
   const sql = `${header}${body}\nCOMMIT;\n`;
   fs.mkdirSync(path.dirname(opts.out), { recursive: true });
   fs.writeFileSync(opts.out, sql, 'utf8');

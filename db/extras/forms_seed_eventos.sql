@@ -2,7 +2,7 @@
 --
 -- Seed do formulario `eventos` (plugin forms). Um anuncio = um evento:
 --   - Evento: data, realizador, link, endereco em texto, local cadastrado (`local_ref`, tipo
---     `service-ref`: uid ou codigo do anuncio-lugar; categorias de lugar
+--     `service-ref`: uid ou codigo do anuncio-lugar; grupo `lugares`
 --     de db/extras/lugares_import.sql), classificacao, gratuito e artistas.
 --   - Sessoes (`list`): data e horarios de cada dia do evento.
 --   - Ingressos (`list`): titulo, setor, tipo, pessoas (= pulseiras), lote, valor (mascara R$) e comprar (texto livre).
@@ -98,8 +98,7 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
       "appearance": { "helpText": "Se o evento acontece num lugar já anunciado, escolha-o: a página do evento mostra \"Onde acontece\" com link." },
       "placeholder": "Busque o lugar pelo nome",
       "serviceRef": {
-        "groupSlugs": ["compras-e-feiras", "bares-e-vida-noturna", "esportes-e-lazer", "familia-e-criancas"],
-        "categorySlugs": ["shoppings-e-lojas", "baladas-e-casas-noturnas", "jogos-e-estadios", "passeios-em-familia", "programacao-infantil"]
+        "groupSlugs": ["lugares"]
       }
     },
     {

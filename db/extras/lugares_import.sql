@@ -8,8 +8,9 @@
 -- atualiza, não duplica. Fotos têm id determinístico pelo conteúdo (sha256).
 -- Uma transação só: qualquer erro desfaz tudo.
 --
--- Pré-requisitos: core + plugins instalados, root cadastrado, seed de taxonomia aplicado
--- (db/extras/taxonomy_seed_bora_cuiaba.sql) e, para o código IBGE, db/extras/location_seed_bora_cuiaba.sql.
+-- Pré-requisitos: core + plugins instalados, root cadastrado, grupo "lugares" na taxonomia
+-- (db/extras/taxonomy_seed_bora_cuiaba.sql ou, em banco com anúncios, db/extras/lugares_grupo_migracao.sql),
+-- formulário db/extras/forms_seed_lugares.sql e, para o código IBGE, db/extras/location_seed_bora_cuiaba.sql.
 -- Atenção: depois deste import existem serviços, e o seed de taxonomia (destrutivo) passa a abortar.
 --
 -- Aplicar:
@@ -18,30 +19,11 @@
 
 BEGIN;
 
--- Subcategoria "Casas de festas" (passeios-em-familia): criada PENDENTE (active = false) se faltar; ativar em /painel/taxonomia/arvore
-DO $sub$
-DECLARE v_root uuid; v_tenant uuid; v_cat bigint; v_outro text;
-BEGIN
-  SELECT u.uid, t.uid INTO v_root, v_tenant
-  FROM (SELECT uid FROM auth.users WHERE is_root = true ORDER BY created_at LIMIT 1) u
-  JOIN LATERAL (SELECT tn.uid FROM auth.tenants tn WHERE tn.owner_uid = u.uid ORDER BY tn.created_at LIMIT 1) t ON true;
-  IF v_tenant IS NULL THEN RAISE EXCEPTION 'lugares: sem usuário root/tenant'; END IF;
-  SELECT id INTO v_cat FROM public.categories WHERE slug = 'passeios-em-familia';
-  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares: categoria passeios-em-familia não existe (rode o seed de taxonomia)'; END IF;
-  INSERT INTO public.categories_sub (category_id, name, slug, description, tags, active, tenant_id, created_by)
-  VALUES (v_cat, 'Casas de festas', 'casas-de-festas', 'Espaços para alugar: aniversários, casamentos, encontros de família e confraternizações.', 'casa de festas, salão de festas, locação de espaço, aniversário, casamento, confraternização', false, v_tenant, v_root)
-  ON CONFLICT (slug) DO NOTHING;
-  SELECT c.slug INTO v_outro FROM public.categories_sub cs JOIN public.categories c ON c.id = cs.category_id
-  WHERE cs.slug = 'casas-de-festas' AND cs.category_id <> v_cat;
-  IF v_outro IS NOT NULL THEN RAISE EXCEPTION 'lugares: slug casas-de-festas já existe sob a categoria %', v_outro; END IF;
-END
-$sub$;
-
 -- Arena Pantanal (content/lugares/arena-pantanal/index.md) — 4 foto(s)
 DO $lugar_1$
 DECLARE
   c_slug      constant text   := 'arena-pantanal';
-  c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"arena-pantanal","arquivo":"content/lugares/arena-pantanal/index.md","atualizado_em":"2026-10-11","status_artigo":"rascunho","categoria_artigo":"Estádio e arenas","cidade":"cuiaba-mt","titulo_md5":"1b1dd2731c3aacd8d2421b71d053165a","descricao_md5":"ca4fa9438dc431e3b1c87d285b4d6461","fotos":[{"arquivo":"public/lugares/arena-pantanal/01.jpg","sha256":"7cddb3bfc925e0c2d7d100ad31931de1d9d319b17c5400edf6aeeaeec1656307","fileId":"16fc676c-736f-52fd-8964-f14453df91e1"},{"arquivo":"public/lugares/arena-pantanal/02.jpg","sha256":"6d8f433d1c5467f55e2e01208a48f6993f49b97bdb6bed0b9322b0d66edba560","fileId":"dbce8405-7253-5422-a895-c951f1ae82e2"},{"arquivo":"public/lugares/arena-pantanal/03.jpg","sha256":"402c7fad5becc7c3ba1fafe640f755849d081c5a1b5ea6677929835ea8c59d86","fileId":"264610f3-0550-5594-b9b3-1eff46111d7f"},{"arquivo":"public/lugares/arena-pantanal/04.jpg","sha256":"3d75a844e6e5d82b8340d2de9f689ea5f1ccfae8425f4a63677659be59bb4dbb","fileId":"38cb4f78-a0bc-5a04-b52d-284efd1610c4"}]},"resumo":"Estádio de Cuiabá construído para a Copa de 2014, casa do Cuiabá E.C. e sede de jogos, shows e visitas guiadas. É gerido pela Secel, do governo de MT.","endereco_texto":"Av. Agrícola Paes de Barros, s/n, Verdão, Cuiabá - MT","contato":{"site":"https://www.secel.mt.gov.br/visita-guiada-arena-pantanal"},"horario":["Visita guiada com agendamento: terças ou quintas-feiras, às 9h e às 15h"],"preco":"Visita guiada gratuita, com agendamento","dicas_chegada":"Segundo o guia do Lance!, linhas de ônibus atendem a Avenida Agrícola Paes de Barros e ruas próximas, e há pontos de embarque de táxi e aplicativo perto do estádio. O estacionamento é limitado, com vagas ao redor; em dias de evento, convém chegar cedo. A visita guiada começa no Portão B, no setor Oeste.","creditos":"Fotos: Arne Müseler, CC BY-SA 3.0 DE (vista aérea); paulisson miura, CC BY 2.0 (fachada à noite, 2014); José Riva, CC BY 2.0 (interior em dia de jogo, 2014); Governo do Brasil / Portal da Copa 2014, CC BY 3.0 (fachada em obras, março de 2014). Todas via Wikimedia Commons.","tags":["estadios","local:arena-pantanal"],"codigo":"arena-pantanal"}'::jsonb;
+  c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"arena-pantanal","arquivo":"content/lugares/arena-pantanal/index.md","atualizado_em":"2026-10-11","status_artigo":"rascunho","categoria_artigo":"Estádio e arenas","cidade":"cuiaba-mt","titulo_md5":"1b1dd2731c3aacd8d2421b71d053165a","descricao_md5":"ca4fa9438dc431e3b1c87d285b4d6461","fotos":[{"arquivo":"public/lugares/arena-pantanal/01.jpg","sha256":"7cddb3bfc925e0c2d7d100ad31931de1d9d319b17c5400edf6aeeaeec1656307","fileId":"16fc676c-736f-52fd-8964-f14453df91e1"},{"arquivo":"public/lugares/arena-pantanal/02.jpg","sha256":"6d8f433d1c5467f55e2e01208a48f6993f49b97bdb6bed0b9322b0d66edba560","fileId":"dbce8405-7253-5422-a895-c951f1ae82e2"},{"arquivo":"public/lugares/arena-pantanal/03.jpg","sha256":"402c7fad5becc7c3ba1fafe640f755849d081c5a1b5ea6677929835ea8c59d86","fileId":"264610f3-0550-5594-b9b3-1eff46111d7f"},{"arquivo":"public/lugares/arena-pantanal/04.jpg","sha256":"3d75a844e6e5d82b8340d2de9f689ea5f1ccfae8425f4a63677659be59bb4dbb","fileId":"38cb4f78-a0bc-5a04-b52d-284efd1610c4"}]},"resumo":"Estádio de Cuiabá construído para a Copa de 2014, casa do Cuiabá E.C. e sede de jogos, shows e visitas guiadas. É gerido pela Secel, do governo de MT.","endereco_texto":"Av. Agrícola Paes de Barros, s/n, Verdão, Cuiabá - MT","horario":[{"texto":"Visita guiada com agendamento: terças ou quintas-feiras, às 9h e às 15h"}],"preco":"Visita guiada gratuita, com agendamento","dicas_chegada":"Segundo o guia do Lance!, linhas de ônibus atendem a Avenida Agrícola Paes de Barros e ruas próximas, e há pontos de embarque de táxi e aplicativo perto do estádio. O estacionamento é limitado, com vagas ao redor; em dias de evento, convém chegar cedo. A visita guiada começa no Portão B, no setor Oeste.","site":"https://www.secel.mt.gov.br/visita-guiada-arena-pantanal","creditos":"Fotos: Arne Müseler, CC BY-SA 3.0 DE (vista aérea); paulisson miura, CC BY 2.0 (fachada à noite, 2014); José Riva, CC BY 2.0 (interior em dia de jogo, 2014); Governo do Brasil / Portal da Copa 2014, CC BY 3.0 (fachada em obras, março de 2014). Todas via Wikimedia Commons.","tags":["estadios-e-arenas","local:arena-pantanal"],"codigo":"arena-pantanal"}'::jsonb;
   c_titulo    constant text   := 'Arena Pantanal';
   c_descricao constant text   := 'A Arena Pantanal é o estádio de Cuiabá construído para a Copa do Mundo de 2014. Fica no bairro Verdão, na Avenida Agrícola Paes de Barros, e é a casa do Cuiabá Esporte Clube. Em material divulgado pelo governo estadual, a arena é descrita como o principal palco de futebol e de eventos de Mato Grosso.
 
@@ -81,8 +63,10 @@ O estádio tem portões em quatro ruas, segundo o guia do Lance!: Rua Oir Castil
 
 Fotos: Arne Müseler, CC BY-SA 3.0 DE (vista aérea); paulisson miura, CC BY 2.0 (fachada à noite, 2014); José Riva, CC BY 2.0 (interior em dia de jogo, 2014); Governo do Brasil / Portal da Copa 2014, CC BY 3.0 (fachada em obras, março de 2014). Todas via Wikimedia Commons.';
   c_images    constant text[] := ARRAY['16fc676c-736f-52fd-8964-f14453df91e1', 'dbce8405-7253-5422-a895-c951f1ae82e2', '264610f3-0550-5594-b9b3-1eff46111d7f', '38cb4f78-a0bc-5a04-b52d-284efd1610c4']::text[];
-  c_subs      constant text[] := ARRAY['futebol']::text[];
-  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text;
+  c_subs      constant text[] := ARRAY['estadios-e-arenas']::text[];
+  c_answers   constant jsonb  := '{"horario":[{"texto":"Visita guiada com agendamento: terças ou quintas-feiras, às 9h e às 15h"}],"preco":"Visita guiada gratuita, com agendamento","dicas_chegada":"Segundo o guia do Lance!, linhas de ônibus atendem a Avenida Agrícola Paes de Barros e ruas próximas, e há pontos de embarque de táxi e aplicativo perto do estádio. O estacionamento é limitado, com vagas ao redor; em dias de evento, convém chegar cedo. A visita guiada começa no Portão B, no setor Oeste.","site":"https://www.secel.mt.gov.br/visita-guiada-arena-pantanal"}'::jsonb;
+  c_form_keys constant text[] := ARRAY['horario', 'preco', 'gratuito', 'dicas_chegada', 'contato_telefone', 'contato_whatsapp', 'contato_instagram', 'site']::text[];
+  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text; v_form_id bigint; v_form_ver int; v_form_schema jsonb;
   v_sid bigint; v_old jsonb; v_old_titulo text; v_old_desc text;
   v_old_import text[]; v_kept text[]; v_images jsonb; v_cover text; v_ibge text; v_missing text[];
 BEGIN
@@ -93,15 +77,19 @@ BEGIN
 
   SELECT g.id, c.id, NULLIF(c.form_key, '') INTO v_group, v_cat, v_form
   FROM public.categories c JOIN public.categories_group g ON g.id = c.category_group_id
-  WHERE g.slug = 'esportes-e-lazer' AND c.slug = 'jogos-e-estadios';
-  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares/%: categoria esportes-e-lazer/jogos-e-estadios não existe (rode o seed de taxonomia)', c_slug; END IF;
-  IF v_form IS NOT NULL THEN
-    RAISE NOTICE 'lugares/%: a categoria tem form_key=%; contato/horário continuam em services.extras (sem form_results)', c_slug, v_form;
+  WHERE g.slug = 'lugares' AND c.slug = 'esporte';
+  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares/%: categoria lugares/esporte não existe (rode o seed de taxonomia)', c_slug; END IF;
+  IF v_form IS NULL THEN
+    RAISE NOTICE 'lugares/%: a categoria não tem form_key (rode db/extras/forms_seed_lugares.sql); horário/contato só em services.extras', c_slug;
+  ELSE
+    SELECT id, version, schema INTO v_form_id, v_form_ver, v_form_schema
+    FROM public.forms WHERE tenant_id = v_tenant AND form_key = v_form AND active;
+    IF v_form_id IS NULL THEN RAISE EXCEPTION 'lugares/%: formulário % não existe no tenant', c_slug, v_form; END IF;
   END IF;
 
   SELECT array_agg(s) INTO v_missing FROM unnest(c_subs) s
   WHERE NOT EXISTS (SELECT 1 FROM public.categories_sub cs WHERE cs.slug = s AND cs.category_id = v_cat);
-  IF v_missing IS NOT NULL THEN RAISE EXCEPTION 'lugares/%: subcategoria(s) % não existem sob jogos-e-estadios', c_slug, v_missing; END IF;
+  IF v_missing IS NOT NULL THEN RAISE EXCEPTION 'lugares/%: subcategoria(s) % não existem sob esporte', c_slug, v_missing; END IF;
 
   -- Fotos (id determinístico pelo conteúdo: rodar de novo não duplica)
   INSERT INTO public.files (id, uid, tenant_id, original_name, storage_path, mime_type, size_bytes, width, height, purpose, content, active)
@@ -161,7 +149,7 @@ BEGIN
       description = CASE WHEN v_old->'origem'->>'descricao_md5' IS NULL OR md5(coalesce(v_old_desc, '')) = v_old->'origem'->>'descricao_md5'
                          THEN c_descricao ELSE description END,
       category_group_id = v_group, category_id = v_cat,
-      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - 'horario' - 'preco' - 'dicas_chegada'
+      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - c_form_keys
                        - 'creditos' - 'tags' - 'codigo' - 'vinculosTitulo' - 'images' - 'coverFileId')
                || jsonb_set(c_extras, '{origem}', (c_extras->'origem')
                     || jsonb_build_object(
@@ -189,6 +177,16 @@ BEGIN
   VALUES (v_sid, c_titulo, 'Av. Agrícola Paes de Barros', 's/n', NULL, 'Verdão', 'Cuiabá', 'MT', v_ibge,
           -15.604, -56.1216, true, v_tenant, v_root, true);
 
+  -- Respostas do formulário (mesmas chaves de extras)
+  IF v_form_id IS NOT NULL THEN
+    INSERT INTO public.form_results
+      (form_id, form_key, reference_id, domain, version, schema_snapshot, answers, submitted_by, tenant_id)
+    VALUES (v_form_id, v_form, v_sid::text, 'service', v_form_ver, v_form_schema, c_answers, v_root, v_tenant)
+    ON CONFLICT (tenant_id, domain, reference_id) DO UPDATE SET
+      answers = EXCLUDED.answers, version = EXCLUDED.version, schema_snapshot = EXCLUDED.schema_snapshot,
+      form_id = EXCLUDED.form_id, form_key = EXCLUDED.form_key, updated_at = now();
+  END IF;
+
   -- Subcategorias
   DELETE FROM public.service_categories_sub scs USING public.categories_sub cs
   WHERE scs.service_id = v_sid AND cs.id = scs.category_sub_id
@@ -204,7 +202,7 @@ $lugar_1$;
 DO $lugar_2$
 DECLARE
   c_slug      constant text   := 'buffet-infantil-mundo-magico';
-  c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"buffet-infantil-mundo-magico","arquivo":"content/lugares/buffet-infantil-mundo-magico/index.md","atualizado_em":"2026-10-11","status_artigo":"rascunho","categoria_artigo":"Casa de festas","cidade":"cuiaba-mt","titulo_md5":"9f21857849830525f690a3acc92654b7","descricao_md5":"4d6cb85be0aa67ce2d9fe83b4b9c605c"},"resumo":"Buffet para festas infantis na Avenida Fernando Corrêa da Costa, em Cuiabá, com duas unidades citadas pela empresa e contato por telefone e Instagram.","endereco_texto":"Avenida Fernando Corrêa da Costa, 797, Jardim Guanabara, Cuiabá - MT","contato":{"telefone":"(65) 3627-6363","instagram":"@mundomagicobuffet","site":"http://www.mundomagicomt.com.br/"},"tags":["festas-e-buffets-infantis","local:buffet-infantil-mundo-magico"],"codigo":"buffet-infantil-mundo-magico"}'::jsonb;
+  c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"buffet-infantil-mundo-magico","arquivo":"content/lugares/buffet-infantil-mundo-magico/index.md","atualizado_em":"2026-10-11","status_artigo":"rascunho","categoria_artigo":"Casa de festas","cidade":"cuiaba-mt","titulo_md5":"9f21857849830525f690a3acc92654b7","descricao_md5":"4d6cb85be0aa67ce2d9fe83b4b9c605c"},"resumo":"Buffet para festas infantis na Avenida Fernando Corrêa da Costa, em Cuiabá, com duas unidades citadas pela empresa e contato por telefone e Instagram.","endereco_texto":"Avenida Fernando Corrêa da Costa, 797, Jardim Guanabara, Cuiabá - MT","contato_telefone":"(65) 3627-6363","contato_instagram":"@mundomagicobuffet","site":"http://www.mundomagicomt.com.br/","tags":["buffets-infantis","local:buffet-infantil-mundo-magico"],"codigo":"buffet-infantil-mundo-magico"}'::jsonb;
   c_titulo    constant text   := 'Mundo Mágico Buffet Infantil';
   c_descricao constant text   := 'O Mundo Mágico Buffet Infantil é um buffet voltado a festas de criança em Cuiabá. O site oficial da empresa informa o endereço na Avenida Fernando Corrêa da Costa, 797, no Jardim Guanabara, e reúne telefone, WhatsApp, e-mail e um formulário de contato.
 
@@ -241,8 +239,10 @@ O mesmo site traz um formulário de contato com campos para nome, e-mail, telefo
 
 Não há horário de atendimento no site oficial, e listagens de terceiros divergem entre si. O mais seguro é ligar ou mandar mensagem antes de visitar o espaço.';
   c_images    constant text[] := ARRAY[]::text[];
-  c_subs      constant text[] := ARRAY['festas-e-buffets-infantis']::text[];
-  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text;
+  c_subs      constant text[] := ARRAY['buffets-infantis']::text[];
+  c_answers   constant jsonb  := '{"contato_telefone":"(65) 3627-6363","contato_instagram":"@mundomagicobuffet","site":"http://www.mundomagicomt.com.br/"}'::jsonb;
+  c_form_keys constant text[] := ARRAY['horario', 'preco', 'gratuito', 'dicas_chegada', 'contato_telefone', 'contato_whatsapp', 'contato_instagram', 'site']::text[];
+  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text; v_form_id bigint; v_form_ver int; v_form_schema jsonb;
   v_sid bigint; v_old jsonb; v_old_titulo text; v_old_desc text;
   v_old_import text[]; v_kept text[]; v_images jsonb; v_cover text; v_ibge text; v_missing text[];
 BEGIN
@@ -253,15 +253,19 @@ BEGIN
 
   SELECT g.id, c.id, NULLIF(c.form_key, '') INTO v_group, v_cat, v_form
   FROM public.categories c JOIN public.categories_group g ON g.id = c.category_group_id
-  WHERE g.slug = 'familia-e-criancas' AND c.slug = 'programacao-infantil';
-  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares/%: categoria familia-e-criancas/programacao-infantil não existe (rode o seed de taxonomia)', c_slug; END IF;
-  IF v_form IS NOT NULL THEN
-    RAISE NOTICE 'lugares/%: a categoria tem form_key=%; contato/horário continuam em services.extras (sem form_results)', c_slug, v_form;
+  WHERE g.slug = 'lugares' AND c.slug = 'festas-e-eventos';
+  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares/%: categoria lugares/festas-e-eventos não existe (rode o seed de taxonomia)', c_slug; END IF;
+  IF v_form IS NULL THEN
+    RAISE NOTICE 'lugares/%: a categoria não tem form_key (rode db/extras/forms_seed_lugares.sql); horário/contato só em services.extras', c_slug;
+  ELSE
+    SELECT id, version, schema INTO v_form_id, v_form_ver, v_form_schema
+    FROM public.forms WHERE tenant_id = v_tenant AND form_key = v_form AND active;
+    IF v_form_id IS NULL THEN RAISE EXCEPTION 'lugares/%: formulário % não existe no tenant', c_slug, v_form; END IF;
   END IF;
 
   SELECT array_agg(s) INTO v_missing FROM unnest(c_subs) s
   WHERE NOT EXISTS (SELECT 1 FROM public.categories_sub cs WHERE cs.slug = s AND cs.category_id = v_cat);
-  IF v_missing IS NOT NULL THEN RAISE EXCEPTION 'lugares/%: subcategoria(s) % não existem sob programacao-infantil', c_slug, v_missing; END IF;
+  IF v_missing IS NOT NULL THEN RAISE EXCEPTION 'lugares/%: subcategoria(s) % não existem sob festas-e-eventos', c_slug, v_missing; END IF;
 
   -- Fotos (id determinístico pelo conteúdo: rodar de novo não duplica)
   -- (sem fotos)
@@ -306,7 +310,7 @@ BEGIN
       description = CASE WHEN v_old->'origem'->>'descricao_md5' IS NULL OR md5(coalesce(v_old_desc, '')) = v_old->'origem'->>'descricao_md5'
                          THEN c_descricao ELSE description END,
       category_group_id = v_group, category_id = v_cat,
-      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - 'horario' - 'preco' - 'dicas_chegada'
+      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - c_form_keys
                        - 'creditos' - 'tags' - 'codigo' - 'vinculosTitulo' - 'images' - 'coverFileId')
                || jsonb_set(c_extras, '{origem}', (c_extras->'origem')
                     || jsonb_build_object(
@@ -334,6 +338,16 @@ BEGIN
   VALUES (v_sid, c_titulo, 'Avenida Fernando Corrêa da Costa', '797', NULL, 'Jardim Guanabara', 'Cuiabá', 'MT', v_ibge,
           NULL, NULL, true, v_tenant, v_root, true);
 
+  -- Respostas do formulário (mesmas chaves de extras)
+  IF v_form_id IS NOT NULL THEN
+    INSERT INTO public.form_results
+      (form_id, form_key, reference_id, domain, version, schema_snapshot, answers, submitted_by, tenant_id)
+    VALUES (v_form_id, v_form, v_sid::text, 'service', v_form_ver, v_form_schema, c_answers, v_root, v_tenant)
+    ON CONFLICT (tenant_id, domain, reference_id) DO UPDATE SET
+      answers = EXCLUDED.answers, version = EXCLUDED.version, schema_snapshot = EXCLUDED.schema_snapshot,
+      form_id = EXCLUDED.form_id, form_key = EXCLUDED.form_key, updated_at = now();
+  END IF;
+
   -- Subcategorias
   DELETE FROM public.service_categories_sub scs USING public.categories_sub cs
   WHERE scs.service_id = v_sid AND cs.id = scs.category_sub_id
@@ -349,7 +363,7 @@ $lugar_2$;
 DO $lugar_3$
 DECLARE
   c_slug      constant text   := 'espaco-art-festas-e-eventos';
-  c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"espaco-art-festas-e-eventos","arquivo":"content/lugares/espaco-art-festas-e-eventos/index.md","atualizado_em":"2026-10-11","status_artigo":"rascunho","categoria_artigo":"Casa de festas","cidade":"cuiaba-mt","titulo_md5":"a8f0b2b13da3db8e4d93555d7e4a4eec","descricao_md5":"1532490d73a6024a73bca05c2197bd5d"},"resumo":"Espaço de eventos no bairro Doutor Fábio Leite, em Cuiabá, com piscina, tenda e salão, para aniversários, casamentos e confraternizações.","endereco_texto":"Avenida Airton Senna, 77, Quadra 90, Doutor Fábio Leite, Cuiabá - MT","contato":{"telefone":"(65) 99699-9749","instagram":"@espacoarteventos","site":"https://espacoarteventos.com.br"},"horario":["Atendimento: seg a sex, 8h às 18h","WhatsApp: 24 horas"],"dicas_chegada":"Fica na Avenida Airton Senna, a poucos minutos do centro e do Coxipó, na região da Morada da Serra, segundo o site oficial.","tags":["casas-de-festas","local:espaco-art-festas-e-eventos"],"codigo":"espaco-art-festas-e-eventos"}'::jsonb;
+  c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"espaco-art-festas-e-eventos","arquivo":"content/lugares/espaco-art-festas-e-eventos/index.md","atualizado_em":"2026-10-11","status_artigo":"rascunho","categoria_artigo":"Casa de festas","cidade":"cuiaba-mt","titulo_md5":"a8f0b2b13da3db8e4d93555d7e4a4eec","descricao_md5":"1532490d73a6024a73bca05c2197bd5d"},"resumo":"Espaço de eventos no bairro Doutor Fábio Leite, em Cuiabá, com piscina, tenda e salão, para aniversários, casamentos e confraternizações.","endereco_texto":"Avenida Airton Senna, 77, Quadra 90, Doutor Fábio Leite, Cuiabá - MT","horario":[{"texto":"Atendimento: seg a sex, 8h às 18h"},{"texto":"WhatsApp: 24 horas"}],"dicas_chegada":"Fica na Avenida Airton Senna, a poucos minutos do centro e do Coxipó, na região da Morada da Serra, segundo o site oficial.","contato_telefone":"(65) 99699-9749","contato_instagram":"@espacoarteventos","site":"https://espacoarteventos.com.br","tags":["casas-de-festas","local:espaco-art-festas-e-eventos"],"codigo":"espaco-art-festas-e-eventos"}'::jsonb;
   c_titulo    constant text   := 'Espaço Art Festas e Eventos';
   c_descricao constant text   := 'O Espaço Art Festas e Eventos é um espaço de locação para festas e eventos na Avenida Airton Senna, 77, no bairro Doutor Fábio Leite, em Cuiabá. Segundo o site oficial, fica a poucos minutos do centro e do Coxipó, na região da Morada da Serra, e comporta até 100 pessoas.
 
@@ -388,7 +402,9 @@ Outros horários podem ser consultados com o espaço.
 O atendimento do espaço é de segunda a sexta-feira, das 8h às 18h, e o WhatsApp (65) 99699-9749 funciona 24 horas, segundo o site oficial. O mesmo site mantém uma página de agenda, com calendário mensal de reservas. O espaço também tem perfil no Instagram, @espacoarteventos.';
   c_images    constant text[] := ARRAY[]::text[];
   c_subs      constant text[] := ARRAY['casas-de-festas']::text[];
-  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text;
+  c_answers   constant jsonb  := '{"horario":[{"texto":"Atendimento: seg a sex, 8h às 18h"},{"texto":"WhatsApp: 24 horas"}],"dicas_chegada":"Fica na Avenida Airton Senna, a poucos minutos do centro e do Coxipó, na região da Morada da Serra, segundo o site oficial.","contato_telefone":"(65) 99699-9749","contato_instagram":"@espacoarteventos","site":"https://espacoarteventos.com.br"}'::jsonb;
+  c_form_keys constant text[] := ARRAY['horario', 'preco', 'gratuito', 'dicas_chegada', 'contato_telefone', 'contato_whatsapp', 'contato_instagram', 'site']::text[];
+  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text; v_form_id bigint; v_form_ver int; v_form_schema jsonb;
   v_sid bigint; v_old jsonb; v_old_titulo text; v_old_desc text;
   v_old_import text[]; v_kept text[]; v_images jsonb; v_cover text; v_ibge text; v_missing text[];
 BEGIN
@@ -399,15 +415,19 @@ BEGIN
 
   SELECT g.id, c.id, NULLIF(c.form_key, '') INTO v_group, v_cat, v_form
   FROM public.categories c JOIN public.categories_group g ON g.id = c.category_group_id
-  WHERE g.slug = 'familia-e-criancas' AND c.slug = 'passeios-em-familia';
-  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares/%: categoria familia-e-criancas/passeios-em-familia não existe (rode o seed de taxonomia)', c_slug; END IF;
-  IF v_form IS NOT NULL THEN
-    RAISE NOTICE 'lugares/%: a categoria tem form_key=%; contato/horário continuam em services.extras (sem form_results)', c_slug, v_form;
+  WHERE g.slug = 'lugares' AND c.slug = 'festas-e-eventos';
+  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares/%: categoria lugares/festas-e-eventos não existe (rode o seed de taxonomia)', c_slug; END IF;
+  IF v_form IS NULL THEN
+    RAISE NOTICE 'lugares/%: a categoria não tem form_key (rode db/extras/forms_seed_lugares.sql); horário/contato só em services.extras', c_slug;
+  ELSE
+    SELECT id, version, schema INTO v_form_id, v_form_ver, v_form_schema
+    FROM public.forms WHERE tenant_id = v_tenant AND form_key = v_form AND active;
+    IF v_form_id IS NULL THEN RAISE EXCEPTION 'lugares/%: formulário % não existe no tenant', c_slug, v_form; END IF;
   END IF;
 
   SELECT array_agg(s) INTO v_missing FROM unnest(c_subs) s
   WHERE NOT EXISTS (SELECT 1 FROM public.categories_sub cs WHERE cs.slug = s AND cs.category_id = v_cat);
-  IF v_missing IS NOT NULL THEN RAISE EXCEPTION 'lugares/%: subcategoria(s) % não existem sob passeios-em-familia', c_slug, v_missing; END IF;
+  IF v_missing IS NOT NULL THEN RAISE EXCEPTION 'lugares/%: subcategoria(s) % não existem sob festas-e-eventos', c_slug, v_missing; END IF;
 
   -- Fotos (id determinístico pelo conteúdo: rodar de novo não duplica)
   -- (sem fotos)
@@ -452,7 +472,7 @@ BEGIN
       description = CASE WHEN v_old->'origem'->>'descricao_md5' IS NULL OR md5(coalesce(v_old_desc, '')) = v_old->'origem'->>'descricao_md5'
                          THEN c_descricao ELSE description END,
       category_group_id = v_group, category_id = v_cat,
-      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - 'horario' - 'preco' - 'dicas_chegada'
+      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - c_form_keys
                        - 'creditos' - 'tags' - 'codigo' - 'vinculosTitulo' - 'images' - 'coverFileId')
                || jsonb_set(c_extras, '{origem}', (c_extras->'origem')
                     || jsonb_build_object(
@@ -480,6 +500,16 @@ BEGIN
   VALUES (v_sid, c_titulo, 'Avenida Airton Senna', '77', 'Quadra 90', 'Doutor Fábio Leite', 'Cuiabá', 'MT', v_ibge,
           NULL, NULL, true, v_tenant, v_root, true);
 
+  -- Respostas do formulário (mesmas chaves de extras)
+  IF v_form_id IS NOT NULL THEN
+    INSERT INTO public.form_results
+      (form_id, form_key, reference_id, domain, version, schema_snapshot, answers, submitted_by, tenant_id)
+    VALUES (v_form_id, v_form, v_sid::text, 'service', v_form_ver, v_form_schema, c_answers, v_root, v_tenant)
+    ON CONFLICT (tenant_id, domain, reference_id) DO UPDATE SET
+      answers = EXCLUDED.answers, version = EXCLUDED.version, schema_snapshot = EXCLUDED.schema_snapshot,
+      form_id = EXCLUDED.form_id, form_key = EXCLUDED.form_key, updated_at = now();
+  END IF;
+
   -- Subcategorias
   DELETE FROM public.service_categories_sub scs USING public.categories_sub cs
   WHERE scs.service_id = v_sid AND cs.id = scs.category_sub_id
@@ -495,7 +525,7 @@ $lugar_3$;
 DO $lugar_4$
 DECLARE
   c_slug      constant text   := 'goiabeiras-shopping';
-  c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"goiabeiras-shopping","arquivo":"content/lugares/goiabeiras-shopping/index.md","atualizado_em":"2026-10-11","status_artigo":"revisao","categoria_artigo":"Shopping","cidade":"cuiaba-mt","titulo_md5":"dc27ddcff82654aef4b73323af829d7c","descricao_md5":"dda52dc3168de430134d2fb033b0f7e4","fotos":[{"arquivo":"public/lugares/goiabeiras-shopping/01.jpg","sha256":"7f13732e2eb1fe8c0f6a19af563dddcd602861d15a190dfe14bb86e4a9bcc970","fileId":"65e8b975-983a-55ef-b743-4fe29271e2ff"},{"arquivo":"public/lugares/goiabeiras-shopping/02.jpg","sha256":"cccd1bb5cdba70bf73537cb3f6f0f1bd686403a4ce6c1f15662aa56396f29e5e","fileId":"a5869fa9-7294-5514-a70c-2f70ec09995c"}]},"resumo":"Shopping inaugurado em 1989 na Av. José Monteiro de Figueiredo, em Cuiabá, com lojas, praça de alimentação e o cinema Cinelaser Goiabeiras.","endereco_texto":"Av. José Monteiro de Figueiredo, 500, Duque de Caxias, Cuiabá - MT","contato":{"telefone":"(65) 3315-2300","instagram":"@goiabeirasshopping","site":"https://www.goiabeirasshopping.com.br"},"horario":["Lojas: seg a sáb, 10h às 22h; dom, 14h às 20h","Praça de alimentação e restaurantes: todos os dias, 11h às 22h","Cinema: conforme a programação"],"dicas_chegada":"O shopping tem estacionamento, listado entre os serviços no site oficial, que não detalha regras nem valores. Outros serviços: bicicletário, fraldário e caixa eletrônico.","creditos":"Fotos: Mateus Hidalgo, licença CC BY-SA 2.0, via Flickr (imagens de 2012; lojas e decoração podem ter mudado).","tags":["shoppings","local:goiabeiras-shopping"],"codigo":"goiabeiras-shopping"}'::jsonb;
+  c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"goiabeiras-shopping","arquivo":"content/lugares/goiabeiras-shopping/index.md","atualizado_em":"2026-10-11","status_artigo":"revisao","categoria_artigo":"Shopping","cidade":"cuiaba-mt","titulo_md5":"dc27ddcff82654aef4b73323af829d7c","descricao_md5":"dda52dc3168de430134d2fb033b0f7e4","fotos":[{"arquivo":"public/lugares/goiabeiras-shopping/01.jpg","sha256":"7f13732e2eb1fe8c0f6a19af563dddcd602861d15a190dfe14bb86e4a9bcc970","fileId":"65e8b975-983a-55ef-b743-4fe29271e2ff"},{"arquivo":"public/lugares/goiabeiras-shopping/02.jpg","sha256":"cccd1bb5cdba70bf73537cb3f6f0f1bd686403a4ce6c1f15662aa56396f29e5e","fileId":"a5869fa9-7294-5514-a70c-2f70ec09995c"}]},"resumo":"Shopping inaugurado em 1989 na Av. José Monteiro de Figueiredo, em Cuiabá, com lojas, praça de alimentação e o cinema Cinelaser Goiabeiras.","endereco_texto":"Av. José Monteiro de Figueiredo, 500, Duque de Caxias, Cuiabá - MT","horario":[{"texto":"Lojas: seg a sáb, 10h às 22h; dom, 14h às 20h"},{"texto":"Praça de alimentação e restaurantes: todos os dias, 11h às 22h"},{"texto":"Cinema: conforme a programação"}],"dicas_chegada":"O shopping tem estacionamento, listado entre os serviços no site oficial, que não detalha regras nem valores. Outros serviços: bicicletário, fraldário e caixa eletrônico.","contato_telefone":"(65) 3315-2300","contato_instagram":"@goiabeirasshopping","site":"https://www.goiabeirasshopping.com.br","creditos":"Fotos: Mateus Hidalgo, licença CC BY-SA 2.0, via Flickr (imagens de 2012; lojas e decoração podem ter mudado).","tags":["shoppings","local:goiabeiras-shopping"],"codigo":"goiabeiras-shopping"}'::jsonb;
   c_titulo    constant text   := 'Goiabeiras Shopping';
   c_descricao constant text   := 'O Goiabeiras Shopping fica na Avenida José Monteiro de Figueiredo, 500, no bairro Duque de Caxias, em Cuiabá. Inaugurado em 1989, reúne lojas, restaurantes, serviços e um cinema, o Cinelaser Goiabeiras. Segundo o site oficial, as lojas abrem de segunda a sábado, das 10h às 22h, e aos domingos, das 14h às 20h.
 
@@ -532,7 +562,9 @@ Para dúvidas sobre horários especiais, estacionamento ou lojas, o atendimento 
 Fotos: Mateus Hidalgo, licença CC BY-SA 2.0, via Flickr (imagens de 2012; lojas e decoração podem ter mudado).';
   c_images    constant text[] := ARRAY['65e8b975-983a-55ef-b743-4fe29271e2ff', 'a5869fa9-7294-5514-a70c-2f70ec09995c']::text[];
   c_subs      constant text[] := ARRAY['shoppings']::text[];
-  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text;
+  c_answers   constant jsonb  := '{"horario":[{"texto":"Lojas: seg a sáb, 10h às 22h; dom, 14h às 20h"},{"texto":"Praça de alimentação e restaurantes: todos os dias, 11h às 22h"},{"texto":"Cinema: conforme a programação"}],"dicas_chegada":"O shopping tem estacionamento, listado entre os serviços no site oficial, que não detalha regras nem valores. Outros serviços: bicicletário, fraldário e caixa eletrônico.","contato_telefone":"(65) 3315-2300","contato_instagram":"@goiabeirasshopping","site":"https://www.goiabeirasshopping.com.br"}'::jsonb;
+  c_form_keys constant text[] := ARRAY['horario', 'preco', 'gratuito', 'dicas_chegada', 'contato_telefone', 'contato_whatsapp', 'contato_instagram', 'site']::text[];
+  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text; v_form_id bigint; v_form_ver int; v_form_schema jsonb;
   v_sid bigint; v_old jsonb; v_old_titulo text; v_old_desc text;
   v_old_import text[]; v_kept text[]; v_images jsonb; v_cover text; v_ibge text; v_missing text[];
 BEGIN
@@ -543,15 +575,19 @@ BEGIN
 
   SELECT g.id, c.id, NULLIF(c.form_key, '') INTO v_group, v_cat, v_form
   FROM public.categories c JOIN public.categories_group g ON g.id = c.category_group_id
-  WHERE g.slug = 'compras-e-feiras' AND c.slug = 'shoppings-e-lojas';
-  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares/%: categoria compras-e-feiras/shoppings-e-lojas não existe (rode o seed de taxonomia)', c_slug; END IF;
-  IF v_form IS NOT NULL THEN
-    RAISE NOTICE 'lugares/%: a categoria tem form_key=%; contato/horário continuam em services.extras (sem form_results)', c_slug, v_form;
+  WHERE g.slug = 'lugares' AND c.slug = 'compras';
+  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares/%: categoria lugares/compras não existe (rode o seed de taxonomia)', c_slug; END IF;
+  IF v_form IS NULL THEN
+    RAISE NOTICE 'lugares/%: a categoria não tem form_key (rode db/extras/forms_seed_lugares.sql); horário/contato só em services.extras', c_slug;
+  ELSE
+    SELECT id, version, schema INTO v_form_id, v_form_ver, v_form_schema
+    FROM public.forms WHERE tenant_id = v_tenant AND form_key = v_form AND active;
+    IF v_form_id IS NULL THEN RAISE EXCEPTION 'lugares/%: formulário % não existe no tenant', c_slug, v_form; END IF;
   END IF;
 
   SELECT array_agg(s) INTO v_missing FROM unnest(c_subs) s
   WHERE NOT EXISTS (SELECT 1 FROM public.categories_sub cs WHERE cs.slug = s AND cs.category_id = v_cat);
-  IF v_missing IS NOT NULL THEN RAISE EXCEPTION 'lugares/%: subcategoria(s) % não existem sob shoppings-e-lojas', c_slug, v_missing; END IF;
+  IF v_missing IS NOT NULL THEN RAISE EXCEPTION 'lugares/%: subcategoria(s) % não existem sob compras', c_slug, v_missing; END IF;
 
   -- Fotos (id determinístico pelo conteúdo: rodar de novo não duplica)
   INSERT INTO public.files (id, uid, tenant_id, original_name, storage_path, mime_type, size_bytes, width, height, purpose, content, active)
@@ -603,7 +639,7 @@ BEGIN
       description = CASE WHEN v_old->'origem'->>'descricao_md5' IS NULL OR md5(coalesce(v_old_desc, '')) = v_old->'origem'->>'descricao_md5'
                          THEN c_descricao ELSE description END,
       category_group_id = v_group, category_id = v_cat,
-      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - 'horario' - 'preco' - 'dicas_chegada'
+      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - c_form_keys
                        - 'creditos' - 'tags' - 'codigo' - 'vinculosTitulo' - 'images' - 'coverFileId')
                || jsonb_set(c_extras, '{origem}', (c_extras->'origem')
                     || jsonb_build_object(
@@ -631,6 +667,16 @@ BEGIN
   VALUES (v_sid, c_titulo, 'Av. José Monteiro de Figueiredo', '500', NULL, 'Duque de Caxias', 'Cuiabá', 'MT', v_ibge,
           -15.5882, -56.1124, true, v_tenant, v_root, true);
 
+  -- Respostas do formulário (mesmas chaves de extras)
+  IF v_form_id IS NOT NULL THEN
+    INSERT INTO public.form_results
+      (form_id, form_key, reference_id, domain, version, schema_snapshot, answers, submitted_by, tenant_id)
+    VALUES (v_form_id, v_form, v_sid::text, 'service', v_form_ver, v_form_schema, c_answers, v_root, v_tenant)
+    ON CONFLICT (tenant_id, domain, reference_id) DO UPDATE SET
+      answers = EXCLUDED.answers, version = EXCLUDED.version, schema_snapshot = EXCLUDED.schema_snapshot,
+      form_id = EXCLUDED.form_id, form_key = EXCLUDED.form_key, updated_at = now();
+  END IF;
+
   -- Subcategorias
   DELETE FROM public.service_categories_sub scs USING public.categories_sub cs
   WHERE scs.service_id = v_sid AND cs.id = scs.category_sub_id
@@ -646,7 +692,7 @@ $lugar_4$;
 DO $lugar_5$
 DECLARE
   c_slug      constant text   := 'lua-morena';
-  c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"lua-morena","arquivo":"content/lugares/lua-morena/index.md","atualizado_em":"2026-10-11","status_artigo":"rascunho","categoria_artigo":"Casa noturna","cidade":"cuiaba-mt","titulo_md5":"3b49f89f1449448aafed3efd39d3b32f","descricao_md5":"0f1b9b6c4974ec69be6208acbf212387"},"resumo":"Casa noturna de Cuiabá na Av. Jornalista Arquimedes Pereira Lima, com bailes, shows e festas de forró, sertanejo, brega e flashback.","endereco_texto":"Avenida Jornalista Arquimedes Pereira Lima, Cuiabá - MT","contato":{"telefone":"(65) 99946-6305","instagram":"@luamorenacuiaba"},"tags":["casas-noturnas","local:lua-morena"],"codigo":"lua-morena"}'::jsonb;
+  c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"lua-morena","arquivo":"content/lugares/lua-morena/index.md","atualizado_em":"2026-10-11","status_artigo":"rascunho","categoria_artigo":"Casa noturna","cidade":"cuiaba-mt","titulo_md5":"3b49f89f1449448aafed3efd39d3b32f","descricao_md5":"0f1b9b6c4974ec69be6208acbf212387"},"resumo":"Casa noturna de Cuiabá na Av. Jornalista Arquimedes Pereira Lima, com bailes, shows e festas de forró, sertanejo, brega e flashback.","endereco_texto":"Avenida Jornalista Arquimedes Pereira Lima, Cuiabá - MT","contato_telefone":"(65) 99946-6305","contato_instagram":"@luamorenacuiaba","tags":["casas-noturnas","local:lua-morena"],"codigo":"lua-morena"}'::jsonb;
   c_titulo    constant text   := 'Lua Morena';
   c_descricao constant text   := 'O Lua Morena é uma casa noturna de Cuiabá, na Avenida Jornalista Arquimedes Pereira Lima. Recebe bailes, shows e festas dançantes, com programação que passa por forró, sertanejo, brega e noites de flashback, segundo a imprensa local e os guias de eventos da cidade.
 
@@ -675,8 +721,10 @@ Para o show do Double You, em 2024, o HiperNotícias listou ingressos de pista e
 
 O telefone divulgado pela casa e por guias de eventos é (65) 99946-6305. O perfil no Instagram, @luamorenacuiaba, é onde a programação é anunciada. Como datas, atrações e preços mudam, vale conferir ali antes de ir.';
   c_images    constant text[] := ARRAY[]::text[];
-  c_subs      constant text[] := ARRAY['casas-noturnas', 'sertanejo-e-forro']::text[];
-  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text;
+  c_subs      constant text[] := ARRAY['casas-noturnas']::text[];
+  c_answers   constant jsonb  := '{"contato_telefone":"(65) 99946-6305","contato_instagram":"@luamorenacuiaba"}'::jsonb;
+  c_form_keys constant text[] := ARRAY['horario', 'preco', 'gratuito', 'dicas_chegada', 'contato_telefone', 'contato_whatsapp', 'contato_instagram', 'site']::text[];
+  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text; v_form_id bigint; v_form_ver int; v_form_schema jsonb;
   v_sid bigint; v_old jsonb; v_old_titulo text; v_old_desc text;
   v_old_import text[]; v_kept text[]; v_images jsonb; v_cover text; v_ibge text; v_missing text[];
 BEGIN
@@ -687,15 +735,19 @@ BEGIN
 
   SELECT g.id, c.id, NULLIF(c.form_key, '') INTO v_group, v_cat, v_form
   FROM public.categories c JOIN public.categories_group g ON g.id = c.category_group_id
-  WHERE g.slug = 'bares-e-vida-noturna' AND c.slug = 'baladas-e-casas-noturnas';
-  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares/%: categoria bares-e-vida-noturna/baladas-e-casas-noturnas não existe (rode o seed de taxonomia)', c_slug; END IF;
-  IF v_form IS NOT NULL THEN
-    RAISE NOTICE 'lugares/%: a categoria tem form_key=%; contato/horário continuam em services.extras (sem form_results)', c_slug, v_form;
+  WHERE g.slug = 'lugares' AND c.slug = 'vida-noturna';
+  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares/%: categoria lugares/vida-noturna não existe (rode o seed de taxonomia)', c_slug; END IF;
+  IF v_form IS NULL THEN
+    RAISE NOTICE 'lugares/%: a categoria não tem form_key (rode db/extras/forms_seed_lugares.sql); horário/contato só em services.extras', c_slug;
+  ELSE
+    SELECT id, version, schema INTO v_form_id, v_form_ver, v_form_schema
+    FROM public.forms WHERE tenant_id = v_tenant AND form_key = v_form AND active;
+    IF v_form_id IS NULL THEN RAISE EXCEPTION 'lugares/%: formulário % não existe no tenant', c_slug, v_form; END IF;
   END IF;
 
   SELECT array_agg(s) INTO v_missing FROM unnest(c_subs) s
   WHERE NOT EXISTS (SELECT 1 FROM public.categories_sub cs WHERE cs.slug = s AND cs.category_id = v_cat);
-  IF v_missing IS NOT NULL THEN RAISE EXCEPTION 'lugares/%: subcategoria(s) % não existem sob baladas-e-casas-noturnas', c_slug, v_missing; END IF;
+  IF v_missing IS NOT NULL THEN RAISE EXCEPTION 'lugares/%: subcategoria(s) % não existem sob vida-noturna', c_slug, v_missing; END IF;
 
   -- Fotos (id determinístico pelo conteúdo: rodar de novo não duplica)
   -- (sem fotos)
@@ -740,7 +792,7 @@ BEGIN
       description = CASE WHEN v_old->'origem'->>'descricao_md5' IS NULL OR md5(coalesce(v_old_desc, '')) = v_old->'origem'->>'descricao_md5'
                          THEN c_descricao ELSE description END,
       category_group_id = v_group, category_id = v_cat,
-      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - 'horario' - 'preco' - 'dicas_chegada'
+      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - c_form_keys
                        - 'creditos' - 'tags' - 'codigo' - 'vinculosTitulo' - 'images' - 'coverFileId')
                || jsonb_set(c_extras, '{origem}', (c_extras->'origem')
                     || jsonb_build_object(
@@ -768,6 +820,16 @@ BEGIN
   VALUES (v_sid, c_titulo, 'Avenida Jornalista Arquimedes Pereira Lima', NULL, NULL, NULL, 'Cuiabá', 'MT', v_ibge,
           -15.61332, -56.05044, true, v_tenant, v_root, true);
 
+  -- Respostas do formulário (mesmas chaves de extras)
+  IF v_form_id IS NOT NULL THEN
+    INSERT INTO public.form_results
+      (form_id, form_key, reference_id, domain, version, schema_snapshot, answers, submitted_by, tenant_id)
+    VALUES (v_form_id, v_form, v_sid::text, 'service', v_form_ver, v_form_schema, c_answers, v_root, v_tenant)
+    ON CONFLICT (tenant_id, domain, reference_id) DO UPDATE SET
+      answers = EXCLUDED.answers, version = EXCLUDED.version, schema_snapshot = EXCLUDED.schema_snapshot,
+      form_id = EXCLUDED.form_id, form_key = EXCLUDED.form_key, updated_at = now();
+  END IF;
+
   -- Subcategorias
   DELETE FROM public.service_categories_sub scs USING public.categories_sub cs
   WHERE scs.service_id = v_sid AND cs.id = scs.category_sub_id
@@ -783,7 +845,7 @@ $lugar_5$;
 DO $lugar_6$
 DECLARE
   c_slug      constant text   := 'pantanal-shopping';
-  c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"pantanal-shopping","arquivo":"content/lugares/pantanal-shopping/index.md","atualizado_em":"2026-10-11","status_artigo":"revisao","categoria_artigo":"Shopping","cidade":"cuiaba-mt","titulo_md5":"2661c1c92740a21fb1914ea1c09cb47b","descricao_md5":"2e1507f22bf4058077cb4f06b92b3280","fotos":[{"arquivo":"public/lugares/pantanal-shopping/01.jpg","sha256":"5e77a313e3e67be99ee4c8c0c2cc5e93c1468d63435937eff427ced450604f41","fileId":"1b181e1d-e9f6-51fc-bc56-2b2be89b0a5b"},{"arquivo":"public/lugares/pantanal-shopping/02.jpg","sha256":"733c036f42f113ad0a262de060363630db2d162c55bc48b19992e3159a61963a","fileId":"c8f73563-38f9-515a-a67b-c6b27c51515e"},{"arquivo":"public/lugares/pantanal-shopping/03.jpg","sha256":"88f27aef813f7ef3ef988506afbd4b58ede132bd2e413da874cea65a252c26df","fileId":"2df5dd62-2ec1-55f9-a158-6fa72b030e18"},{"arquivo":"public/lugares/pantanal-shopping/04.jpg","sha256":"bc455ba197ad04d6b64ee7b51b8bd1b1e445c4244da874713d1d436f5ceb8594","fileId":"484ea3b3-f5b7-5426-b317-8af5840e7fa9"}]},"resumo":"Shopping inaugurado em novembro de 2004, na Av. Historiador Rubens de Mendonça, em Cuiabá. Tem lojas, restaurantes, Terraço do Pan e o Cine Araújo.","endereco_texto":"Av. Historiador Rubens de Mendonça (Av. CPA), 3300, Jardim Aclimação, Cuiabá - MT","contato":{"instagram":"@pantanalshopping","site":"https://www.pantanalshopping.com.br"},"horario":["Lojas e quiosques: seg a sáb, 10h às 22h; dom e feriados, 14h às 22h (facultativo das 11h às 14h e das 20h às 22h)","Alimentação: seg a sáb, 10h às 22h; dom e feriados, 11h às 22h","Terraço do Pan: todos os dias, 10h às 23h","Cinema: conforme a programação semanal"],"dicas_chegada":"Estacionamento pago no próprio shopping: o site oficial informa tarifa única de R$ 20 para carros e R$ 16 para motos até as 23h59, com 15 minutos de tolerância, e pagamento por cartão nas entradas ou pelo aplicativo (valores consultados em 11/10/2026). Atendimento por WhatsApp: (65) 99627-3680.","creditos":"Fotos: Ajmcbarreto, licença CC BY-SA 4.0, via Wikimedia Commons (saguão do cinema Multiplex Araújo Pantanal, dezembro de 2024; lojas e decoração podem ter mudado).","tags":["shoppings","local:pantanal-shopping"],"codigo":"pantanal-shopping"}'::jsonb;
+  c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"pantanal-shopping","arquivo":"content/lugares/pantanal-shopping/index.md","atualizado_em":"2026-10-11","status_artigo":"revisao","categoria_artigo":"Shopping","cidade":"cuiaba-mt","titulo_md5":"2661c1c92740a21fb1914ea1c09cb47b","descricao_md5":"2e1507f22bf4058077cb4f06b92b3280","fotos":[{"arquivo":"public/lugares/pantanal-shopping/01.jpg","sha256":"5e77a313e3e67be99ee4c8c0c2cc5e93c1468d63435937eff427ced450604f41","fileId":"1b181e1d-e9f6-51fc-bc56-2b2be89b0a5b"},{"arquivo":"public/lugares/pantanal-shopping/02.jpg","sha256":"733c036f42f113ad0a262de060363630db2d162c55bc48b19992e3159a61963a","fileId":"c8f73563-38f9-515a-a67b-c6b27c51515e"},{"arquivo":"public/lugares/pantanal-shopping/03.jpg","sha256":"88f27aef813f7ef3ef988506afbd4b58ede132bd2e413da874cea65a252c26df","fileId":"2df5dd62-2ec1-55f9-a158-6fa72b030e18"},{"arquivo":"public/lugares/pantanal-shopping/04.jpg","sha256":"bc455ba197ad04d6b64ee7b51b8bd1b1e445c4244da874713d1d436f5ceb8594","fileId":"484ea3b3-f5b7-5426-b317-8af5840e7fa9"}]},"resumo":"Shopping inaugurado em novembro de 2004, na Av. Historiador Rubens de Mendonça, em Cuiabá. Tem lojas, restaurantes, Terraço do Pan e o Cine Araújo.","endereco_texto":"Av. Historiador Rubens de Mendonça (Av. CPA), 3300, Jardim Aclimação, Cuiabá - MT","horario":[{"texto":"Lojas e quiosques: seg a sáb, 10h às 22h; dom e feriados, 14h às 22h (facultativo das 11h às 14h e das 20h às 22h)"},{"texto":"Alimentação: seg a sáb, 10h às 22h; dom e feriados, 11h às 22h"},{"texto":"Terraço do Pan: todos os dias, 10h às 23h"},{"texto":"Cinema: conforme a programação semanal"}],"dicas_chegada":"Estacionamento pago no próprio shopping: o site oficial informa tarifa única de R$ 20 para carros e R$ 16 para motos até as 23h59, com 15 minutos de tolerância, e pagamento por cartão nas entradas ou pelo aplicativo (valores consultados em 11/10/2026). Atendimento por WhatsApp: (65) 99627-3680.","contato_instagram":"@pantanalshopping","site":"https://www.pantanalshopping.com.br","creditos":"Fotos: Ajmcbarreto, licença CC BY-SA 4.0, via Wikimedia Commons (saguão do cinema Multiplex Araújo Pantanal, dezembro de 2024; lojas e decoração podem ter mudado).","tags":["shoppings","local:pantanal-shopping"],"codigo":"pantanal-shopping"}'::jsonb;
   c_titulo    constant text   := 'Pantanal Shopping';
   c_descricao constant text   := 'O Pantanal Shopping fica na Avenida Historiador Rubens de Mendonça, a Avenida do CPA, número 3300, no bairro Jardim Aclimação, em Cuiabá. Inaugurado em novembro de 2004, reúne lojas, restaurantes, cinema, o parque de brinquedos Planet Park e o Terraço do Pan. É administrado pela Ancar Ivanhoe, segundo o site oficial.
 
@@ -814,7 +876,9 @@ O estacionamento é pago. O site informa tarifa única de R$ 20 para carros e R$
 Fotos: Ajmcbarreto, licença CC BY-SA 4.0, via Wikimedia Commons (saguão do cinema Multiplex Araújo Pantanal, dezembro de 2024; lojas e decoração podem ter mudado).';
   c_images    constant text[] := ARRAY['1b181e1d-e9f6-51fc-bc56-2b2be89b0a5b', 'c8f73563-38f9-515a-a67b-c6b27c51515e', '2df5dd62-2ec1-55f9-a158-6fa72b030e18', '484ea3b3-f5b7-5426-b317-8af5840e7fa9']::text[];
   c_subs      constant text[] := ARRAY['shoppings']::text[];
-  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text;
+  c_answers   constant jsonb  := '{"horario":[{"texto":"Lojas e quiosques: seg a sáb, 10h às 22h; dom e feriados, 14h às 22h (facultativo das 11h às 14h e das 20h às 22h)"},{"texto":"Alimentação: seg a sáb, 10h às 22h; dom e feriados, 11h às 22h"},{"texto":"Terraço do Pan: todos os dias, 10h às 23h"},{"texto":"Cinema: conforme a programação semanal"}],"dicas_chegada":"Estacionamento pago no próprio shopping: o site oficial informa tarifa única de R$ 20 para carros e R$ 16 para motos até as 23h59, com 15 minutos de tolerância, e pagamento por cartão nas entradas ou pelo aplicativo (valores consultados em 11/10/2026). Atendimento por WhatsApp: (65) 99627-3680.","contato_instagram":"@pantanalshopping","site":"https://www.pantanalshopping.com.br"}'::jsonb;
+  c_form_keys constant text[] := ARRAY['horario', 'preco', 'gratuito', 'dicas_chegada', 'contato_telefone', 'contato_whatsapp', 'contato_instagram', 'site']::text[];
+  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text; v_form_id bigint; v_form_ver int; v_form_schema jsonb;
   v_sid bigint; v_old jsonb; v_old_titulo text; v_old_desc text;
   v_old_import text[]; v_kept text[]; v_images jsonb; v_cover text; v_ibge text; v_missing text[];
 BEGIN
@@ -825,15 +889,19 @@ BEGIN
 
   SELECT g.id, c.id, NULLIF(c.form_key, '') INTO v_group, v_cat, v_form
   FROM public.categories c JOIN public.categories_group g ON g.id = c.category_group_id
-  WHERE g.slug = 'compras-e-feiras' AND c.slug = 'shoppings-e-lojas';
-  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares/%: categoria compras-e-feiras/shoppings-e-lojas não existe (rode o seed de taxonomia)', c_slug; END IF;
-  IF v_form IS NOT NULL THEN
-    RAISE NOTICE 'lugares/%: a categoria tem form_key=%; contato/horário continuam em services.extras (sem form_results)', c_slug, v_form;
+  WHERE g.slug = 'lugares' AND c.slug = 'compras';
+  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares/%: categoria lugares/compras não existe (rode o seed de taxonomia)', c_slug; END IF;
+  IF v_form IS NULL THEN
+    RAISE NOTICE 'lugares/%: a categoria não tem form_key (rode db/extras/forms_seed_lugares.sql); horário/contato só em services.extras', c_slug;
+  ELSE
+    SELECT id, version, schema INTO v_form_id, v_form_ver, v_form_schema
+    FROM public.forms WHERE tenant_id = v_tenant AND form_key = v_form AND active;
+    IF v_form_id IS NULL THEN RAISE EXCEPTION 'lugares/%: formulário % não existe no tenant', c_slug, v_form; END IF;
   END IF;
 
   SELECT array_agg(s) INTO v_missing FROM unnest(c_subs) s
   WHERE NOT EXISTS (SELECT 1 FROM public.categories_sub cs WHERE cs.slug = s AND cs.category_id = v_cat);
-  IF v_missing IS NOT NULL THEN RAISE EXCEPTION 'lugares/%: subcategoria(s) % não existem sob shoppings-e-lojas', c_slug, v_missing; END IF;
+  IF v_missing IS NOT NULL THEN RAISE EXCEPTION 'lugares/%: subcategoria(s) % não existem sob compras', c_slug, v_missing; END IF;
 
   -- Fotos (id determinístico pelo conteúdo: rodar de novo não duplica)
   INSERT INTO public.files (id, uid, tenant_id, original_name, storage_path, mime_type, size_bytes, width, height, purpose, content, active)
@@ -893,7 +961,7 @@ BEGIN
       description = CASE WHEN v_old->'origem'->>'descricao_md5' IS NULL OR md5(coalesce(v_old_desc, '')) = v_old->'origem'->>'descricao_md5'
                          THEN c_descricao ELSE description END,
       category_group_id = v_group, category_id = v_cat,
-      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - 'horario' - 'preco' - 'dicas_chegada'
+      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - c_form_keys
                        - 'creditos' - 'tags' - 'codigo' - 'vinculosTitulo' - 'images' - 'coverFileId')
                || jsonb_set(c_extras, '{origem}', (c_extras->'origem')
                     || jsonb_build_object(
@@ -921,6 +989,16 @@ BEGIN
   VALUES (v_sid, c_titulo, 'Av. Historiador Rubens de Mendonça (Av. CPA)', '3300', NULL, 'Jardim Aclimação', 'Cuiabá', 'MT', v_ibge,
           -15.576722, -56.072502, true, v_tenant, v_root, true);
 
+  -- Respostas do formulário (mesmas chaves de extras)
+  IF v_form_id IS NOT NULL THEN
+    INSERT INTO public.form_results
+      (form_id, form_key, reference_id, domain, version, schema_snapshot, answers, submitted_by, tenant_id)
+    VALUES (v_form_id, v_form, v_sid::text, 'service', v_form_ver, v_form_schema, c_answers, v_root, v_tenant)
+    ON CONFLICT (tenant_id, domain, reference_id) DO UPDATE SET
+      answers = EXCLUDED.answers, version = EXCLUDED.version, schema_snapshot = EXCLUDED.schema_snapshot,
+      form_id = EXCLUDED.form_id, form_key = EXCLUDED.form_key, updated_at = now();
+  END IF;
+
   -- Subcategorias
   DELETE FROM public.service_categories_sub scs USING public.categories_sub cs
   WHERE scs.service_id = v_sid AND cs.id = scs.category_sub_id
@@ -936,7 +1014,7 @@ $lugar_6$;
 DO $lugar_7$
 DECLARE
   c_slug      constant text   := 'shopping-estacao-cuiaba';
-  c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"shopping-estacao-cuiaba","arquivo":"content/lugares/shopping-estacao-cuiaba/index.md","atualizado_em":"2026-10-11","status_artigo":"revisao","categoria_artigo":"Shopping","cidade":"cuiaba-mt","titulo_md5":"e47935bfd30242cc70353a74b30c2170","descricao_md5":"adff19480838898412bc5433028df9a5","fotos":[{"arquivo":"public/lugares/shopping-estacao-cuiaba/01.jpg","sha256":"8c6755cf74d2592e32f5da3440ea5003aadb85262a0496818c88f01b62564242","fileId":"08126946-0741-5f98-97ff-99433d68e062"},{"arquivo":"public/lugares/shopping-estacao-cuiaba/02.jpg","sha256":"ab1231bfe3c0643c7fc23e7f3e161127bd686d2a406cf60852d7b1fa786ced51","fileId":"9eb464fb-7db5-53e8-b5c5-42f4028654d8"},{"arquivo":"public/lugares/shopping-estacao-cuiaba/03.jpg","sha256":"06fa791d4f059f2fe0d5f039d40c4c19eb7768d6e97d00c9fbbe51fab99f47c1","fileId":"9513b22d-5ebf-5136-ab61-ee71c187d29b"}]},"resumo":"Shopping da Allos na Av. Miguel Sutil, no Santa Rosa, aberto em 2018: mais de 270 lojas, restaurantes, cinema Cinépolis com 7 salas e estacionamento.","endereco_texto":"Av. Miguel Sutil, 9300, Santa Rosa, Cuiabá - MT","contato":{"telefone":"(65) 93300-7001","instagram":"@shoppingestacaocuiaba","site":"https://shoppingestacaocuiaba.com.br"},"horario":["Lojas: seg a sáb, 10h às 22h; domingos e feriados, 14h às 20h","Restaurantes: todos os dias, 11h às 22h","Cinema: seg a sáb, 14h às 22h; domingos e feriados, 14h às 20h","Estacionamento: seg a sáb, 10h às 22h; domingos e feriados, 11h às 22h"],"dicas_chegada":"Fica na Av. Miguel Sutil. O estacionamento tem mais de 2 mil vagas, mais de 1.600 delas cobertas, e há área de valet, segundo o site do shopping.","creditos":"Fotos: Ajmcbarreto, CC BY-SA 4.0, Wikimedia Commons (arquivos Cinépolis Estação Cuiabá 01, 08 e 09, de 6/12/2024); as imagens mostram o cinema do shopping e foram apenas redimensionadas.","tags":["shoppings","local:shopping-estacao-cuiaba"],"codigo":"shopping-estacao-cuiaba"}'::jsonb;
+  c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"shopping-estacao-cuiaba","arquivo":"content/lugares/shopping-estacao-cuiaba/index.md","atualizado_em":"2026-10-11","status_artigo":"revisao","categoria_artigo":"Shopping","cidade":"cuiaba-mt","titulo_md5":"e47935bfd30242cc70353a74b30c2170","descricao_md5":"adff19480838898412bc5433028df9a5","fotos":[{"arquivo":"public/lugares/shopping-estacao-cuiaba/01.jpg","sha256":"8c6755cf74d2592e32f5da3440ea5003aadb85262a0496818c88f01b62564242","fileId":"08126946-0741-5f98-97ff-99433d68e062"},{"arquivo":"public/lugares/shopping-estacao-cuiaba/02.jpg","sha256":"ab1231bfe3c0643c7fc23e7f3e161127bd686d2a406cf60852d7b1fa786ced51","fileId":"9eb464fb-7db5-53e8-b5c5-42f4028654d8"},{"arquivo":"public/lugares/shopping-estacao-cuiaba/03.jpg","sha256":"06fa791d4f059f2fe0d5f039d40c4c19eb7768d6e97d00c9fbbe51fab99f47c1","fileId":"9513b22d-5ebf-5136-ab61-ee71c187d29b"}]},"resumo":"Shopping da Allos na Av. Miguel Sutil, no Santa Rosa, aberto em 2018: mais de 270 lojas, restaurantes, cinema Cinépolis com 7 salas e estacionamento.","endereco_texto":"Av. Miguel Sutil, 9300, Santa Rosa, Cuiabá - MT","horario":[{"texto":"Lojas: seg a sáb, 10h às 22h; domingos e feriados, 14h às 20h"},{"texto":"Restaurantes: todos os dias, 11h às 22h"},{"texto":"Cinema: seg a sáb, 14h às 22h; domingos e feriados, 14h às 20h"},{"texto":"Estacionamento: seg a sáb, 10h às 22h; domingos e feriados, 11h às 22h"}],"dicas_chegada":"Fica na Av. Miguel Sutil. O estacionamento tem mais de 2 mil vagas, mais de 1.600 delas cobertas, e há área de valet, segundo o site do shopping.","contato_telefone":"(65) 93300-7001","contato_instagram":"@shoppingestacaocuiaba","site":"https://shoppingestacaocuiaba.com.br","creditos":"Fotos: Ajmcbarreto, CC BY-SA 4.0, Wikimedia Commons (arquivos Cinépolis Estação Cuiabá 01, 08 e 09, de 6/12/2024); as imagens mostram o cinema do shopping e foram apenas redimensionadas.","tags":["shoppings","local:shopping-estacao-cuiaba"],"codigo":"shopping-estacao-cuiaba"}'::jsonb;
   c_titulo    constant text   := 'Shopping Estação Cuiabá';
   c_descricao constant text   := 'O Shopping Estação Cuiabá fica na Avenida Miguel Sutil, 9300, no bairro Santa Rosa, em Cuiabá. Abriu em outubro de 2018 e é administrado pela Allos. Segundo a administradora, tem 48 mil m² de área bruta locável, distribuídos em três pisos.
 
@@ -969,7 +1047,9 @@ O atendimento ao cliente informado pela Allos é o (65) 93300-7001, e a administ
 Fotos: Ajmcbarreto, CC BY-SA 4.0, Wikimedia Commons (arquivos Cinépolis Estação Cuiabá 01, 08 e 09, de 6/12/2024); as imagens mostram o cinema do shopping e foram apenas redimensionadas.';
   c_images    constant text[] := ARRAY['08126946-0741-5f98-97ff-99433d68e062', '9eb464fb-7db5-53e8-b5c5-42f4028654d8', '9513b22d-5ebf-5136-ab61-ee71c187d29b']::text[];
   c_subs      constant text[] := ARRAY['shoppings']::text[];
-  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text;
+  c_answers   constant jsonb  := '{"horario":[{"texto":"Lojas: seg a sáb, 10h às 22h; domingos e feriados, 14h às 20h"},{"texto":"Restaurantes: todos os dias, 11h às 22h"},{"texto":"Cinema: seg a sáb, 14h às 22h; domingos e feriados, 14h às 20h"},{"texto":"Estacionamento: seg a sáb, 10h às 22h; domingos e feriados, 11h às 22h"}],"dicas_chegada":"Fica na Av. Miguel Sutil. O estacionamento tem mais de 2 mil vagas, mais de 1.600 delas cobertas, e há área de valet, segundo o site do shopping.","contato_telefone":"(65) 93300-7001","contato_instagram":"@shoppingestacaocuiaba","site":"https://shoppingestacaocuiaba.com.br"}'::jsonb;
+  c_form_keys constant text[] := ARRAY['horario', 'preco', 'gratuito', 'dicas_chegada', 'contato_telefone', 'contato_whatsapp', 'contato_instagram', 'site']::text[];
+  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text; v_form_id bigint; v_form_ver int; v_form_schema jsonb;
   v_sid bigint; v_old jsonb; v_old_titulo text; v_old_desc text;
   v_old_import text[]; v_kept text[]; v_images jsonb; v_cover text; v_ibge text; v_missing text[];
 BEGIN
@@ -980,15 +1060,19 @@ BEGIN
 
   SELECT g.id, c.id, NULLIF(c.form_key, '') INTO v_group, v_cat, v_form
   FROM public.categories c JOIN public.categories_group g ON g.id = c.category_group_id
-  WHERE g.slug = 'compras-e-feiras' AND c.slug = 'shoppings-e-lojas';
-  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares/%: categoria compras-e-feiras/shoppings-e-lojas não existe (rode o seed de taxonomia)', c_slug; END IF;
-  IF v_form IS NOT NULL THEN
-    RAISE NOTICE 'lugares/%: a categoria tem form_key=%; contato/horário continuam em services.extras (sem form_results)', c_slug, v_form;
+  WHERE g.slug = 'lugares' AND c.slug = 'compras';
+  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares/%: categoria lugares/compras não existe (rode o seed de taxonomia)', c_slug; END IF;
+  IF v_form IS NULL THEN
+    RAISE NOTICE 'lugares/%: a categoria não tem form_key (rode db/extras/forms_seed_lugares.sql); horário/contato só em services.extras', c_slug;
+  ELSE
+    SELECT id, version, schema INTO v_form_id, v_form_ver, v_form_schema
+    FROM public.forms WHERE tenant_id = v_tenant AND form_key = v_form AND active;
+    IF v_form_id IS NULL THEN RAISE EXCEPTION 'lugares/%: formulário % não existe no tenant', c_slug, v_form; END IF;
   END IF;
 
   SELECT array_agg(s) INTO v_missing FROM unnest(c_subs) s
   WHERE NOT EXISTS (SELECT 1 FROM public.categories_sub cs WHERE cs.slug = s AND cs.category_id = v_cat);
-  IF v_missing IS NOT NULL THEN RAISE EXCEPTION 'lugares/%: subcategoria(s) % não existem sob shoppings-e-lojas', c_slug, v_missing; END IF;
+  IF v_missing IS NOT NULL THEN RAISE EXCEPTION 'lugares/%: subcategoria(s) % não existem sob compras', c_slug, v_missing; END IF;
 
   -- Fotos (id determinístico pelo conteúdo: rodar de novo não duplica)
   INSERT INTO public.files (id, uid, tenant_id, original_name, storage_path, mime_type, size_bytes, width, height, purpose, content, active)
@@ -1044,7 +1128,7 @@ BEGIN
       description = CASE WHEN v_old->'origem'->>'descricao_md5' IS NULL OR md5(coalesce(v_old_desc, '')) = v_old->'origem'->>'descricao_md5'
                          THEN c_descricao ELSE description END,
       category_group_id = v_group, category_id = v_cat,
-      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - 'horario' - 'preco' - 'dicas_chegada'
+      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - c_form_keys
                        - 'creditos' - 'tags' - 'codigo' - 'vinculosTitulo' - 'images' - 'coverFileId')
                || jsonb_set(c_extras, '{origem}', (c_extras->'origem')
                     || jsonb_build_object(
@@ -1072,6 +1156,16 @@ BEGIN
   VALUES (v_sid, c_titulo, 'Av. Miguel Sutil', '9300', NULL, 'Santa Rosa', 'Cuiabá', 'MT', v_ibge,
           -15.59004, -56.12024, true, v_tenant, v_root, true);
 
+  -- Respostas do formulário (mesmas chaves de extras)
+  IF v_form_id IS NOT NULL THEN
+    INSERT INTO public.form_results
+      (form_id, form_key, reference_id, domain, version, schema_snapshot, answers, submitted_by, tenant_id)
+    VALUES (v_form_id, v_form, v_sid::text, 'service', v_form_ver, v_form_schema, c_answers, v_root, v_tenant)
+    ON CONFLICT (tenant_id, domain, reference_id) DO UPDATE SET
+      answers = EXCLUDED.answers, version = EXCLUDED.version, schema_snapshot = EXCLUDED.schema_snapshot,
+      form_id = EXCLUDED.form_id, form_key = EXCLUDED.form_key, updated_at = now();
+  END IF;
+
   -- Subcategorias
   DELETE FROM public.service_categories_sub scs USING public.categories_sub cs
   WHERE scs.service_id = v_sid AND cs.id = scs.category_sub_id
@@ -1087,7 +1181,7 @@ $lugar_7$;
 DO $lugar_8$
 DECLARE
   c_slug      constant text   := 'shopping-tres-americas';
-  c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"shopping-tres-americas","arquivo":"content/lugares/shopping-tres-americas/index.md","atualizado_em":"2026-10-11","status_artigo":"revisao","categoria_artigo":"Shopping","cidade":"cuiaba-mt","titulo_md5":"ef2461a6c480a31d0ec18bffcd7ad3a2","descricao_md5":"6f64a34ce994f1b604f3b39027b750cd","fotos":[{"arquivo":"public/lugares/shopping-tres-americas/01.jpg","sha256":"3799750017aeb366047cb00498f33b327ab2d89ab2fb8fbbfbcc04cc624ebb43","fileId":"a5f200b9-b60c-594e-a1da-9c291239d0fe"},{"arquivo":"public/lugares/shopping-tres-americas/02.jpg","sha256":"1745193dafa624e0dd0deddc3daca28fe3d9fdcb82ca29f0bb70a8d603f90fa5","fileId":"bc3273d5-3c18-5d0d-b3a6-168c9143a35a"},{"arquivo":"public/lugares/shopping-tres-americas/03.jpg","sha256":"31107c20a9205cd9f445e796a8cfe51788bebf4ebe5b24f4e7f35c96e6ce42c3","fileId":"76c3e11b-6ecd-588b-abe5-369016991501"}]},"resumo":"Shopping inaugurado em 1996 na Avenida Brasília, em Cuiabá, com lojas, praça de alimentação, estacionamento coberto e cinema Cineflix de oito salas.","endereco_texto":"Avenida Brasília, 146, Jardim das Américas, Cuiabá - MT","contato":{"telefone":"(65) 3627-5501","instagram":"@shopping3americas","site":"https://www.shopping3americas.com.br"},"horario":["Lojas: seg a sáb, 10h às 22h; dom, 14h às 20h","Alimentação: seg a sáb, 10h às 22h; dom, 11h às 22h","Cinema: conforme a programação"],"dicas_chegada":"Estacionamento coberto em quatro pisos, com 1.100 vagas, segundo o site oficial, que o informa aberto das 10h às 22h. As tarifas devem ser confirmadas com o atendimento do shopping.","creditos":"Fotos: Rodrigo_Santos, CC BY 3.0 (fachada, 2012); Ajmcbarreto, CC BY-SA 4.0 (Cineflix, 2024); via Wikimedia Commons. Lojas e fachadas podem ter mudado desde o registro das imagens.","tags":["shoppings","local:shopping-tres-americas"],"codigo":"shopping-tres-americas"}'::jsonb;
+  c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"shopping-tres-americas","arquivo":"content/lugares/shopping-tres-americas/index.md","atualizado_em":"2026-10-11","status_artigo":"revisao","categoria_artigo":"Shopping","cidade":"cuiaba-mt","titulo_md5":"ef2461a6c480a31d0ec18bffcd7ad3a2","descricao_md5":"6f64a34ce994f1b604f3b39027b750cd","fotos":[{"arquivo":"public/lugares/shopping-tres-americas/01.jpg","sha256":"3799750017aeb366047cb00498f33b327ab2d89ab2fb8fbbfbcc04cc624ebb43","fileId":"a5f200b9-b60c-594e-a1da-9c291239d0fe"},{"arquivo":"public/lugares/shopping-tres-americas/02.jpg","sha256":"1745193dafa624e0dd0deddc3daca28fe3d9fdcb82ca29f0bb70a8d603f90fa5","fileId":"bc3273d5-3c18-5d0d-b3a6-168c9143a35a"},{"arquivo":"public/lugares/shopping-tres-americas/03.jpg","sha256":"31107c20a9205cd9f445e796a8cfe51788bebf4ebe5b24f4e7f35c96e6ce42c3","fileId":"76c3e11b-6ecd-588b-abe5-369016991501"}]},"resumo":"Shopping inaugurado em 1996 na Avenida Brasília, em Cuiabá, com lojas, praça de alimentação, estacionamento coberto e cinema Cineflix de oito salas.","endereco_texto":"Avenida Brasília, 146, Jardim das Américas, Cuiabá - MT","horario":[{"texto":"Lojas: seg a sáb, 10h às 22h; dom, 14h às 20h"},{"texto":"Alimentação: seg a sáb, 10h às 22h; dom, 11h às 22h"},{"texto":"Cinema: conforme a programação"}],"dicas_chegada":"Estacionamento coberto em quatro pisos, com 1.100 vagas, segundo o site oficial, que o informa aberto das 10h às 22h. As tarifas devem ser confirmadas com o atendimento do shopping.","contato_telefone":"(65) 3627-5501","contato_instagram":"@shopping3americas","site":"https://www.shopping3americas.com.br","creditos":"Fotos: Rodrigo_Santos, CC BY 3.0 (fachada, 2012); Ajmcbarreto, CC BY-SA 4.0 (Cineflix, 2024); via Wikimedia Commons. Lojas e fachadas podem ter mudado desde o registro das imagens.","tags":["shoppings","local:shopping-tres-americas"],"codigo":"shopping-tres-americas"}'::jsonb;
   c_titulo    constant text   := 'Shopping 3 Américas';
   c_descricao constant text   := 'O Shopping 3 Américas fica na Avenida Brasília, 146, no bairro Jardim das Américas, em Cuiabá. Inaugurado em 28 de junho de 1996, reúne lojas, praça de alimentação, academia, estacionamento coberto e um cinema da rede Cineflix com oito salas. Segundo o site oficial, as lojas abrem de segunda a sábado, das 10h às 22h, e aos domingos, das 14h às 20h.
 
@@ -1120,7 +1214,9 @@ O site oficial informa que o estacionamento é coberto, distribuído em quatro p
 Fotos: Rodrigo_Santos, CC BY 3.0 (fachada, 2012); Ajmcbarreto, CC BY-SA 4.0 (Cineflix, 2024); via Wikimedia Commons. Lojas e fachadas podem ter mudado desde o registro das imagens.';
   c_images    constant text[] := ARRAY['a5f200b9-b60c-594e-a1da-9c291239d0fe', 'bc3273d5-3c18-5d0d-b3a6-168c9143a35a', '76c3e11b-6ecd-588b-abe5-369016991501']::text[];
   c_subs      constant text[] := ARRAY['shoppings']::text[];
-  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text;
+  c_answers   constant jsonb  := '{"horario":[{"texto":"Lojas: seg a sáb, 10h às 22h; dom, 14h às 20h"},{"texto":"Alimentação: seg a sáb, 10h às 22h; dom, 11h às 22h"},{"texto":"Cinema: conforme a programação"}],"dicas_chegada":"Estacionamento coberto em quatro pisos, com 1.100 vagas, segundo o site oficial, que o informa aberto das 10h às 22h. As tarifas devem ser confirmadas com o atendimento do shopping.","contato_telefone":"(65) 3627-5501","contato_instagram":"@shopping3americas","site":"https://www.shopping3americas.com.br"}'::jsonb;
+  c_form_keys constant text[] := ARRAY['horario', 'preco', 'gratuito', 'dicas_chegada', 'contato_telefone', 'contato_whatsapp', 'contato_instagram', 'site']::text[];
+  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text; v_form_id bigint; v_form_ver int; v_form_schema jsonb;
   v_sid bigint; v_old jsonb; v_old_titulo text; v_old_desc text;
   v_old_import text[]; v_kept text[]; v_images jsonb; v_cover text; v_ibge text; v_missing text[];
 BEGIN
@@ -1131,15 +1227,19 @@ BEGIN
 
   SELECT g.id, c.id, NULLIF(c.form_key, '') INTO v_group, v_cat, v_form
   FROM public.categories c JOIN public.categories_group g ON g.id = c.category_group_id
-  WHERE g.slug = 'compras-e-feiras' AND c.slug = 'shoppings-e-lojas';
-  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares/%: categoria compras-e-feiras/shoppings-e-lojas não existe (rode o seed de taxonomia)', c_slug; END IF;
-  IF v_form IS NOT NULL THEN
-    RAISE NOTICE 'lugares/%: a categoria tem form_key=%; contato/horário continuam em services.extras (sem form_results)', c_slug, v_form;
+  WHERE g.slug = 'lugares' AND c.slug = 'compras';
+  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares/%: categoria lugares/compras não existe (rode o seed de taxonomia)', c_slug; END IF;
+  IF v_form IS NULL THEN
+    RAISE NOTICE 'lugares/%: a categoria não tem form_key (rode db/extras/forms_seed_lugares.sql); horário/contato só em services.extras', c_slug;
+  ELSE
+    SELECT id, version, schema INTO v_form_id, v_form_ver, v_form_schema
+    FROM public.forms WHERE tenant_id = v_tenant AND form_key = v_form AND active;
+    IF v_form_id IS NULL THEN RAISE EXCEPTION 'lugares/%: formulário % não existe no tenant', c_slug, v_form; END IF;
   END IF;
 
   SELECT array_agg(s) INTO v_missing FROM unnest(c_subs) s
   WHERE NOT EXISTS (SELECT 1 FROM public.categories_sub cs WHERE cs.slug = s AND cs.category_id = v_cat);
-  IF v_missing IS NOT NULL THEN RAISE EXCEPTION 'lugares/%: subcategoria(s) % não existem sob shoppings-e-lojas', c_slug, v_missing; END IF;
+  IF v_missing IS NOT NULL THEN RAISE EXCEPTION 'lugares/%: subcategoria(s) % não existem sob compras', c_slug, v_missing; END IF;
 
   -- Fotos (id determinístico pelo conteúdo: rodar de novo não duplica)
   INSERT INTO public.files (id, uid, tenant_id, original_name, storage_path, mime_type, size_bytes, width, height, purpose, content, active)
@@ -1195,7 +1295,7 @@ BEGIN
       description = CASE WHEN v_old->'origem'->>'descricao_md5' IS NULL OR md5(coalesce(v_old_desc, '')) = v_old->'origem'->>'descricao_md5'
                          THEN c_descricao ELSE description END,
       category_group_id = v_group, category_id = v_cat,
-      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - 'horario' - 'preco' - 'dicas_chegada'
+      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - c_form_keys
                        - 'creditos' - 'tags' - 'codigo' - 'vinculosTitulo' - 'images' - 'coverFileId')
                || jsonb_set(c_extras, '{origem}', (c_extras->'origem')
                     || jsonb_build_object(
@@ -1222,6 +1322,16 @@ BEGIN
      latitude, longitude, is_primary, tenant_id, created_by, active)
   VALUES (v_sid, c_titulo, 'Avenida Brasília', '146', NULL, 'Jardim das Américas', 'Cuiabá', 'MT', v_ibge,
           -15.612, -56.0733, true, v_tenant, v_root, true);
+
+  -- Respostas do formulário (mesmas chaves de extras)
+  IF v_form_id IS NOT NULL THEN
+    INSERT INTO public.form_results
+      (form_id, form_key, reference_id, domain, version, schema_snapshot, answers, submitted_by, tenant_id)
+    VALUES (v_form_id, v_form, v_sid::text, 'service', v_form_ver, v_form_schema, c_answers, v_root, v_tenant)
+    ON CONFLICT (tenant_id, domain, reference_id) DO UPDATE SET
+      answers = EXCLUDED.answers, version = EXCLUDED.version, schema_snapshot = EXCLUDED.schema_snapshot,
+      form_id = EXCLUDED.form_id, form_key = EXCLUDED.form_key, updated_at = now();
+  END IF;
 
   -- Subcategorias
   DELETE FROM public.service_categories_sub scs USING public.categories_sub cs

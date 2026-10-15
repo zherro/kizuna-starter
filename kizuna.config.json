@@ -158,7 +158,6 @@
     "defaultVariant": "service",
     "variantByCategorySlug": {
       "cinema": "cinema",
-      "shoppings-e-lojas": "lugar",
       "teatro": "evento",
       "humor-e-espetaculos": "evento",
       "shows-e-musica-ao-vivo": "evento",
@@ -168,7 +167,8 @@
       "palestras-e-encontros": "evento"
     },
     "variantByGroupSlug": {
-      "eventos": "evento"
+      "eventos": "evento",
+      "lugares": "lugar"
     },
     "_comment_cardVariant": "cardVariantByCategorySlug: slug da categoria -> estilo só do CARD (busca e carrosséis), sem mudar a tela de detalhe. Vazio = o card segue a mesma variant do detalhe (teatro usa o card de evento). Ex.: { \"teatro\": \"cinema\" } daria card de cinema (sem data) com detalhe de evento.",
     "cardVariantByCategorySlug": {},
@@ -176,6 +176,7 @@
       "default": { "hue": 230 },
       "cinema": { "hue": 268 },
       "eventos": { "hue": 25 },
+      "lugares": { "hue": 165 },
       "teatro": { "hue": 25 },
       "humor-e-espetaculos": { "hue": 25 },
       "shows-e-musica-ao-vivo": { "hue": 25 },
@@ -185,7 +186,7 @@
       "palestras-e-encontros": { "hue": 25 }
     },
     "sectionTitles": {
-      "shoppings-e-lojas": { "about": "Sobre o lugar", "details": "Informações do lugar" },
+      "lugares": { "about": "Sobre o lugar", "details": "Informações do lugar" },
       "eventos": { "about": "Sobre o evento", "details": "Informações do evento" },
       "shows-e-musica-ao-vivo": { "about": "Sobre o show", "details": "Informações do show" },
       "festas-e-baladas": { "about": "Sobre a festa", "details": "Informações da festa" },

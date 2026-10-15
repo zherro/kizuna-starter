@@ -56,8 +56,7 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
       "appearance": { "helpText": "Se o evento acontece num lugar já anunciado, escolha-o: a página do evento mostra \"Onde acontece\" com link." },
       "placeholder": "Busque o lugar pelo nome",
       "serviceRef": {
-        "groupSlugs": ["compras-e-feiras", "bares-e-vida-noturna", "esportes-e-lazer", "familia-e-criancas"],
-        "categorySlugs": ["shoppings-e-lojas", "baladas-e-casas-noturnas", "jogos-e-estadios", "passeios-em-familia", "programacao-infantil"]
+        "groupSlugs": ["lugares"]
       }
     },
     {

@@ -43,7 +43,7 @@ describe('linkEditorialPlaces', () => {
   it('local_ref (código ou nome) sem anúncio cai na página editorial', () => {
     const out = linkEditorialPlaces(
       { extras: { local_ref: 'Casa de Festas Cuiabá' } },
-      { venue: null, salePoints: [] },
+      { venue: null as typeof venue | null, salePoints: [] },
       lookup
     );
     expect(out.venue?.href).toBe('/cuiaba-mt/lugares/casa-de-festas-cuiaba');

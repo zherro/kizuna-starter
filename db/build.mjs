@@ -98,6 +98,7 @@ const reseedFiles = [
   'kizuna-core/db/extras/forms_seed_cinema.sql',
   'db/extras/forms_seed_eventos.sql',
   'db/extras/forms_seed_noticias.sql',
+  'db/extras/forms_seed_lugares.sql',
 ].map((f) => join(projectDir, f));
 
 writeFileSync(

@@ -3,7 +3,7 @@
 -- Seed da taxonomia do Bora Cuiabá (plugin taxonomy): grupo -> categoria -> subcategoria -> tag.
 -- Conteúdo específico deste projeto — por isso fica em db/extras/ e não no plugin do core.
 --
---   16 grupos · 59 categorias · 224 subcategorias · 864 tags · 21 vínculos extras
+--   16 grupos · 63 categorias · 235 subcategorias · 864 tags · 21 vínculos extras
 --
 -- Pré-requisitos: schema do core + plugin taxonomy aplicados, e um usuário root já cadastrado
 -- (tenant_id/created_by vêm do primeiro root e do tenant dele, igual ao seed de páginas; sem root,
@@ -17,7 +17,8 @@
 -- coisa (tudo roda numa transação). O clear-all roda a cada execução.
 --
 -- Ordem de execução: 1) este seed de taxonomia -> 2) seeds de formulário: kizuna-core/db/extras/
--- forms_seed_cinema.sql, db/extras/forms_seed_eventos.sql e db/extras/forms_seed_noticias.sql.
+-- forms_seed_cinema.sql, db/extras/forms_seed_eventos.sql, db/extras/forms_seed_noticias.sql e
+-- db/extras/forms_seed_lugares.sql.
 -- O clear-all recria as categorias, então categories.form_key volta a NULL; o seed do formulário
 -- (UPDATE categories SET form_key=...) precisa rodar DEPOIS, sempre que este rodar.
 --
@@ -71,6 +72,7 @@ INSERT INTO public.categories_group (name, slug, description, tags, icon, sort_o
 SELECT v.name, v.slug, v.description, v.tags, v.icon, v.sort_order, true, t.uid, u.uid
 FROM (VALUES
     ('Eventos', 'eventos', 'Agenda do que rola em Cuiabá e região: shows, festas, festivais e encontros.', 'agenda, programação, hoje, fim de semana, ingresso', 'CalendarDays', 10),
+    ('Lugares', 'lugares', 'Shoppings, casas de festas, parques, museus, estádios e casas noturnas: endereço, horário e contato.', 'lugar, onde fica, endereço, horário, como chegar', 'MapPin', 15),
     ('Cinema', 'cinema', 'Filmes em cartaz, pré-venda, reexibições, cinema nacional e sessões especiais.', 'filme, sessão, cinema, ingresso, estreia', 'Clapperboard', 20),
     ('Trilhas & Aventura', 'trilhas-e-aventura', 'Trilhas, esportes de aventura e mirantes na Chapada, no Pantanal e arredores.', 'trilha, aventura, ecoturismo, chapada, natureza', 'Mountain', 30),
     ('Camping & Natureza', 'camping-e-natureza', 'Camping, cachoeiras, rios, parques e a vida selvagem do cerrado e do Pantanal.', 'camping, natureza, cachoeira, rio, pantanal', 'Tent', 40),
@@ -106,6 +108,13 @@ FROM (VALUES
     ('eventos', 'Festas', 'festas-e-baladas', 'Baladas, festas temáticas e as festas tradicionais e religiosas da região.', 'PartyPopper'),
     ('eventos', 'Festivais & Feiras', 'festivais-e-exposicoes', 'Festivais, feiras, exposições agropecuárias e eventos de vários dias.', 'Ticket'),
     ('eventos', 'Palestras & Cursos', 'palestras-e-encontros', 'Palestras, workshops, congressos e encontros de networking.', 'Presentation'),
+    -- Lugares: páginas de lugar (variant `lugar`, formulário `lugares`).
+    ('lugares', 'Compras', 'compras', 'Shoppings, lojas, feiras e mercados.', 'ShoppingBag'),
+    ('lugares', 'Festas e eventos', 'festas-e-eventos', 'Casas de festas, buffets infantis e espaços para eventos.', 'PartyPopper'),
+    ('lugares', 'Ao ar livre', 'ao-ar-livre', 'Parques, praças, orlas e mirantes da cidade.', 'Trees'),
+    ('lugares', 'Esporte', 'esporte', 'Estádios, arenas e ginásios.', 'Trophy'),
+    ('lugares', 'Cultura', 'cultura', 'Museus, teatros e centros culturais.', 'Landmark'),
+    ('lugares', 'Vida noturna', 'vida-noturna', 'Casas noturnas e bares.', 'Moon'),
     ('cinema', 'Cinema', 'cinema', 'Estreias, mostras e sessões especiais nas telas da cidade.', 'Film'),
     ('eventos', 'Teatro & Espetáculos', 'teatro', 'Peças, stand-up, dança, circo e espetáculos de palco.', 'Drama'),
     ('trilhas-e-aventura', 'Trilhas', 'trilhas', 'Trilhas por nível de dificuldade, com e sem cachoeira.', 'Footprints'),
@@ -175,6 +184,18 @@ ON CONFLICT (slug) DO UPDATE SET
 INSERT INTO public.categories_sub (category_id, name, slug, description, tags, active, tenant_id, created_by)
 SELECT c.id, v.name, v.slug, v.description, v.tags, true, t.uid, u.uid
 FROM (VALUES
+    -- Lugares (shoppings, casas-noturnas, museus, centros-culturais e buffets-infantis estão abaixo, nas categorias do grupo lugares)
+    ('compras', 'Lojas', 'lojas', 'Lojas de rua, galerias e lojas de departamento.', 'loja, galeria, comércio, centro'),
+    ('compras', 'Feiras & mercados', 'feiras-e-mercados', 'Mercados municipais e feiras fixas.', 'mercado, feira, mercado do porto, hortifrúti'),
+    ('festas-e-eventos', 'Casas de festas', 'casas-de-festas', 'Espaços para alugar: aniversários, casamentos, encontros de família e confraternizações.', 'casa de festas, salão de festas, locação de espaço, aniversário, casamento, confraternização'),
+    ('festas-e-eventos', 'Espaços de eventos', 'espacos-de-eventos', 'Centros de convenções, salões e espaços para eventos corporativos e shows.', 'centro de eventos, convenções, salão, corporativo'),
+    ('ao-ar-livre', 'Parques', 'parques', 'Parques da cidade para caminhar, correr e levar as crianças.', 'parque, caminhada, mãe bonifácia, massairo okamura'),
+    ('ao-ar-livre', 'Praças', 'pracas', 'Praças com sombra, feirinha e programação.', 'praça, centro, feirinha, sombra'),
+    ('ao-ar-livre', 'Orlas & mirantes', 'orlas-e-mirantes', 'Orlas de rio e mirantes para ver o pôr do sol.', 'orla do porto, mirante, pôr do sol, vista'),
+    ('esporte', 'Estádios & arenas', 'estadios-e-arenas', 'Estádios e arenas de jogos e shows.', 'estádio, arena pantanal, verdão, jogo'),
+    ('esporte', 'Ginásios', 'ginasios', 'Ginásios poliesportivos e quadras cobertas.', 'ginásio, quadra coberta, aecim tocantins, poliesportivo'),
+    ('cultura', 'Teatros', 'teatros', 'Teatros e salas de espetáculo.', 'teatro, palco, cine teatro, espetáculo'),
+    ('vida-noturna', 'Bares', 'bares', 'Bares e botecos com endereço fixo.', 'bar, boteco, chope, mesa na calçada'),
     ('shows-e-musica-ao-vivo', 'Shows nacionais', 'shows-nacionais', 'Grandes turnês e artistas de fora passando pela cidade.', 'sertanejo, pop, rock, mpb, funk, pagode'),
     ('shows-e-musica-ao-vivo', 'Música regional', 'musica-regional', 'Ritmos mato-grossenses e da cultura pantaneira.', 'rasqueado, lambadão, siriri, cururu, viola de cocho'),
     ('shows-e-musica-ao-vivo', 'Eletrônica & raves', 'eletronica-e-raves', 'Festas de música eletrônica, open airs e DJ sets.', 'house, techno, open air, dj set, psytrance'),
@@ -253,7 +274,7 @@ FROM (VALUES
     ('drinks-e-destilados', 'Bares de drinks', 'bares-de-drinks', 'Mixologia, drinks autorais e gin.', 'mixologia, drink autoral, gin, happy hour'),
     ('drinks-e-destilados', 'Adegas & vinhos', 'adegas-e-vinhos', 'Vinhos por taça, degustações e harmonizações.', 'vinho, degustação, harmonização, taça'),
     ('drinks-e-destilados', 'Cachaçarias & licores', 'cachacarias-e-licores', 'Cachaças artesanais e licores regionais, como o de pequi.', 'cachaça, licor de pequi, alambique, dose'),
-    ('baladas-e-casas-noturnas', 'Casas noturnas', 'casas-noturnas', 'Casas com pista, DJ e programação semanal.', 'pista, dj, dress code, camarote'),
+    ('vida-noturna', 'Casas noturnas', 'casas-noturnas', 'Casas com pista, DJ e programação semanal.', 'pista, dj, dress code, camarote'),
     ('baladas-e-casas-noturnas', 'Sertanejo & forró', 'sertanejo-e-forro', 'Noites para dançar a dois.', 'sertanejo, forró, arrocha, dança a dois'),
     ('baladas-e-casas-noturnas', 'Karaokê', 'karaoke', 'Para soltar a voz com os amigos.', 'karaokê, videokê, sala privativa, grupo'),
     ('baladas-e-casas-noturnas', 'LGBTQIA+', 'lgbtqia', 'Espaços e festas inclusivas, com drag shows e muita diversidade.', 'drag show, pride, inclusivo, diversidade'),
@@ -277,7 +298,7 @@ FROM (VALUES
     ('lanches-e-delivery', 'Food trucks & comida de rua', 'food-trucks-e-comida-de-rua', 'Food parks, cachorro-quente, tapioca e pastel.', 'food park, cachorro-quente, tapioca, comida de rua'),
     ('lanches-e-delivery', 'Delivery & madrugada', 'delivery-e-madrugada', 'Quem entrega rápido e quem atende de madrugada.', 'entrega grátis, aplicativo, madrugada, 24 horas'),
     ('cuiaba', 'Centro histórico', 'centro-historico', 'Igrejas, casarões e praças que contam a história de Cuiabá.', 'igreja do rosário e são benedito, casarões, praça da república, catedral'),
-    ('cuiaba', 'Museus', 'museus', 'Museus de história, arte sacra, ciência e cultura regional.', 'museu do rio, arte sacra, história, exposição permanente'),
+    ('cultura', 'Museus', 'museus', 'Museus de história, arte sacra, ciência e cultura regional.', 'museu do rio, arte sacra, história, exposição permanente'),
     ('cuiaba', 'Orla & Rio Cuiabá', 'orla-e-rio-cuiaba', 'O rio que batizou a cidade, com orla, calçadão e pôr do sol.', 'orla do porto, pôr do sol, aquário municipal, calçadão'),
     ('cuiaba', 'Marcos & mirantes urbanos', 'marcos-e-mirantes-urbanos', 'Obelisco do Centro Geodésico, Morro da Luz e vistas da cidade.', 'centro geodésico, obelisco, morro da luz, vista da cidade'),
     ('chapada-dos-guimaraes', 'Cachoeiras da Chapada', 'cachoeiras-da-chapada', 'Véu de Noiva e o circuito de cachoeiras do parque.', 'véu de noiva, circuito das cachoeiras, banho, parque nacional'),
@@ -328,7 +349,7 @@ FROM (VALUES
     ('cultura-popular-e-artesanato', 'Siriri & cururu', 'siriri-e-cururu', 'Danças e cantorias tradicionais e seus grupos folclóricos.', 'grupo folclórico, apresentação, dança típica, festival de siriri'),
     ('cultura-popular-e-artesanato', 'Cerâmica & artesanato', 'ceramica-e-artesanato', 'Cerâmica de São Gonçalo Beira Rio, bordados e cestaria.', 'são gonçalo beira rio, cerâmica, bordado, cestaria'),
     ('cultura-popular-e-artesanato', 'Cultura indígena', 'cultura-indigena', 'Arte, grafismo e saberes dos povos indígenas de Mato Grosso.', 'artesanato indígena, grafismo, bororo, saberes tradicionais'),
-    ('espacos-culturais', 'Centros culturais', 'centros-culturais', 'Espaços com programação de teatro, música, cinema e oficinas.', 'programação, oficina, sesc arsenal, gratuito'),
+    ('cultura', 'Centros culturais', 'centros-culturais', 'Espaços com programação de teatro, música, cinema e oficinas.', 'programação, oficina, sesc arsenal, gratuito'),
     ('espacos-culturais', 'Bibliotecas & livrarias', 'bibliotecas-e-livrarias', 'Lugares para ler, estudar e ir a lançamentos.', 'leitura, lançamento de livro, clube do livro, estudo'),
     ('espacos-culturais', 'Saraus & poesia', 'saraus-e-poesia', 'Slams, saraus e microfone aberto.', 'slam, sarau, microfone aberto, poesia'),
     ('cursos-e-oficinas', 'Oficinas de arte', 'oficinas-de-arte', 'Pintura, desenho, cerâmica e artesanato.', 'pintura, desenho, cerâmica, iniciante'),
@@ -356,7 +377,7 @@ FROM (VALUES
     ('passeios-em-familia', 'Ciência & descoberta', 'ciencia-e-descoberta', 'Museus interativos, planetário e experiências educativas.', 'interativo, planetário, experiências, educativo'),
     ('programacao-infantil', 'Contação de histórias', 'contacao-de-historias', 'Sessões de leitura e histórias encenadas.', 'contação, leitura, biblioteca, gratuito'),
     ('programacao-infantil', 'Oficinas infantis', 'oficinas-infantis', 'Arte, culinária e ciência para os pequenos.', 'oficina, arte, culinária kids, ciência'),
-    ('programacao-infantil', 'Festas & buffets infantis', 'festas-e-buffets-infantis', 'Buffets e espaços para aniversários.', 'buffet, aniversário, recreação, decoração'),
+    ('festas-e-eventos', 'Buffets infantis', 'buffets-infantis', 'Buffets e espaços para aniversários.', 'buffet, aniversário, recreação, decoração'),
     ('programacao-infantil', 'Colônia de férias', 'colonia-de-ferias', 'Programação especial nas férias escolares.', 'férias escolares, recreação, esportes, meio período'),
     ('restaurantes-para-criancas', 'Espaço kids', 'espaco-kids', 'Restaurantes com brinquedoteca e monitores.', 'brinquedoteca, monitor, parquinho, seguro'),
     ('restaurantes-para-criancas', 'Cardápio infantil', 'cardapio-infantil', 'Pratos e porções pensados para crianças.', 'menu kids, porção infantil, saudável, sobremesa'),
@@ -364,7 +385,7 @@ FROM (VALUES
     ('feiras', 'Feiras de artesanato', 'feiras-de-artesanato', 'Artesãos locais com peças únicas.', 'artesanato, feito à mão, artesão local, presentes'),
     ('feiras', 'Feiras orgânicas', 'feiras-organicas', 'Produtos orgânicos direto do produtor.', 'orgânico, agricultura familiar, direto do produtor, sem agrotóxico'),
     ('feiras', 'Brechós & feiras vintage', 'brechos-e-feiras-vintage', 'Moda circular, vinil e antiguidades.', 'brechó, vintage, vinil, antiguidades'),
-    ('shoppings-e-lojas', 'Shoppings', 'shoppings', 'Lojas, praça de alimentação e cinema em um só lugar.', 'praça de alimentação, estacionamento, cinema, lojas'),
+    ('compras', 'Shoppings', 'shoppings', 'Lojas, praça de alimentação e cinema em um só lugar.', 'praça de alimentação, estacionamento, cinema, lojas'),
     ('shoppings-e-lojas', 'Lembranças & souvenirs', 'lembrancas-e-souvenirs', 'Presentes que lembram Mato Grosso.', 'souvenir, lembrancinha, viola de cocho em miniatura, camiseta'),
     ('shoppings-e-lojas', 'Empórios & produtos regionais', 'emporios-e-produtos-regionais', 'Pequi, doces, licores e cachaças da região.', 'pequi, doces caseiros, licor, cachaça'),
     ('moda-e-design-local', 'Marcas locais', 'marcas-locais', 'Moda e acessórios criados na região.', 'moda autoral, acessórios, estampa regional, sustentável'),
@@ -1107,10 +1128,10 @@ FROM (VALUES
     ('oficinas-infantis', 'Arte', 'arte'),
     ('oficinas-infantis', 'Culinária kids', 'culinaria-kids'),
     ('oficinas-infantis', 'Ciência', 'ciencia'),
-    ('festas-e-buffets-infantis', 'Buffet', 'buffet'),
-    ('festas-e-buffets-infantis', 'Aniversário', 'aniversario'),
-    ('festas-e-buffets-infantis', 'Recreação', 'recreacao'),
-    ('festas-e-buffets-infantis', 'Decoração', 'decoracao'),
+    ('buffets-infantis', 'Buffet', 'buffet'),
+    ('buffets-infantis', 'Aniversário', 'aniversario'),
+    ('buffets-infantis', 'Recreação', 'recreacao'),
+    ('buffets-infantis', 'Decoração', 'decoracao'),
     ('colonia-de-ferias', 'Férias escolares', 'ferias-escolares'),
     ('colonia-de-ferias', 'Recreação', 'recreacao'),
     ('colonia-de-ferias', 'Esportes', 'esportes'),

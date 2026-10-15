@@ -259,11 +259,10 @@ O **código** de um lugar é o `extras.codigo` do anúncio-lugar, igual ao slug 
 ```sql
 SELECT s.extras->>'codigo' AS codigo
 FROM public.services s
-JOIN public.categories c ON c.id = s.category_id
+JOIN public.categories_group g ON g.id = s.category_group_id
 WHERE s.active AND s.status = 'active'
   AND NULLIF(btrim(s.extras->>'codigo'), '') IS NOT NULL
-  AND c.slug IN ('shoppings-e-lojas', 'baladas-e-casas-noturnas', 'jogos-e-estadios',
-                 'passeios-em-familia', 'programacao-infantil')
+  AND g.slug = 'lugares'
   AND (lower(unaccent(s.title)) = lower(unaccent(%(nome)s))
        OR s.extras->>'codigo' = %(nome_slug)s
        OR EXISTS (SELECT 1 FROM public.service_addresses a
