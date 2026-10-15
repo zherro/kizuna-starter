@@ -232,6 +232,18 @@
                 { "value": "no_estabelecimento", "model": "addresses", "maxAddresses": 1, "icon": "MapPin" },
                 { "value": "remoto", "model": "identifier", "icon": "Globe" }
               ]
+            },
+            "lugares": {
+              "options": [
+                { "value": "no_estabelecimento", "model": "addresses", "maxAddresses": 1, "icon": "MapPin" }
+              ],
+              "labels": {
+                "title": "Onde fica?",
+                "subtitle": "Informe o endereço do lugar.",
+                "why": "O endereço é o que o público procura: ele aparece na página do lugar, com mapa e rota, e posiciona o lugar nas buscas da região.",
+                "addressesTitle": "Endereço do lugar",
+                "addressesHint": "O endereço aparece na página do lugar, com mapa e rota."
+              }
             }
           }
         },
