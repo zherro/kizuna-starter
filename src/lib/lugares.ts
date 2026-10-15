@@ -1,5 +1,7 @@
+import type { EditorialPlace } from './lugar-links';
 import {
   defineCollection,
+  getEntry,
   loadEntries,
   type Entry,
   type EntryData,
@@ -102,6 +104,20 @@ function siteLabel(url: string): string {
   } catch {
     return url;
   }
+}
+
+/** Lugar publicado por slug, no formato dos links de lugar do evento (`lugar-links.ts`). */
+export function findEditorialPlace(slug: string): EditorialPlace | null {
+  const entry = getEntry(LUGARES, slug);
+  const cidade = entry ? text(entry.data, 'cidade') : null;
+  if (!entry || !cidade) return null;
+  return {
+    slug: entry.slug,
+    title: text(entry.data, 'titulo') ?? entry.slug,
+    cidade,
+    photo: entry.media[0] ?? null,
+    address: text(entry.data, 'endereco'),
+  };
 }
 
 /** Reduz a entrada a dados prontos para a página (sem JSX): fácil de testar e de compor. */

@@ -76,7 +76,7 @@ FROM public.forms WHERE tenant_id = %(tenant_uid)s AND form_key = 'eventos' AND 
 Confira no `schema_snapshot` que existem estes campos (por `key`) e subcampos (`itemFields`). Faltou algum: aborte e reporte "rode `db/extras/pendentes_forms_eventos.sql`".
 
 ```
-data_inicio data_fim realizador link endereco classificacao_indicativa gratuito
+data_inicio data_fim realizador link endereco local_ref classificacao_indicativa gratuito
 link_ingresso contato_telefone contato_whatsapp contato_email
 artistas: nome
 sessoes: data abertura_portoes hora_inicio hora_fim
@@ -252,6 +252,32 @@ LIMIT 1;
 - **Organizado por a casa:** basta o evento ter, em `tags[]`, o código da casa (o slug dela, por exemplo `"espaco-art-festas-e-eventos"`); nada mais é necessário. A casa é o anúncio ativo cujo `extras.codigo` é esse código (os lugares importados já o gravam, ver [lugares-depara.md](lugares-depara.md)). A página do evento mostra "Organizado por <casa>" com link e a página da casa lista o evento em "Vinculados" (ou no título de `extras.vinculosTitulo`, se a casa o definir). Sem casa para nenhuma das tags, a página segue mostrando `detalhes.organizador` como texto. Detalhes em [services.md](../../kizuna-core/docs/plugins/services.md).
 - **Formato e permissão de `tags[]` (obrigatório):** o robô DEVE mandar no máximo 10 tags, cada uma minúscula e no padrão `[a-z0-9][a-z0-9:._-]{0,59}` (sem acento, até 60 caracteres), descartando ou truncando as que não couberem ANTES do insert; senão o INSERT/UPDATE falha com erro `22023` e aborta. O robô conecta sem JWT (sessão de sistema), então não precisa da permissão `services.link`. Usuários comuns só editam `tags` se tiverem essa permissão.
 
+### Código do lugar (`local_ref` e `pontos_de_venda`)
+
+O **código** de um lugar é o `extras.codigo` do anúncio-lugar, igual ao slug da pasta `content/lugares/<slug>/` (ex.: `espaco-art-festas-e-eventos`). O robô grava códigos, nunca uids nem nomes, quando o lugar está cadastrado. Consulta (uma por nome; `NULL` = lugar não cadastrado):
+
+```sql
+SELECT s.extras->>'codigo' AS codigo
+FROM public.services s
+JOIN public.categories c ON c.id = s.category_id
+WHERE s.active AND s.status = 'active'
+  AND NULLIF(btrim(s.extras->>'codigo'), '') IS NOT NULL
+  AND c.slug IN ('shoppings-e-lojas', 'baladas-e-casas-noturnas', 'jogos-e-estadios',
+                 'passeios-em-familia', 'programacao-infantil')
+  AND (lower(unaccent(s.title)) = lower(unaccent(%(nome)s))
+       OR s.extras->>'codigo' = %(nome_slug)s
+       OR EXISTS (SELECT 1 FROM public.service_addresses a
+                  WHERE a.service_id = s.id AND a.active AND a.city_ibge = %(cidade_ibge)s
+                    AND lower(unaccent(a.label)) = lower(unaccent(%(nome)s))))
+ORDER BY s.created_at, s.id
+LIMIT 1;
+```
+
+`nome_slug` = `nome` sem acento, minúsculo, o que não for letra/dígito vira `-`, sem `-` nas pontas.
+
+- **`answers.local_ref`**: o código de UM lugar, o local do evento (consulta com `nome` = `local.nome`). A página do evento mostra "Onde acontece" com link para ele. Sem código: omita a chave.
+- **`answers.pontos_de_venda[].nome`**: um item por ponto de venda, cada um com o código do lugar (consulta com `nome` = o texto do ponto). Nunca junte dois pontos num item nem use vírgula para separar: dois lugares = dois itens. Ponto sem código (não é um lugar cadastrado, ex.: "Disk ingresso"): o texto, `trim()`.
+
 ### De-para
 
 | Campo do payload | Destino | Conversão |
@@ -288,9 +314,10 @@ LIMIT 1;
 | `detalhes.artistas[]` | `answers.artistas[].nome` | um item por texto |
 | `detalhes.sessoes[]` | `answers.sessoes[]`, `answers.data_inicio`, `answers.data_fim` | `hora`→`hora_inicio`, `fim`→`hora_fim`, `abertura_portas`→`abertura_portoes`; ver cálculo acima |
 | `detalhes.ingressos[]` | `answers.ingressos[]` | ver "Formulário" |
-| `detalhes.pontos_de_venda[]` | `answers.pontos_de_venda[].nome` | um item por texto |
+| `detalhes.pontos_de_venda[]` | `answers.pontos_de_venda[].nome` | um item por ponto: código do lugar, ou o texto; ver "Código do lugar" |
 | `origem.*` | `extras.origem` | ver cálculo acima |
 | `tags[]` + local cadastrado | `extras.tags` | ver "Tags" |
+| `local.nome` + lugar cadastrado | `answers.local_ref` | código do lugar; ver "Código do lugar" |
 | campos ignorados (ver "Contrato do payload") | | não grava |
 | campo fora da lista da 1.2 | | não grava; reportar em `campos_nao_mapeados` |
 
@@ -304,6 +331,7 @@ Objeto JSON com chaves planas, montado inteiro a cada execução; o upsert subst
   "realizador": "Casa de Festas",
   "link": "https://exemplo.com.br/eventos/celebration-flashback",
   "endereco": "Lua Morena — Av. Exemplo, 1000, Bairro Exemplo, Cuiabá/MT",
+  "local_ref": "lua-morena",
   "classificacao_indicativa": "18 anos",
   "sessoes": [
     { "data": "2026-10-10" }
@@ -314,7 +342,7 @@ Objeto JSON com chaves planas, montado inteiro a cada execução; o upsert subst
   ],
   "link_ingresso": "https://exemplo.com.br/eventos/celebration-flashback/ingressos",
   "pontos_de_venda": [
-    { "nome": "Casa de Festas (Pantanal Shopping, Piso 2)" },
+    { "nome": "pantanal-shopping" },
     { "nome": "Disk ingresso" }
   ],
   "contato_telefone": "(65) 9.9953-1935",
@@ -326,6 +354,7 @@ Objeto JSON com chaves planas, montado inteiro a cada execução; o upsert subst
 - Números como JSON number, nunca string (`valor`, `pessoas`).
 - Datas: `data` `AAAA-MM-DD`; horas `HH:MM`; `data_inicio`/`data_fim` `AAAA-MM-DDTHH:MM` (hora local, sem fuso).
 - `endereco`: `local.nome` + ` — ` + (`local.endereco`, `local.numero`, `local.bairro`, `local.cidade`/`local.uf`) unidos por `, `, pulando os nulos. Sem `local.nome`: só a segunda parte.
+- `local_ref`: string com um código de lugar ("Código do lugar"); sem lugar, omitir.
 - `classificacao_indicativa`: `livre`/`L` → `Livre`; um número 10, 12, 14, 16 ou 18 no texto (`18`, `18+`, `18 anos`) → `"<n> anos"`; qualquer outro valor → omitir e reportar.
 - `sessoes`: um item por sessão válida, na ordem calculada, com `data`, `abertura_portoes`, `hora_inicio`, `hora_fim`.
 - `ingressos`: um item por ingresso com `setor` ou `valor` (os outros são descartados), na ordem do payload.
@@ -333,7 +362,7 @@ Objeto JSON com chaves planas, montado inteiro a cada execução; o upsert subst
   - `setor`, `lote`, `comprar` direto; `pessoas` number ≥ 1; `valor` number ≥ 0.
   - `tipo` normalizado contra as opções (sem caixa e acento) e gravado com o valor da opção.
 - `artistas`: `[{"nome": "..."}]`, um por texto não vazio, sem duplicados.
-- `pontos_de_venda`: `[{"nome": "..."}]`, um por texto não vazio, sem duplicados.
+- `pontos_de_venda`: `[{"nome": "<código ou texto>"}]`, um por ponto de venda, sem vírgula juntando pontos, sem duplicados.
 - `gratuito`: grave `true` só quando `detalhes.gratuito = true`.
 
 ### Queries
@@ -440,4 +469,4 @@ CREATE UNIQUE INDEX IF NOT EXISTS services_origem_eventos_uq ON public.services
 - `origem.chave_dedup`, `revisao_descricao.modelo`, `revisao_descricao.revisado_em`: controle interno do assistente (deduplicação e reescrita da descrição), não gravado e **não** reportado como campo não mapeado.
 - Evento gratuito: `starting_price = 0` aparece no site como "Sob consulta" (não há rótulo "Gratuito" no preço); o formulário guarda `gratuito = true`.
 - `price_unit = 'unit'` aparece como "por unidade": não há unidade "por ingresso" nem "a partir de".
-- Pontos de venda e artistas são texto livre (`answers.pontos_de_venda[].nome`, `answers.artistas[].nome`); não têm endereço nem cadastro. `service_addresses` guarda só o local do evento.
+- Artistas são texto livre (`answers.artistas[].nome`). Pontos de venda são código de lugar ou texto (`answers.pontos_de_venda[].nome`); nenhum dos dois grava endereço. `service_addresses` guarda só o local do evento.

@@ -18,6 +18,8 @@ import { photosFor } from '@kizuna/core/client/components/services/service-helpe
 import { cityPath } from '@kizuna/core/shared/city-routing/city-slug';
 import { SEO_SITE } from '@/lib/seo';
 import { trackRule } from '@/lib/analytics';
+import { linkEditorialPlaces } from '@/lib/lugar-links';
+import { findEditorialPlace } from '@/lib/lugares';
 import cfg from '../../kizuna.config.json';
 
 const serviceDetailConfig: ServiceDetailConfig | null =
@@ -46,7 +48,8 @@ export function anuncioMetadata(data: ServiceDetailData, path: string): Metadata
   });
 }
 
-export function AnuncioDetail({ data, path }: { data: ServiceDetailData; path: string }) {
+export function AnuncioDetail({ data: loaded, path }: { data: ServiceDetailData; path: string }) {
+  const data = linkEditorialPlaces(loaded.service, loaded, findEditorialPlace);
   const photos = photosFor(data.service);
   // Lugar (shopping, loja, parque): o anúncio fala do lugar, não de uma oferta — sem preço nem
   // prestador no JSON-LD, como na tela.

@@ -1,7 +1,9 @@
 -- db/extras/forms_seed_eventos.sql
 --
 -- Seed do formulario `eventos` (plugin forms). Um anuncio = um evento:
---   - Evento: data, realizador, link, endereco em texto, classificacao, gratuito e artistas.
+--   - Evento: data, realizador, link, endereco em texto, local cadastrado (`local_ref`, tipo
+--     `service-ref`: uid ou codigo do anuncio-lugar; categorias de lugar
+--     de db/extras/lugares_import.sql), classificacao, gratuito e artistas.
 --   - Sessoes (`list`): data e horarios de cada dia do evento.
 --   - Ingressos (`list`): titulo, setor, tipo, pessoas (= pulseiras), lote, valor (mascara R$) e comprar (texto livre).
 --   - Onde comprar: link de ingressos e pontos de venda (`list` de um campo de texto livre, como artistas).
@@ -88,6 +90,17 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
       "id": "evt_06_endereco", "key": "endereco", "name": "endereco", "type": "text", "label": "Endereço",
       "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
       "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "Local, rua, número, bairro"
+    },
+    {
+      "id": "evt_07_local_ref", "key": "local_ref", "name": "local_ref", "type": "service-ref", "label": "Local cadastrado",
+      "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
+      "behavior": {}, "validation": {},
+      "appearance": { "helpText": "Se o evento acontece num lugar já anunciado, escolha-o: a página do evento mostra \"Onde acontece\" com link." },
+      "placeholder": "Busque o lugar pelo nome",
+      "serviceRef": {
+        "groupSlugs": ["compras-e-feiras", "bares-e-vida-noturna", "esportes-e-lazer", "familia-e-criancas"],
+        "categorySlugs": ["shoppings-e-lojas", "baladas-e-casas-noturnas", "jogos-e-estadios", "passeios-em-familia", "programacao-infantil"]
+      }
     },
     {
       "id": "evt_10_classificacao_indicativa", "key": "classificacao_indicativa", "name": "classificacao_indicativa", "type": "select", "label": "Classificação indicativa",
