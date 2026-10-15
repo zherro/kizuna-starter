@@ -211,7 +211,8 @@
       "steps": [ "category", "start", "location", "price", "images", "description", "dynamic-form", "links", "moderation"],
       "disable": [],
       "skipStepsByGroup": {
-        "location": ["noticias"]
+        "location": ["noticias"],
+        "price": ["lugares"]
       },
       "creatable": {
         "groups": ["eventos", "turismo"],
