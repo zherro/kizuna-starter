@@ -53,4 +53,18 @@ describe('linkEditorialPlaces', () => {
     const data = { venue: null, salePoints: undefined };
     expect(linkEditorialPlaces({ extras: {} }, data, lookup)).toEqual(data);
   });
+
+  it('local_ref e pontos só nas respostas do formulário também ganham link editorial', () => {
+    const out = linkEditorialPlaces(
+      { extras: {} },
+      {
+        venue: null,
+        salePoints: [{ label: 'Casa De Festas Cuiaba', venue: null }],
+        extraFields: { answers: { local_ref: 'casa-de-festas-cuiaba', pontos_de_venda: [{ nome: 'casa-de-festas-cuiaba' }] } },
+      },
+      lookup
+    );
+    expect((out.venue as { href: string } | null)?.href).toBe('/cuiaba-mt/lugares/casa-de-festas-cuiaba');
+    expect((out.salePoints?.[0].venue as { href: string } | null)?.href).toBe('/cuiaba-mt/lugares/casa-de-festas-cuiaba');
+  });
 });

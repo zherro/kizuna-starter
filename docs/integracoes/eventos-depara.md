@@ -233,7 +233,7 @@ Calcule:
 `services.extras.tags` é um array de strings que agrupa anúncios além da taxonomia (convenção: minúsculas, sem acento, kebab-case, `:` separando prefixo). A busca filtra por elas e a tela de detalhe mostra carrosséis por tag.
 
 - Cada item de `tags[]` do payload: sem acento, minúsculas, o que não for letra/dígito vira `-` (o `:` fica), sem `-` nas pontas; vazio é descartado; sem repetir.
-- **Local cadastrado:** se o local do evento for um lugar já cadastrado (anúncio com `extras.codigo`), entra em `tags` o código dele. Assim o evento aparece como vinculado na página da casa (carrossel "Vinculados") e a página do evento mostra "Organizado por <casa>". Sem linha: nenhuma tag de local.
+- **Local cadastrado:** se o local do evento for um lugar já cadastrado (anúncio com `extras.codigo`), entra em `tags` o código dele, para a página do evento mostrar "Organizado por <casa>". Para o evento aparecer na página da casa, a tag é opcional: basta `answers.local_ref` (ver "Código do lugar"). Sem linha: nenhuma tag de local.
 
 ```sql
 SELECT s.extras->>'codigo' AS tag
@@ -249,7 +249,7 @@ LIMIT 1;
 ```
 
 - No UPDATE (passo 5), `"tags"` presente substitui a lista inteira; ausente (lista calculada vazia) mantém a que já estava no anúncio.
-- **Organizado por a casa:** basta o evento ter, em `tags[]`, o código da casa (o slug dela, por exemplo `"espaco-art-festas-e-eventos"`); nada mais é necessário. A casa é o anúncio ativo cujo `extras.codigo` é esse código (os lugares importados já o gravam, ver [lugares-depara.md](lugares-depara.md)). A página do evento mostra "Organizado por <casa>" com link e a página da casa lista o evento em "Vinculados" (ou no título de `extras.vinculosTitulo`, se a casa o definir). Sem casa para nenhuma das tags, a página segue mostrando `detalhes.organizador` como texto. Detalhes em [services.md](../../kizuna-core/docs/plugins/services.md).
+- **Organizado por a casa:** basta o evento ter, em `tags[]`, o código da casa (o slug dela, por exemplo `"espaco-art-festas-e-eventos"`); nada mais é necessário. A casa é o anúncio ativo cujo `extras.codigo` é esse código (os lugares importados já o gravam, ver [lugares-depara.md](lugares-depara.md)). A página do evento mostra "Organizado por <casa>" com link. A página da casa lista o evento em "Vinculados" (ou no título de `extras.vinculosTitulo`, se a casa o definir) tanto pela tag quanto pelo `local_ref`. Sem casa para nenhuma das tags, a página segue mostrando `detalhes.organizador` como texto. Detalhes em [services.md](../../kizuna-core/docs/plugins/services.md).
 - **Formato e permissão de `tags[]` (obrigatório):** o robô DEVE mandar no máximo 10 tags, cada uma minúscula e no padrão `[a-z0-9][a-z0-9:._-]{0,59}` (sem acento, até 60 caracteres), descartando ou truncando as que não couberem ANTES do insert; senão o INSERT/UPDATE falha com erro `22023` e aborta. O robô conecta sem JWT (sessão de sistema), então não precisa da permissão `services.link`. Usuários comuns só editam `tags` se tiverem essa permissão.
 
 ### Código do lugar (`local_ref` e `pontos_de_venda`)
@@ -274,7 +274,7 @@ LIMIT 1;
 
 `nome_slug` = `nome` sem acento, minúsculo, o que não for letra/dígito vira `-`, sem `-` nas pontas.
 
-- **`answers.local_ref`**: o código de UM lugar, o local do evento (consulta com `nome` = `local.nome`). A página do evento mostra "Onde acontece" com link para ele. Sem código: omita a chave.
+- **`answers.local_ref`**: o código de UM lugar, o local do evento (consulta com `nome` = `local.nome`). Liga os dois sentidos sozinho: a página do evento mostra "Onde acontece" com link para o lugar, e a página do lugar lista o evento no carrossel de vinculados (eventos futuros primeiro). A tag com o código do lugar é opcional. Sem código: omita a chave.
 - **`answers.pontos_de_venda[].nome`**: um item por ponto de venda, cada um com o código do lugar (consulta com `nome` = o texto do ponto). Nunca junte dois pontos num item nem use vírgula para separar: dois lugares = dois itens. Ponto sem código (não é um lugar cadastrado, ex.: "Disk ingresso"): o texto, `trim()`.
 
 ### De-para

@@ -1,5 +1,6 @@
 import type { ServiceDetailData } from '@kizuna/core/server';
 import { slugify } from '@kizuna/core/client/components/pages/slugify';
+import { serviceRefExtras } from '@kizuna/core/shared/service-ref-extras';
 
 type ServiceVenue = NonNullable<ServiceDetailData['venue']>;
 type ServiceSalePoint = NonNullable<ServiceDetailData['salePoints']>[number];
@@ -15,7 +16,11 @@ export type EditorialPlace = {
 
 export type PlaceLookup = (slug: string) => EditorialPlace | null;
 
-type LinkedData = { venue?: ServiceVenue | null; salePoints?: ServiceSalePoint[] };
+type LinkedData = {
+  venue?: ServiceVenue | null;
+  salePoints?: ServiceSalePoint[];
+  extraFields?: { answers?: Record<string, unknown> | null } | null;
+};
 
 function clean(v: unknown): string {
   return typeof v === 'string' ? v.trim() : '';
@@ -44,14 +49,15 @@ function placeVenue(value: string, lookup: PlaceLookup): ServiceVenue | null {
 /**
  * Segunda chance pros links de lugar do evento: o core liga o código a um ANÚNCIO; o que ficou sem
  * link (`venue: null`) é tentado aqui como slug de uma página editorial `/[cidade]/lugares/[slug]`.
- * Usa o valor cru de `extras` (o rótulo já vem humanizado). Ordem: anúncio > editorial > texto.
+ * Usa o valor cru de `extras` ou, se vazio, das respostas do formulário (`data.extraFields`, mesma
+ * precedência do core: `serviceRefExtras`); o rótulo já vem humanizado. Ordem: anúncio > editorial > texto.
  */
 export function linkEditorialPlaces<T extends LinkedData>(
   service: { extras?: Record<string, unknown> | null },
   data: T,
   lookup: PlaceLookup
 ): T {
-  const extras = service.extras ?? {};
+  const extras = serviceRefExtras(service, data.extraFields);
   const out = { ...data };
 
   const localRef = clean(extras.local_ref);
