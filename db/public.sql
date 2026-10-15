@@ -3,7 +3,7 @@
 -- Aplicar DEPOIS do db/auth.sql, em base limpa:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/public.sql
 -- Ordem = kizuna.plugins.json (ordem de dependência).
--- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (3), onboarding (1), storage (6), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (4), services (13), reviews (1), analytics (2), ads (1), search (8), swipe (4), messaging (1), ai_assistant (1), ai_review (1), demandas (4), pedidos (4)
+-- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (3), onboarding (1), storage (6), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (5), services (13), reviews (1), analytics (2), ads (1), search (8), swipe (4), messaging (1), ai_assistant (1), ai_review (1), demandas (4), pedidos (4)
 
 
 -- ===============================================================================================
@@ -2617,7 +2617,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: taxonomy  (4 arquivos)
+-- PLUGIN: taxonomy  (5 arquivos)
 -- ===============================================================================================
 
 
@@ -3018,6 +3018,33 @@ ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS ai_review boolean NOT NUL
 
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('taxonomy', '1.5.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/taxonomy/0005_categories_seq_grant.sql
+-- ===============================================================================================
+
+-- plugins/taxonomy/0005_categories_seq_grant.sql
+-- O 0001 dá INSERT em public.categories para auth_user, mas não o USAGE na sequência do id
+-- (supunha que a tabela vinha do projeto). Sem isso, criar categoria pelo painel falha com
+-- "permission denied for sequence categories_id_seq". As demais tabelas do plugin já têm o grant.
+-- Idempotente; resolve o nome real da sequência (projeto pode ter criado a tabela por conta própria).
+
+DO $$
+DECLARE
+  seq text := pg_get_serial_sequence('public.categories', 'id');
+BEGIN
+  IF seq IS NOT NULL THEN
+    EXECUTE format('GRANT USAGE, SELECT ON SEQUENCE %s TO auth_user', seq);
+  END IF;
+END
+$$;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('taxonomy', '1.5.1')
 ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
 
 NOTIFY pgrst, 'reload schema';
