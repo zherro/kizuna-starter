@@ -20,6 +20,7 @@ export function CategoryRail({
   return (
     <CategoryCarousel
       variant={variant}
+      groupBy="group"
       onlyWithListings={onlyWithListings}
       title={t.categoriesTitle}
       allLabel={t.categoriesAll}
