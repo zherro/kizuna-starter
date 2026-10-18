@@ -1,0 +1,63 @@
+# Produção: igual ao docker-compose.yml, mas o Postgres só no loopback do host.
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-kizuna}
+    # Default do Postgres é 100. PostgREST (pool 10) + CloudBeaver + crons +
+    # psql somam rápido; 200 dá folga sem custo relevante de RAM nesse porte.
+    command: ["postgres", "-c", "max_connections=${PG_MAX_CONNECTIONS:-200}"]
+    volumes:
+      # Bind mount em disco real do Ubuntu (não volume gerenciado do Docker),
+      # para sobreviver a rebuild/redeploy da app e a limpezas do Dokploy.
+      # Crie o diretório antes: mkdir -p /data/kizuna/postgres
+      - /data/kizuna/postgres:/var/lib/postgresql/data
+    # Só no loopback do host (acesso por túnel SSH / CloudBeaver na rede interna). Publicar em
+    # 0.0.0.0 deixa o banco aberto na internet se o firewall falhar.
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-kizuna}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgrest:
+    image: postgrest/postgrest:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # authenticator é o role de login do PostgREST (ver
+      # kizuna-core/sql/0099_grant_authenticator.sql); anon é o role sem JWT.
+      PGRST_DB_URI: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kizuna}
+      PGRST_DB_SCHEMAS: public,auth
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${PGRST_JWT_SECRET}
+      # As functions de auth do kizuna-core leem `request.jwt.claims` como um
+      # único JSON (current_setting('request.jwt.claims', true)::json) — o
+      # formato legado. Com "false" o PostgREST usaria GUCs por claim
+      # (request.jwt.claim.<nome>) e a auth quebraria.
+      PGRST_DB_USE_LEGACY_GUCS: "true"
+      # Pool de conexões do PostgREST (teto por instância; o PostgREST abre
+      # sob demanda, não existe "mínimo"). Reaproveita conexões em vez de
+      # abrir uma por request. Ajuste por env na aba Environment do Dokploy.
+      PGRST_DB_POOL: ${PGRST_DB_POOL:-10}
+      # Espera por uma conexão livre antes de devolver 503 (segundos).
+      PGRST_DB_POOL_ACQUISITION_TIMEOUT: ${PGRST_DB_POOL_ACQUISITION_TIMEOUT:-10}
+      # Recicla conexões velhas/ociosas para não vazar sessões no Postgres.
+      PGRST_DB_POOL_MAX_LIFETIME: ${PGRST_DB_POOL_MAX_LIFETIME:-1800}
+      PGRST_DB_POOL_MAX_IDLETIME: ${PGRST_DB_POOL_MAX_IDLETIME:-30}
+    # Sem `ports:` de propósito — só o app Next.js (e o CloudBeaver, no
+    # Postgres) falam com isso, pela rede interna, por nome de serviço
+    # (postgres:5432, postgrest:3000 — porta padrão da imagem). Publicar no
+    # host exporia o banco/API para a VPS inteira sem necessidade.
+
+networks:
+  default:
+    name: kizuna_net
+    external: true
