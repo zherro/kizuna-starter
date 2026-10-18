@@ -1,5 +1,5 @@
 import { getAuthHeaderFromCookies, getSession } from '@kizuna/core/server';
-import { fileContentSizeFromRequest, getStorageService } from '@kizuna/core/server';
+import { fileContentSizeFromRequest, getStorageService, storageContentHeaders } from '@kizuna/core/server';
 
 export const runtime = 'nodejs';
 
@@ -37,8 +37,7 @@ export async function GET(request: Request, { params }: Params) {
   return new Response(content, {
     status: 200,
     headers: {
-      'Content-Type': found.mimeType,
-      'Content-Disposition': `inline; filename="${found.originalName.replace(/"/g, '')}"`,
+      ...storageContentHeaders(found.mimeType, found.originalName),
       'Cache-Control': 'private, max-age=60',
     },
   });

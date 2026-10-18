@@ -1,4 +1,4 @@
-import { fileContentSizeFromRequest, pgrstTable } from '@kizuna/core/server';
+import { fileContentSizeFromRequest, pgrstTable, storageContentHeaders } from '@kizuna/core/server';
 
 export const runtime = 'nodejs';
 
@@ -74,13 +74,11 @@ export async function GET(request: Request, { params }: Params) {
   }
 
   const mimeType = mimeOverride ?? found.mime_type ?? 'application/octet-stream';
-  const safeName = (found.original_name ?? `file-${cleanId}`).replace(/"/g, '');
 
   return new Response(new Blob([new Uint8Array(content)]), {
     status: 200,
     headers: {
-      'Content-Type': mimeType,
-      'Content-Disposition': `inline; filename="${safeName}"`,
+      ...storageContentHeaders(mimeType, found.original_name ?? `file-${cleanId}`),
       'Cache-Control': 'public, max-age=3600, immutable',
     },
   });

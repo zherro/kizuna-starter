@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
       POSTGRES_DB: app
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -33,7 +33,7 @@ services:
       # As functions de auth do core leem request.jwt.claims como um JSON só (formato legado).
       PGRST_DB_USE_LEGACY_GUCS: "true"
     ports:
-      - "${PGRST_PORT:-3001}:3000"
+      - "127.0.0.1:${PGRST_PORT:-3001}:3000"
 
 volumes:
   pgdata:
