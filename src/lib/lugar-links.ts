@@ -68,7 +68,7 @@ export function linkEditorialPlaces<T extends LinkedData>(
     out.salePoints = out.salePoints.map((sp, i) => {
       if (sp.venue || !raw[i]) return sp;
       const venue = placeVenue(raw[i], lookup);
-      return venue ? { label: venue.title, venue } : sp;
+      return venue ? { ...sp, label: venue.title, venue } : sp;
     });
   }
   return out;

@@ -52,6 +52,7 @@ Só os caminhos abaixo têm destino; qualquer outro vai em `campos_nao_mapeados`
 | `detalhes.ingressos[].pessoas` | number | não | pessoas por ingresso (mesa, bistrô, camarote); é também a quantidade de pulseiras. `1` para individual |
 | `detalhes.ingressos[].valor` | number | não | em reais |
 | `detalhes.pontos_de_venda[]` | text | não | um texto livre por ponto de venda |
+| `detalhes.pontos_de_venda[].link` | url | não | link de compra do ingresso NAQUELE ponto, se a fonte trouxer (ver "Onde comprar") |
 | `origem.fonte`, `origem.id_evento` | text | sim | chave do anúncio |
 | `origem.url`, `origem.coletado_em` | text | não | |
 | `tags[]` | text | não | tags de agrupamento do anúncio (ver "Tags"); ausente = nenhuma |
@@ -275,7 +276,9 @@ LIMIT 1;
 `nome_slug` = `nome` sem acento, minúsculo, o que não for letra/dígito vira `-`, sem `-` nas pontas.
 
 - **`answers.local_ref`**: o código de UM lugar, o local do evento (consulta com `nome` = `local.nome`). Liga os dois sentidos sozinho: a página do evento mostra "Onde acontece" com link para o lugar, e a página do lugar lista o evento no carrossel de vinculados (eventos futuros primeiro). A tag com o código do lugar é opcional. Sem código: omita a chave.
-- **`answers.pontos_de_venda[].nome`**: um item por ponto de venda, cada um com o código do lugar (consulta com `nome` = o texto do ponto). Nunca junte dois pontos num item nem use vírgula para separar: dois lugares = dois itens. Ponto sem código (não é um lugar cadastrado, ex.: "Disk ingresso"): o texto, `trim()`.
+- **`answers.pontos_de_venda[]`**: um item `{ "nome": string, "link"?: string }` por ponto de venda. `nome` = o código do lugar (consulta com `nome` = o texto do ponto) ou, sem código (não é um lugar cadastrado, ex.: "Disk ingresso"), o texto, `trim()`. `link` = URL http(s) de compra do ingresso deste evento naquele ponto; omita se a fonte não trouxer (não copie o `link_ingresso` geral para cá). Nunca junte dois pontos num item nem use vírgula para separar: dois lugares = dois itens. Itens antigos (só `nome`, ou string pura) continuam válidos.
+- **Exibição de "Onde comprar"** (página do evento): um card por ponto, com foto, título e cidade do lugar (link para a página dele quando o código resolve para um lugar; só o texto quando não). Se o item tem `link` http(s) válido, o card ganha o botão "Bora comprar ingresso" (nova aba, `rel="noopener noreferrer"`, com o rastreio de links de contato da página). O botão só aparece com o `link` do próprio ponto: o `link_ingresso` geral do evento continua só em "Ingressos" ("Comprar ingresso").
+- **Cidade no "Onde acontece"**: com `local_ref` resolvido, o cartão mostra a cidade do lugar; se o lugar não tiver cidade, usa o trecho final "Cidade/UF" de `answers.endereco`.
 
 ### De-para
 
@@ -314,6 +317,7 @@ LIMIT 1;
 | `detalhes.sessoes[]` | `answers.sessoes[]`, `answers.data_inicio`, `answers.data_fim` | `hora`→`hora_inicio`, `fim`→`hora_fim`, `abertura_portas`→`abertura_portoes`; ver cálculo acima |
 | `detalhes.ingressos[]` | `answers.ingressos[]` | ver "Formulário" |
 | `detalhes.pontos_de_venda[]` | `answers.pontos_de_venda[].nome` | um item por ponto: código do lugar, ou o texto; ver "Código do lugar" |
+| `detalhes.pontos_de_venda[].link` | `answers.pontos_de_venda[].link` | URL http(s) de compra naquele ponto; omitir se ausente |
 | `origem.*` | `extras.origem` | ver cálculo acima |
 | `tags[]` + local cadastrado | `extras.tags` | ver "Tags" |
 | `local.nome` + lugar cadastrado | `answers.local_ref` | código do lugar; ver "Código do lugar" |
@@ -341,7 +345,7 @@ Objeto JSON com chaves planas, montado inteiro a cada execução; o upsert subst
   ],
   "link_ingresso": "https://exemplo.com.br/eventos/celebration-flashback/ingressos",
   "pontos_de_venda": [
-    { "nome": "pantanal-shopping" },
+    { "nome": "pantanal-shopping", "link": "https://exemplo.com.br/pantanal/celebration-flashback" },
     { "nome": "Disk ingresso" }
   ],
   "contato_telefone": "(65) 9.9953-1935",
@@ -361,7 +365,7 @@ Objeto JSON com chaves planas, montado inteiro a cada execução; o upsert subst
   - `setor`, `lote`, `comprar` direto; `pessoas` number ≥ 1; `valor` number ≥ 0.
   - `tipo` normalizado contra as opções (sem caixa e acento) e gravado com o valor da opção.
 - `artistas`: `[{"nome": "..."}]`, um por texto não vazio, sem duplicados.
-- `pontos_de_venda`: `[{"nome": "<código ou texto>"}]`, um por ponto de venda, sem vírgula juntando pontos, sem duplicados.
+- `pontos_de_venda`: `[{"nome": "<código ou texto>", "link": "<url de compra, opcional>"}]`, um por ponto de venda, sem vírgula juntando pontos, sem duplicados.
 - `gratuito`: grave `true` só quando `detalhes.gratuito = true`.
 
 ### Queries

@@ -198,6 +198,11 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
           "id": "pdv_nome", "key": "nome", "name": "nome", "type": "text", "label": "Ponto de venda",
           "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
           "behavior": { "required": true }, "validation": {}, "appearance": {}
+        },
+        {
+          "id": "pdv_link", "key": "link", "name": "link", "type": "text", "label": "Link de compra do ingresso",
+          "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
+          "behavior": {}, "validation": {}, "appearance": {}
         }
       ]
     },
