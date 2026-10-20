@@ -11,7 +11,7 @@ export default async function ChamadoPage({ params }: { params: Promise<{ id: st
   if (!session) redirect(`/login?returnTo=${encodeURIComponent(`/painel/chamados/${id}`)}`);
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-6">
+    <div className="mx-auto w-full max-w-[900px] px-4 py-6 md:px-6">
       <TicketDetail ticketId={id} viewer={viewerFromSession(session)} />
     </div>
   );

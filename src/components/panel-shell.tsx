@@ -39,6 +39,7 @@ export function PanelShell({ children }: Readonly<{ children: React.ReactNode }>
       navGroups={navigationGroups}
       topActions={topActions}
       topActionsIconOnly
+      userProfileHref="/painel/minha-conta"
       renderItemBadge={(item, collapsed) =>
         item.href === '/painel/chamados' && !collapsed ? <OpenTicketsBadge /> : null
       }

@@ -215,8 +215,7 @@
         "price": ["lugares"]
       },
       "creatable": {
-        "groups": ["eventos", "turismo"],
-        "categories": ["hoteis-e-pousadas", "trilhas", "bares", "restaurantes"]
+        "groups": ["eventos", "turismo"]
       },
       "stepProfiles": {
         "location": {
