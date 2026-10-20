@@ -22,7 +22,13 @@
   },
   "search": {
     "_comment": "Plugin search (/busca). \"ai\": liga/desliga a busca com IA (assistente Naví: botão, chat e título \"Buscar com IA\"). false = só busca por texto + filtros. Omitido = true. Ver kizuna-core/docs/plugins/search.md.",
-    "ai": false
+    "ai": false,
+    "_comment_defaults": "\"defaultGroup\": slug do grupo já selecionado quando a /busca abre sem grupo, categoria nem texto (o usuário vê tudo escolhendo \"Todas as categorias\" no filtro; a URL ganha ?group=todos). Omitido/null = todos. \"orderByGroup\": ordenação por slug do grupo em vigor, \"default\" para os demais — relevance | event_start (próximos eventos primeiro) | recent (mais novos) | title (A-Z). Só vale com \"Ordenar por: Relevância\". Requer search 0010.",
+    "defaultGroup": "eventos",
+    "orderByGroup": {
+      "eventos": "event_start",
+      "default": "relevance"
+    }
   },
   "header": {
     "_comment": "\"variant\": classic (padrão) | compact — layout do cabeçalho do site.",

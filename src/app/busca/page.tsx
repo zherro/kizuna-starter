@@ -19,6 +19,13 @@ const serviceDetailConfig: ServiceDetailConfig | null =
 const excludeFromMixedCategorySlugs = serviceDetailConfig?.excludeFromMixedCategorySlugs ?? [];
 // `search.ai` no kizuna.config.json: false desativa a busca com IA (assistente). Omitido = ligado.
 const aiEnabled = (cfg as { search?: { ai?: boolean } }).search?.ai !== false;
+// `search.defaultGroup` (grupo marcado ao chegar sem filtro) e `search.orderByGroup` (ordem por grupo).
+const searchCfg = (cfg as { search?: { defaultGroup?: string | null; orderByGroup?: Record<string, string> } })
+  .search;
+const searchDefaults = {
+  defaultGroupSlug: searchCfg?.defaultGroup ?? null,
+  orderByGroup: searchCfg?.orderByGroup,
+};
 // Cidades vizinhas sugeridas abaixo dos resultados (kizuna.config.json → regions).
 const regions = parseRegions((cfg as { regions?: unknown }).regions);
 
@@ -81,6 +88,7 @@ export default function BuscaPage() {
         excludeFromMixedCategorySlugs={excludeFromMixedCategorySlugs}
         serviceDetailConfig={serviceDetailConfig}
         aiEnabled={aiEnabled}
+        defaults={searchDefaults}
         regions={regions}
         impressionRule={trackRule('service', 'impression')}
         sponsoredSlot={
