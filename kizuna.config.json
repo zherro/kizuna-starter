@@ -23,10 +23,10 @@
   "search": {
     "_comment": "Plugin search (/busca). \"ai\": liga/desliga a busca com IA (assistente Naví: botão, chat e título \"Buscar com IA\"). false = só busca por texto + filtros. Omitido = true. Ver kizuna-core/docs/plugins/search.md.",
     "ai": false,
-    "_comment_defaults": "\"defaultGroup\": slug do grupo já selecionado quando a /busca abre sem grupo, categoria nem texto (o usuário vê tudo escolhendo \"Todas as categorias\" no filtro; a URL ganha ?group=todos). Omitido/null = todos. \"orderByGroup\": ordenação por slug do grupo em vigor, \"default\" para os demais — relevance | event_start (próximos eventos primeiro) | recent (mais novos) | title (A-Z). Só vale com \"Ordenar por: Relevância\". Requer search 0010.",
+    "_comment_defaults": "\"defaultGroup\": slug do grupo já selecionado quando a /busca abre sem grupo, categoria nem texto (\"Todas as categorias\" no filtro mostra tudo; a URL ganha ?group=todos). null = todos. \"orderByGroup\": ordenação por slug do grupo, \"default\" para os demais, no formato \"campo:asc|desc\" — campos: occurs_at (quando acontece; asc = próximos primeiro), created_at, expires_at, price, title; \"relevance\" = ordem de sempre. Só com \"Ordenar por: Relevância\". Requer services 0016 + search 0011.",
     "defaultGroup": "eventos",
     "orderByGroup": {
-      "eventos": "event_start",
+      "eventos": "occurs_at:asc",
       "default": "relevance"
     }
   },
