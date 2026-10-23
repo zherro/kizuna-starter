@@ -3,7 +3,7 @@
 -- De-para: docs/integracoes/lugares-depara.md
 --
 -- Grava os artigos de content/lugares/ como anúncios (public.services) no tenant do usuário root:
--- 8 lugar(es), 16 foto(s). Status no INSERT: 'pending' (o dono aprova no painel).
+-- 9 lugar(es), 16 foto(s). Status no INSERT: 'pending' (o dono aprova no painel).
 -- Idempotente: o anúncio é achado por extras.origem (fonte = 'content/lugares', slug); rodar de novo
 -- atualiza, não duplica. Fotos têm id determinístico pelo conteúdo (sha256).
 -- Uma transação só: qualquer erro desfaz tudo.
@@ -1010,8 +1010,154 @@ BEGIN
 END
 $lugar_6$;
 
--- Shopping Estação Cuiabá (content/lugares/shopping-estacao-cuiaba/index.md) — 3 foto(s)
+-- Seu Francisco (content/lugares/seu-francisco-cuiaba-porto/index.md) — 0 foto(s)
 DO $lugar_7$
+DECLARE
+  c_slug      constant text   := 'seu-francisco-cuiaba-porto';
+  c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"seu-francisco-cuiaba-porto","arquivo":"content/lugares/seu-francisco-cuiaba-porto/index.md","atualizado_em":"2026-10-22","status_artigo":"rascunho","categoria_artigo":"Bar","cidade":"cuiaba-mt","titulo_md5":"c506110aa65188a2b97b9a0ec14c91c1","descricao_md5":"fc13f5e9df3e685c0e888d39638e23d6"},"resumo":"Bar com música ao vivo na Avenida Manoel José de Arruda, a avenida da Orla do Porto, em Cuiabá, conhecido pelas noites de pagode e samba.","endereco_texto":"Avenida Manoel José de Arruda, Porto, Cuiabá - MT","contato_instagram":"@seufranciscobar_reserva","tags":["bares","local:seu-francisco-cuiaba-porto"],"codigo":"seu-francisco-cuiaba-porto"}'::jsonb;
+  c_titulo    constant text   := 'Seu Francisco';
+  c_descricao constant text   := 'O Seu Francisco é um bar de Cuiabá na Avenida Manoel José de Arruda, no bairro Porto, a mesma avenida da Orla do Porto, perto do Rio Cuiabá. A casa é conhecida pela música ao vivo, com destaque para o pagode e o samba.
+
+## O que é
+
+Guias de avaliação na internet classificam o Seu Francisco como bar. Os comentários de clientes falam de um espaço amplo e aberto, de cerveja gelada e de noites animadas com música ao vivo. Um cliente resumiu a casa como lugar "pra quem curte um pagode".
+
+O perfil no Instagram (@seufranciscobar_reserva) divulga as noites de fim de semana com pagode e lambadão e reúne o contato para reservas.
+
+## Programação
+
+A agenda é divulgada nas redes do bar. Guias de eventos da cidade registram noites de música ao vivo a partir das 19h, como a "Sexta de verão" de janeiro de 2025, e festas temáticas, como o flashback e o aniversário da casa.
+
+## Onde fica
+
+O endereço citado pelos guias é a Avenida Manoel José de Arruda, no Porto, CEP 78025-190. As fontes consultadas não trazem o número do imóvel. A avenida acompanha a Orla do Porto, então vale traçar a rota pelo nome do bar no aplicativo de mapas.
+
+## Antes de ir
+
+As listagens de terceiros divergem no telefone e nos horários, e citam cobrança de entrada em algumas noites e limite de horário para menores. Para confirmar horário, valor de entrada e reserva de mesa, o caminho mais seguro é o Instagram do bar.';
+  c_images    constant text[] := ARRAY[]::text[];
+  c_subs      constant text[] := ARRAY['bares']::text[];
+  c_answers   constant jsonb  := '{"contato_instagram":"@seufranciscobar_reserva"}'::jsonb;
+  c_form_keys constant text[] := ARRAY['horario', 'preco', 'gratuito', 'dicas_chegada', 'contato_telefone', 'contato_whatsapp', 'contato_instagram', 'site']::text[];
+  v_root uuid; v_tenant uuid; v_group bigint; v_cat bigint; v_form text; v_form_id bigint; v_form_ver int; v_form_schema jsonb;
+  v_sid bigint; v_old jsonb; v_old_titulo text; v_old_desc text;
+  v_old_import text[]; v_kept text[]; v_images jsonb; v_cover text; v_ibge text; v_missing text[];
+BEGIN
+  SELECT u.uid, t.uid INTO v_root, v_tenant
+  FROM (SELECT uid FROM auth.users WHERE is_root = true ORDER BY created_at LIMIT 1) u
+  JOIN LATERAL (SELECT tn.uid FROM auth.tenants tn WHERE tn.owner_uid = u.uid ORDER BY tn.created_at LIMIT 1) t ON true;
+  IF v_tenant IS NULL THEN RAISE EXCEPTION 'lugares: sem usuário root/tenant'; END IF;
+
+  SELECT g.id, c.id, NULLIF(c.form_key, '') INTO v_group, v_cat, v_form
+  FROM public.categories c JOIN public.categories_group g ON g.id = c.category_group_id
+  WHERE g.slug = 'lugares' AND c.slug = 'vida-noturna';
+  IF v_cat IS NULL THEN RAISE EXCEPTION 'lugares/%: categoria lugares/vida-noturna não existe (rode o seed de taxonomia)', c_slug; END IF;
+  IF v_form IS NULL THEN
+    RAISE NOTICE 'lugares/%: a categoria não tem form_key (rode db/extras/forms_seed_lugares.sql); horário/contato só em services.extras', c_slug;
+  ELSE
+    SELECT id, version, schema INTO v_form_id, v_form_ver, v_form_schema
+    FROM public.forms WHERE tenant_id = v_tenant AND form_key = v_form AND active;
+    IF v_form_id IS NULL THEN RAISE EXCEPTION 'lugares/%: formulário % não existe no tenant', c_slug, v_form; END IF;
+  END IF;
+
+  SELECT array_agg(s) INTO v_missing FROM unnest(c_subs) s
+  WHERE NOT EXISTS (SELECT 1 FROM public.categories_sub cs WHERE cs.slug = s AND cs.category_id = v_cat);
+  IF v_missing IS NOT NULL THEN RAISE EXCEPTION 'lugares/%: subcategoria(s) % não existem sob vida-noturna', c_slug, v_missing; END IF;
+
+  -- Fotos (id determinístico pelo conteúdo: rodar de novo não duplica)
+  -- (sem fotos)
+
+  -- Serviço existente? (chave: extras.origem.fonte + slug; inclui inativo, que não é reativado)
+  SELECT id, extras, title, description INTO v_sid, v_old, v_old_titulo, v_old_desc
+  FROM public.services
+  WHERE tenant_id = v_tenant AND extras->'origem'->>'fonte' = 'content/lugares' AND extras->'origem'->>'slug' = c_slug
+  ORDER BY id LIMIT 1;
+
+  -- Imagens: as do artigo primeiro; as que alguém subiu pelo painel continuam depois
+  SELECT coalesce(array_agg(x), '{}') INTO v_old_import
+  FROM (SELECT f->>'fileId' AS x FROM jsonb_array_elements(coalesce(v_old->'origem'->'fotos', '[]'::jsonb)) f) y;
+  SELECT coalesce(array_agg(x ORDER BY o), '{}') INTO v_kept
+  FROM jsonb_array_elements_text(coalesce(v_old->'images', '[]'::jsonb)) WITH ORDINALITY AS a(x, o)
+  WHERE x <> ALL(v_old_import) AND x <> ALL(c_images);
+  v_images := to_jsonb(c_images || v_kept);
+  v_cover := CASE
+    WHEN v_old->>'coverFileId' IS NOT NULL AND v_old->>'coverFileId' <> ALL(v_old_import)
+         AND (c_images || v_kept) @> ARRAY[v_old->>'coverFileId'] THEN v_old->>'coverFileId'
+    ELSE (c_images || v_kept)[1] END;
+
+  -- Foto que saiu do artigo: desativa o arquivo antigo
+  UPDATE public.files SET active = false, updated_at = now()
+  WHERE id::text = ANY(v_old_import) AND id::text <> ALL(c_images) AND active;
+
+  IF v_sid IS NULL THEN
+    INSERT INTO public.services
+      (title, category_group_id, category_id, description, starting_price, price_unit, status,
+       service_location, extras, tenant_id, created_by, active)
+    VALUES (c_titulo, v_group, v_cat, c_descricao, 0, 'quote', 'pending'::public.service_status,
+            'no_estabelecimento',
+            c_extras || jsonb_strip_nulls(jsonb_build_object('images', CASE WHEN jsonb_array_length(v_images) > 0 THEN v_images END, 'coverFileId', v_cover)),
+            v_tenant, v_root, true)
+    RETURNING id INTO v_sid;
+    RAISE NOTICE 'lugares/%: inserido (service id %)', c_slug, v_sid;
+  ELSE
+    -- Título/descrição só mudam se ninguém os editou desde o último import (md5 guardado em extras.origem)
+    UPDATE public.services SET
+      title = CASE WHEN v_old->'origem'->>'titulo_md5' IS NULL OR md5(v_old_titulo) = v_old->'origem'->>'titulo_md5'
+                   THEN c_titulo ELSE title END,
+      description = CASE WHEN v_old->'origem'->>'descricao_md5' IS NULL OR md5(coalesce(v_old_desc, '')) = v_old->'origem'->>'descricao_md5'
+                         THEN c_descricao ELSE description END,
+      category_group_id = v_group, category_id = v_cat,
+      extras = (extras - 'origem' - 'resumo' - 'endereco_texto' - 'contato' - c_form_keys
+                       - 'creditos' - 'tags' - 'codigo' - 'vinculosTitulo' - 'images' - 'coverFileId')
+               || jsonb_set(c_extras, '{origem}', (c_extras->'origem')
+                    || jsonb_build_object(
+                         'titulo_md5', CASE WHEN v_old->'origem'->>'titulo_md5' IS NULL OR md5(v_old_titulo) = v_old->'origem'->>'titulo_md5'
+                                            THEN c_extras->'origem'->>'titulo_md5' ELSE v_old->'origem'->>'titulo_md5' END,
+                         'descricao_md5', CASE WHEN v_old->'origem'->>'descricao_md5' IS NULL OR md5(coalesce(v_old_desc, '')) = v_old->'origem'->>'descricao_md5'
+                                               THEN c_extras->'origem'->>'descricao_md5' ELSE v_old->'origem'->>'descricao_md5' END))
+               || jsonb_strip_nulls(jsonb_build_object('images', CASE WHEN jsonb_array_length(v_images) > 0 THEN v_images END, 'coverFileId', v_cover)),
+      updated_at = now()
+    WHERE id = v_sid;
+    RAISE NOTICE 'lugares/%: atualizado (service id %)', c_slug, v_sid;
+  END IF;
+
+  -- Endereço (apaga os do anúncio e grava um, principal)
+  DELETE FROM public.service_addresses WHERE service_id = v_sid;
+  BEGIN
+    SELECT lc.id::text INTO v_ibge FROM public.location_city lc JOIN public.location_state ls ON ls.id = lc.state_id
+    WHERE lower(lc.name) = lower('Cuiabá') AND upper(ls.code) = 'MT' LIMIT 1;
+  EXCEPTION WHEN undefined_table THEN v_ibge := NULL;
+  END;
+  IF v_ibge IS NULL THEN RAISE NOTICE 'lugares/%: cidade % / % sem código IBGE em location_city', c_slug, 'Cuiabá', 'MT'; END IF;
+  INSERT INTO public.service_addresses
+    (service_id, label, street, number, complement, neighborhood, city, state, city_ibge,
+     latitude, longitude, is_primary, tenant_id, created_by, active)
+  VALUES (v_sid, c_titulo, 'Avenida Manoel José de Arruda', NULL, NULL, 'Porto', 'Cuiabá', 'MT', v_ibge,
+          NULL, NULL, true, v_tenant, v_root, true);
+
+  -- Respostas do formulário (mesmas chaves de extras)
+  IF v_form_id IS NOT NULL THEN
+    INSERT INTO public.form_results
+      (form_id, form_key, reference_id, domain, version, schema_snapshot, answers, submitted_by, tenant_id)
+    VALUES (v_form_id, v_form, v_sid::text, 'service', v_form_ver, v_form_schema, c_answers, v_root, v_tenant)
+    ON CONFLICT (tenant_id, domain, reference_id) DO UPDATE SET
+      answers = EXCLUDED.answers, version = EXCLUDED.version, schema_snapshot = EXCLUDED.schema_snapshot,
+      form_id = EXCLUDED.form_id, form_key = EXCLUDED.form_key, updated_at = now();
+  END IF;
+
+  -- Subcategorias
+  DELETE FROM public.service_categories_sub scs USING public.categories_sub cs
+  WHERE scs.service_id = v_sid AND cs.id = scs.category_sub_id
+    AND (cs.category_id <> v_cat OR cs.slug <> ALL(c_subs));
+  INSERT INTO public.service_categories_sub (service_id, category_group_id, category_id, category_sub_id, tenant_id, created_by)
+  SELECT v_sid, v_group, v_cat, cs.id, v_tenant, v_root
+  FROM public.categories_sub cs WHERE cs.category_id = v_cat AND cs.slug = ANY(c_subs)
+  ON CONFLICT (service_id, category_sub_id) DO NOTHING;
+END
+$lugar_7$;
+
+-- Shopping Estação Cuiabá (content/lugares/shopping-estacao-cuiaba/index.md) — 3 foto(s)
+DO $lugar_8$
 DECLARE
   c_slug      constant text   := 'shopping-estacao-cuiaba';
   c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"shopping-estacao-cuiaba","arquivo":"content/lugares/shopping-estacao-cuiaba/index.md","atualizado_em":"2026-10-11","status_artigo":"revisao","categoria_artigo":"Shopping","cidade":"cuiaba-mt","titulo_md5":"e47935bfd30242cc70353a74b30c2170","descricao_md5":"adff19480838898412bc5433028df9a5","fotos":[{"arquivo":"public/lugares/shopping-estacao-cuiaba/01.jpg","sha256":"8c6755cf74d2592e32f5da3440ea5003aadb85262a0496818c88f01b62564242","fileId":"08126946-0741-5f98-97ff-99433d68e062"},{"arquivo":"public/lugares/shopping-estacao-cuiaba/02.jpg","sha256":"ab1231bfe3c0643c7fc23e7f3e161127bd686d2a406cf60852d7b1fa786ced51","fileId":"9eb464fb-7db5-53e8-b5c5-42f4028654d8"},{"arquivo":"public/lugares/shopping-estacao-cuiaba/03.jpg","sha256":"06fa791d4f059f2fe0d5f039d40c4c19eb7768d6e97d00c9fbbe51fab99f47c1","fileId":"9513b22d-5ebf-5136-ab61-ee71c187d29b"}]},"resumo":"Shopping da Allos na Av. Miguel Sutil, no Santa Rosa, aberto em 2018: mais de 270 lojas, restaurantes, cinema Cinépolis com 7 salas e estacionamento.","endereco_texto":"Av. Miguel Sutil, 9300, Santa Rosa, Cuiabá - MT","horario":[{"texto":"Lojas: seg a sáb, 10h às 22h; domingos e feriados, 14h às 20h"},{"texto":"Restaurantes: todos os dias, 11h às 22h"},{"texto":"Cinema: seg a sáb, 14h às 22h; domingos e feriados, 14h às 20h"},{"texto":"Estacionamento: seg a sáb, 10h às 22h; domingos e feriados, 11h às 22h"}],"dicas_chegada":"Fica na Av. Miguel Sutil. O estacionamento tem mais de 2 mil vagas, mais de 1.600 delas cobertas, e há área de valet, segundo o site do shopping.","contato_telefone":"(65) 93300-7001","contato_instagram":"@shoppingestacaocuiaba","site":"https://shoppingestacaocuiaba.com.br","creditos":"Fotos: Ajmcbarreto, CC BY-SA 4.0, Wikimedia Commons (arquivos Cinépolis Estação Cuiabá 01, 08 e 09, de 6/12/2024); as imagens mostram o cinema do shopping e foram apenas redimensionadas.","tags":["shoppings","local:shopping-estacao-cuiaba"],"codigo":"shopping-estacao-cuiaba"}'::jsonb;
@@ -1175,10 +1321,10 @@ BEGIN
   FROM public.categories_sub cs WHERE cs.category_id = v_cat AND cs.slug = ANY(c_subs)
   ON CONFLICT (service_id, category_sub_id) DO NOTHING;
 END
-$lugar_7$;
+$lugar_8$;
 
 -- Shopping 3 Américas (content/lugares/shopping-tres-americas/index.md) — 3 foto(s)
-DO $lugar_8$
+DO $lugar_9$
 DECLARE
   c_slug      constant text   := 'shopping-tres-americas';
   c_extras    constant jsonb  := '{"origem":{"fonte":"content/lugares","slug":"shopping-tres-americas","arquivo":"content/lugares/shopping-tres-americas/index.md","atualizado_em":"2026-10-11","status_artigo":"revisao","categoria_artigo":"Shopping","cidade":"cuiaba-mt","titulo_md5":"ef2461a6c480a31d0ec18bffcd7ad3a2","descricao_md5":"6f64a34ce994f1b604f3b39027b750cd","fotos":[{"arquivo":"public/lugares/shopping-tres-americas/01.jpg","sha256":"3799750017aeb366047cb00498f33b327ab2d89ab2fb8fbbfbcc04cc624ebb43","fileId":"a5f200b9-b60c-594e-a1da-9c291239d0fe"},{"arquivo":"public/lugares/shopping-tres-americas/02.jpg","sha256":"1745193dafa624e0dd0deddc3daca28fe3d9fdcb82ca29f0bb70a8d603f90fa5","fileId":"bc3273d5-3c18-5d0d-b3a6-168c9143a35a"},{"arquivo":"public/lugares/shopping-tres-americas/03.jpg","sha256":"31107c20a9205cd9f445e796a8cfe51788bebf4ebe5b24f4e7f35c96e6ce42c3","fileId":"76c3e11b-6ecd-588b-abe5-369016991501"}]},"resumo":"Shopping inaugurado em 1996 na Avenida Brasília, em Cuiabá, com lojas, praça de alimentação, estacionamento coberto e cinema Cineflix de oito salas.","endereco_texto":"Avenida Brasília, 146, Jardim das Américas, Cuiabá - MT","horario":[{"texto":"Lojas: seg a sáb, 10h às 22h; dom, 14h às 20h"},{"texto":"Alimentação: seg a sáb, 10h às 22h; dom, 11h às 22h"},{"texto":"Cinema: conforme a programação"}],"dicas_chegada":"Estacionamento coberto em quatro pisos, com 1.100 vagas, segundo o site oficial, que o informa aberto das 10h às 22h. As tarifas devem ser confirmadas com o atendimento do shopping.","contato_telefone":"(65) 3627-5501","contato_instagram":"@shopping3americas","site":"https://www.shopping3americas.com.br","creditos":"Fotos: Rodrigo_Santos, CC BY 3.0 (fachada, 2012); Ajmcbarreto, CC BY-SA 4.0 (Cineflix, 2024); via Wikimedia Commons. Lojas e fachadas podem ter mudado desde o registro das imagens.","tags":["shoppings","local:shopping-tres-americas"],"codigo":"shopping-tres-americas"}'::jsonb;
@@ -1342,6 +1488,6 @@ BEGIN
   FROM public.categories_sub cs WHERE cs.category_id = v_cat AND cs.slug = ANY(c_subs)
   ON CONFLICT (service_id, category_sub_id) DO NOTHING;
 END
-$lugar_8$;
+$lugar_9$;
 
 COMMIT;

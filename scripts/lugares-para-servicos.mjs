@@ -31,6 +31,7 @@ const IMAGE_EXT = /\.(jpe?g|png|webp|gif|avif)$/i;
 // `tag` (opcional): tag de agrupamento gravada em extras.tags; sem ela vale o slug da 1ª subcategoria.
 const TAXONOMIA = {
   'lua-morena': { grupo: 'lugares', categoria: 'vida-noturna', subs: ['casas-noturnas'] },
+  'seu-francisco-cuiaba-porto': { grupo: 'lugares', categoria: 'vida-noturna', subs: ['bares'] },
   'arena-pantanal': { grupo: 'lugares', categoria: 'esporte', subs: ['estadios-e-arenas'] },
   'goiabeiras-shopping': { grupo: 'lugares', categoria: 'compras', subs: ['shoppings'] },
   'pantanal-shopping': { grupo: 'lugares', categoria: 'compras', subs: ['shoppings'] },
