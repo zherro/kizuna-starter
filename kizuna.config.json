@@ -218,7 +218,16 @@
       "disable": [],
       "skipStepsByGroup": {
         "location": ["noticias"],
-        "price": ["lugares"]
+        "price": ["lugares", "eventos"]
+      },
+      "_comment_stepLabels": "Nome do passo no stepper por grupo/categoria (mesmo formato de stepProfiles: default, byGroup, byCategory; categoria → grupo → default). Sem entrada, fica o nome padrão.",
+      "stepLabels": {
+        "dynamic-form": {
+          "byGroup": {
+            "eventos": "Detalhes do evento",
+            "lugares": "Funcionamento e contato"
+          }
+        }
       },
       "creatable": {
         "groups": ["eventos", "turismo"]
@@ -237,6 +246,27 @@
               "options": [
                 { "value": "no_estabelecimento", "model": "addresses", "maxAddresses": 1, "icon": "MapPin" },
                 { "value": "remoto", "model": "identifier", "icon": "Globe" }
+              ],
+              "_comment_refs": "Vínculos com outros anúncios abaixo do endereço, gravados em services.extras[key]. groups = slugs de grupo onde a busca procura. multiple = lista [{nome: uid, link?}]; sem multiple = um uid. withLink (só com multiple) pede um link por item.",
+              "refs": [
+                {
+                  "key": "local_ref",
+                  "label": "Local do evento",
+                  "hint": "Escolha o lugar cadastrado onde o evento acontece. Ele aparece em \"Onde acontece\", com link para a página do lugar.",
+                  "groups": ["lugares"],
+                  "placeholder": "Buscar lugar pelo nome…"
+                },
+                {
+                  "key": "pontos_de_venda",
+                  "label": "Onde comprar ingressos",
+                  "hint": "Lugares que vendem ingresso. O link é opcional: a página de compra naquele ponto.",
+                  "groups": ["lugares"],
+                  "multiple": true,
+                  "withLink": true,
+                  "linkLabel": "Link de compra (opcional)",
+                  "addLabel": "Adicionar ponto de venda",
+                  "placeholder": "Buscar lugar pelo nome…"
+                }
               ]
             },
             "lugares": {
