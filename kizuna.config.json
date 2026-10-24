@@ -233,6 +233,9 @@
         "groups": ["eventos", "turismo"]
       },
       "stepProfiles": {
+        "images": {
+          "default": { "maxImages": 4 }
+        },
         "location": {
           "default": {
             "options": [

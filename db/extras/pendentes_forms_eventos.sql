@@ -1,8 +1,8 @@
 -- db/extras/pendentes_forms_eventos.sql
 --
 -- Atualiza o formulario `eventos` de um banco existente para o schema de db/extras/forms_seed_eventos.sql
--- (sessoes, ingressos com setor/tipo/pessoas/lote/comprar, link de compra e contato; local_ref e
--- pontos_de_venda sairam do formulario e ficam em services.extras), sem apagar
+-- (sessoes, ingressos com setor/tipo/pessoas/lote/comprar, link de compra e contato; endereco, local_ref e
+-- pontos_de_venda sairam do formulario: ficam no passo de endereco do wizard), sem apagar
 -- o formulario nem as respostas. As chaves antigas continuam iguais; as respostas ja gravadas seguem validas.
 -- O trigger do plugin forms incrementa `version`. Opcoes acrescentadas pelo importador sao substituidas
 -- pelas do seed (o importador as acrescenta de novo na proxima Fase 1).
@@ -44,11 +44,6 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
       "id": "evt_05_link", "key": "link", "name": "link", "type": "url", "label": "Link do evento",
       "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6, "2xl": 6 },
       "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "https://"
-    },
-    {
-      "id": "evt_06_endereco", "key": "endereco", "name": "endereco", "type": "text", "label": "Endereço",
-      "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-      "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "Local, rua, número, bairro"
     },
     {
       "id": "evt_10_classificacao_indicativa", "key": "classificacao_indicativa", "name": "classificacao_indicativa", "type": "select", "label": "Classificação indicativa",

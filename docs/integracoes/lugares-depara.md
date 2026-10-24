@@ -1,13 +1,13 @@
 # De-para: artigos `content/lugares` → banco Kizuna
 
-Instruções para gravar os artigos de lugares (casas noturnas, estádio, shoppings, casas de festas) como anúncios (`public.services`) no tenant do usuário root. O caminho padrão é gerado: `scripts/lugares-para-servicos.mjs` lê os artigos e escreve `db/extras/lugares_import.sql`, que faz as Fases 1 e 2 abaixo numa transação só. Quem gravar por outro meio (robô) segue as mesmas queries.
+Instruções para gravar os artigos de lugares (casas noturnas, estádio, shoppings, casas de festas) como anúncios (`public.services`) no tenant do usuário root. O caminho padrão é gerado: `scripts/lugares-para-servicos.mjs` lê os artigos e escreve `db/extras/lugares_import/lugares_NN.sql`, 3 lugares por arquivo (ordem alfabética de slug). Cada arquivo faz as Fases 1 e 2 abaixo numa transação só; os arquivos são independentes e idempotentes, a ordem não importa. Quem gravar por outro meio (robô) segue as mesmas queries.
 
 ```
-node scripts/lugares-para-servicos.mjs                 # gera db/extras/lugares_import.sql (status inicial 'pending')
-node kizuna-core/cli db run db/extras/lugares_import.sql   # aplica (usa DATABASE_URL ou --db-url)
+node scripts/lugares-para-servicos.mjs                 # gera db/extras/lugares_import/lugares_NN.sql (status inicial 'pending')
+for f in db/extras/lugares_import/*.sql; do node kizuna-core/cli db run "$f"; done   # aplica (usa DATABASE_URL ou --db-url)
 ```
 
-Opções do script: `--status pending|active|paused|archived` (status no INSERT; padrão `pending`), `--only <slug>` (um lugar só), `--out <arquivo.sql>`.
+Opções do script: `--status pending|active|paused|archived` (status no INSERT; padrão `pending`), `--only <slug>` (um lugar só), `--per-file N` (lugares por arquivo; padrão 3), `--out <arquivo.sql>` (tudo num arquivo só, ex.: com `--only`).
 
 ## Regras
 

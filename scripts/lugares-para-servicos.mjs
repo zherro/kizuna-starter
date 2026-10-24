@@ -3,7 +3,8 @@
 //
 // Lê os artigos de lugares (content/lugares/<slug>/index.md + fotos em public/lugares/<slug>/) e
 // GERA o SQL que os grava como anúncios (public.services) no banco do Kizuna:
-// db/extras/lugares_import.sql. Não conecta em banco nenhum.
+// db/extras/lugares_import/lugares_NN.sql (3 lugares por arquivo, em ordem alfabética de slug).
+// Não conecta em banco nenhum.
 //
 // De-para (regras, destinos e o que ficou sem destino): docs/integracoes/lugares-depara.md
 //
@@ -11,9 +12,11 @@
 //   node scripts/lugares-para-servicos.mjs                       # todos, status inicial 'pending'
 //   node scripts/lugares-para-servicos.mjs --only lua-morena     # só um lugar
 //   node scripts/lugares-para-servicos.mjs --status pending      # status no INSERT (pending|active|paused|archived)
-//   node scripts/lugares-para-servicos.mjs --out caminho.sql     # outro arquivo de saída
+//   node scripts/lugares-para-servicos.mjs --per-file 2          # quantos lugares por arquivo (padrão 3)
+//   node scripts/lugares-para-servicos.mjs --out caminho.sql     # tudo num arquivo só (ex.: com --only)
 //
-// Depois: node kizuna-core/cli db run db/extras/lugares_import.sql   (usa $DATABASE_URL ou --db-url)
+// Depois, cada arquivo (são independentes e idempotentes; a ordem não importa):
+//   for f in db/extras/lugares_import/*.sql; do node kizuna-core/cli db run "$f"; done
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,6 +26,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT_DIR = path.join(ROOT, 'content', 'lugares');
 const MEDIA_DIR = path.join(ROOT, 'public', 'lugares');
+const OUT_DIR = path.join(ROOT, 'db', 'extras', 'lugares_import');
 const FONTE = 'content/lugares';
 const STATUSES = ['pending', 'active', 'paused', 'archived'];
 const IMAGE_EXT = /\.(jpe?g|png|webp|gif|avif)$/i;
@@ -39,6 +43,7 @@ const TAXONOMIA = {
   'shopping-tres-americas': { grupo: 'lugares', categoria: 'compras', subs: ['shoppings'] },
   'buffet-infantil-mundo-magico': { grupo: 'lugares', categoria: 'festas-e-eventos', subs: ['buffets-infantis'] },
   'espaco-art-festas-e-eventos': { grupo: 'lugares', categoria: 'festas-e-eventos', subs: ['casas-de-festas'] },
+  'musiva-cuiaba': { grupo: 'lugares', categoria: 'vida-noturna', subs: ['casas-noturnas'] },
 };
 
 // Chaves do formulário `lugares` (db/extras/forms_seed_lugares.sql): gravadas em form_results.answers e
@@ -49,7 +54,7 @@ const FORM_KEYS = ['horario', 'preco', 'gratuito', 'dicas_chegada', 'contato_tel
 // Argumentos
 // ---------------------------------------------------------------------------------------------
 function parseArgs(argv) {
-  const opts = { status: 'pending', only: null, out: path.join(ROOT, 'db', 'extras', 'lugares_import.sql') };
+  const opts = { status: 'pending', only: null, out: null, perFile: 3 };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => {
@@ -60,11 +65,13 @@ function parseArgs(argv) {
     if (a === '--status') opts.status = next();
     else if (a === '--only') opts.only = next();
     else if (a === '--out') opts.out = path.resolve(next());
+    else if (a === '--per-file') opts.perFile = Number(next());
     else if (a === '-h' || a === '--help') {
-      console.log('uso: node scripts/lugares-para-servicos.mjs [--status pending|active|paused|archived] [--only <slug>] [--out <arquivo.sql>]');
+      console.log('uso: node scripts/lugares-para-servicos.mjs [--status pending|active|paused|archived] [--only <slug>] [--per-file N] [--out <arquivo.sql>]');
       process.exit(0);
     } else fail(`opção desconhecida: ${a}`);
   }
+  if (!Number.isInteger(opts.perFile) || opts.perFile < 1) fail(`--per-file inválido: ${opts.perFile}`);
   if (!STATUSES.includes(opts.status)) fail(`--status inválido: ${opts.status} (use ${STATUSES.join(', ')})`);
   return opts;
 }
@@ -513,17 +520,35 @@ function main() {
     slugs = [opts.only];
   }
   const lugares = slugs.map(readLugar);
-  const totalFotos = lugares.reduce((n, l) => n + l.imagens.length, 0);
 
-  const header = `-- db/extras/lugares_import.sql
+  const chunks = [];
+  if (opts.out) chunks.push({ file: opts.out, lugares });
+  else {
+    for (let k = 0; k < lugares.length; k += opts.perFile) {
+      const n = String(chunks.length + 1).padStart(2, '0');
+      chunks.push({ file: path.join(OUT_DIR, `lugares_${n}.sql`), lugares: lugares.slice(k, k + opts.perFile) });
+    }
+    // Arquivos de uma geração anterior com mais lugares: some com eles (não apaga o resto do diretório).
+    if (fs.existsSync(OUT_DIR) && !opts.only) {
+      const keep = new Set(chunks.map((c) => path.basename(c.file)));
+      for (const f of fs.readdirSync(OUT_DIR)) {
+        if (/^lugares_\d+\.sql$/.test(f) && !keep.has(f)) fs.unlinkSync(path.join(OUT_DIR, f));
+      }
+    }
+  }
+
+  for (const chunk of chunks) {
+    const rel = path.relative(ROOT, chunk.file).split(path.sep).join('/');
+    const fotos = chunk.lugares.reduce((n, l) => n + l.imagens.length, 0);
+    const header = `-- ${rel}
 -- GERADO por scripts/lugares-para-servicos.mjs — não edite à mão; rode o script de novo.
 -- De-para: docs/integracoes/lugares-depara.md
 --
--- Grava os artigos de content/lugares/ como anúncios (public.services) no tenant do usuário root:
--- ${lugares.length} lugar(es), ${totalFotos} foto(s). Status no INSERT: '${opts.status}' (o dono aprova no painel).
+-- Grava artigos de content/lugares/ como anúncios (public.services) no tenant do usuário root:
+-- ${chunk.lugares.map((l) => l.slug).join(', ')} — ${fotos} foto(s). Status no INSERT: '${opts.status}' (o dono aprova no painel).
 -- Idempotente: o anúncio é achado por extras.origem (fonte = '${FONTE}', slug); rodar de novo
 -- atualiza, não duplica. Fotos têm id determinístico pelo conteúdo (sha256).
--- Uma transação só: qualquer erro desfaz tudo.
+-- Uma transação por arquivo: qualquer erro desfaz o arquivo inteiro. Os arquivos são independentes.
 --
 -- Pré-requisitos: core + plugins instalados, root cadastrado, grupo "lugares" na taxonomia
 -- (db/extras/taxonomy_seed_bora_cuiaba.sql ou, em banco com anúncios, db/extras/lugares_grupo_migracao.sql),
@@ -531,18 +556,19 @@ function main() {
 -- Atenção: depois deste import existem serviços, e o seed de taxonomia (destrutivo) passa a abortar.
 --
 -- Aplicar:
---   node kizuna-core/cli db run db/extras/lugares_import.sql          (usa $DATABASE_URL; ou --db-url <url>)
---   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/extras/lugares_import.sql
+--   node kizuna-core/cli db run ${rel}          (usa $DATABASE_URL; ou --db-url <url>)
+--   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f ${rel}
 
 BEGIN;
 `;
-  const body = lugares.map((l, i) => sqlLugar(l, i + 1, opts.status)).join('');
-  const sql = `${header}${body}\nCOMMIT;\n`;
-  fs.mkdirSync(path.dirname(opts.out), { recursive: true });
-  fs.writeFileSync(opts.out, sql, 'utf8');
-  console.log(`gerado ${path.relative(ROOT, opts.out)}: ${lugares.length} lugar(es), ${totalFotos} foto(s), ${(sql.length / 1024 / 1024).toFixed(1)} MB`);
-  for (const l of lugares) {
-    console.log(`  ${l.slug.padEnd(30)} ${l.tax.categoria}/${l.tax.subs.join('+')}  fotos=${l.imagens.length}  endereco=${l.endereco ? 'sim' : 'não'}  coords=${typeof l.lat === 'number' ? 'sim' : 'não'}`);
+    const body = chunk.lugares.map((l, i) => sqlLugar(l, i + 1, opts.status)).join('');
+    const sql = `${header}${body}\nCOMMIT;\n`;
+    fs.mkdirSync(path.dirname(chunk.file), { recursive: true });
+    fs.writeFileSync(chunk.file, sql, 'utf8');
+    console.log(`gerado ${rel}: ${chunk.lugares.length} lugar(es), ${fotos} foto(s), ${(sql.length / 1024 / 1024).toFixed(1)} MB`);
+    for (const l of chunk.lugares) {
+      console.log(`  ${l.slug.padEnd(30)} ${l.tax.categoria}/${l.tax.subs.join('+')}  fotos=${l.imagens.length}  endereco=${l.endereco ? 'sim' : 'não'}  coords=${typeof l.lat === 'number' ? 'sim' : 'não'}`);
+    }
   }
 }
 

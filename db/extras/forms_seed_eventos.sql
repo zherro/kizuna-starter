@@ -1,10 +1,11 @@
 -- db/extras/forms_seed_eventos.sql
 --
 -- Seed do formulario `eventos` (plugin forms). Um anuncio = um evento:
---   - Evento: data, realizador, link, endereco em texto, classificacao, gratuito e artistas.
---     O local cadastrado (`local_ref`) e os pontos de venda (`pontos_de_venda`) NAO ficam no formulario:
---     o wizard os edita no passo de endereco e grava em services.extras (kizuna.config.json,
---     stepProfiles.location.byGroup.eventos.refs). Respostas antigas com essas chaves continuam lidas.
+--   - Evento: data, realizador, link, classificacao, gratuito e artistas.
+--     Endereco, local cadastrado (`local_ref`) e pontos de venda (`pontos_de_venda`) NAO ficam no formulario:
+--     o wizard os edita no passo de endereco (endereco em service_addresses; local e pontos de venda em
+--     services.extras, via kizuna.config.json stepProfiles.location.byGroup.eventos.refs).
+--     Respostas antigas com essas chaves continuam lidas pela pagina do evento.
 --   - Sessoes (`list`): data e horarios de cada dia do evento.
 --   - Ingressos (`list`): titulo, setor, tipo, pessoas (= pulseiras), lote, valor (mascara R$) e comprar (texto livre).
 --   - Onde comprar: link de ingressos.
@@ -86,11 +87,6 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
       "id": "evt_05_link", "key": "link", "name": "link", "type": "url", "label": "Link do evento",
       "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6, "2xl": 6 },
       "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "https://"
-    },
-    {
-      "id": "evt_06_endereco", "key": "endereco", "name": "endereco", "type": "text", "label": "Endereço",
-      "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-      "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "Local, rua, número, bairro"
     },
     {
       "id": "evt_10_classificacao_indicativa", "key": "classificacao_indicativa", "name": "classificacao_indicativa", "type": "select", "label": "Classificação indicativa",
