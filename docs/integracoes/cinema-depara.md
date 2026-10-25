@@ -246,6 +246,8 @@ WHERE tenant_id = %(tenant_uid)s AND active
 ORDER BY id LIMIT 1;
 ```
 
+No máximo **4 imagens** por anúncio (capa + 3), o limite do painel: use as 4 primeiras na ordem acima e reporte as que ficaram de fora.
+
 **2. Imagem já existe?** (para cada imagem, capa primeiro)
 ```sql
 SELECT id FROM public.files

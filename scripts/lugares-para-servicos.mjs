@@ -48,6 +48,7 @@ const TAXONOMIA = {
 
 // Chaves do formulário `lugares` (db/extras/forms_seed_lugares.sql): gravadas em form_results.answers e
 // repetidas em services.extras. O UPDATE remove todas antes de regravar (campo que saiu do artigo some).
+const MAX_FOTOS = 4;
 const FORM_KEYS = ['horario', 'preco', 'gratuito', 'dicas_chegada', 'contato_telefone', 'contato_whatsapp', 'contato_instagram', 'site'];
 
 // ---------------------------------------------------------------------------------------------
@@ -276,9 +277,14 @@ function readLugar(slug) {
   if (!tax) fail(`${rel}: lugar sem mapeamento de taxonomia em TAXONOMIA (scripts/lugares-para-servicos.mjs)`);
 
   const mediaDir = path.join(MEDIA_DIR, slug);
-  const fotos = fs.existsSync(mediaDir)
+  const todasFotos = fs.existsSync(mediaDir)
     ? fs.readdirSync(mediaDir).filter((f) => IMAGE_EXT.test(f)).sort((a, b) => a.localeCompare(b, 'en', { numeric: true }))
     : [];
+  // Mesmo limite do painel (kizuna.config.json, stepProfiles.images.default.maxImages).
+  const fotos = todasFotos.slice(0, MAX_FOTOS);
+  if (todasFotos.length > MAX_FOTOS) {
+    console.warn(`aviso: public/lugares/${slug}: ${todasFotos.length} fotos, só as ${MAX_FOTOS} primeiras entram (${todasFotos.slice(MAX_FOTOS).join(', ')} ficam de fora)`);
+  }
   const mesAno = String(d.atualizado_em).slice(0, 7).replace('-', '/');
   const imagens = fotos.map((nome) => {
     const buf = fs.readFileSync(path.join(mediaDir, nome));

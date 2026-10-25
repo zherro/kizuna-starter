@@ -24,7 +24,7 @@ Opções do script: `--status pending|active|paused|archived` (status no INSERT;
 
 ## Contrato de entrada (o artigo)
 
-Arquivo `content/lugares/<slug>/index.md`: frontmatter YAML (subconjunto: `chave: valor` com aspas opcionais, listas com hífen, comentários com `#`) + corpo Markdown. Fotos em `public/lugares/<slug>/` (arquivos de imagem, ordenados pelo nome; o primeiro é a capa). A validação de referência é `src/lib/lugares.ts`.
+Arquivo `content/lugares/<slug>/index.md`: frontmatter YAML (subconjunto: `chave: valor` com aspas opcionais, listas com hífen, comentários com `#`) + corpo Markdown. Fotos em `public/lugares/<slug>/` (arquivos de imagem, ordenados pelo nome; o primeiro é a capa). No máximo **4 fotos** por lugar, o limite do painel: entram as 4 primeiras e o script avisa das demais. A validação de referência é `src/lib/lugares.ts`.
 
 | Caminho | Tipo | Obrigatório | Observação |
 |---|---|---|---|
