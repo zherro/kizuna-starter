@@ -1,0 +1,31 @@
+{
+  "url": [
+    "http://localhost:3000/cuiaba-mt/anuncio/b3fcb8fd-070c-413e-bbcb-fcca5d8f3929",
+    "http://localhost:3000/cuiaba-mt/anuncio/bcbf3fb0-9e5d-41df-b3a8-5d6ca3a2c5f8",
+    "http://localhost:3000/cuiaba-mt/anuncio/e2bceba4-b773-470c-ae76-a3ab6b3e63e6",
+    "http://localhost:3000/showcase/service-detail-noticia",
+    "http://localhost:3000/busca?group=noticias"
+  ],
+  "date": "2026-10-25",
+  "mode": "standard",
+  "counts": { "broken": 2, "degraded": 4, "polish": 9 },
+  "findings": [
+    { "severity": "broken", "breakpoint": "all (dark)", "category": "contrast", "selector": "main > div.pointer-events-none (hero tint)", "source": "kizuna-core/src/client/components/services/detail/service-detail-page.tsx:195", "fix": "tint derived from var(--background) via relative oklch", "status": "fixed" },
+    { "severity": "broken", "breakpoint": "all (dark)", "category": "contrast", "selector": "article h1", "source": "src/app/globals.css:323 (dark block lacks --foreground-display)", "fix": "define a light --foreground-display in the dark theme block", "status": "reported" },
+    { "severity": "degraded", "breakpoint": "all", "category": "croppedMedia", "selector": "figure img (portrait 1280x1920 in 2:1 frame)", "source": "kizuna-core/src/client/components/content/article-figure.tsx:61", "fix": "tall photos use object-contain over blurred copy; frame unchanged", "status": "fixed" },
+    { "severity": "degraded", "breakpoint": "mobile (narrow column)", "category": "awkwardWrap", "selector": "article header byline separator", "source": "kizuna-core/src/client/components/content/article-byline.tsx:49", "fix": "separator on the left of each item, clipped at line start", "status": "fixed" },
+    { "severity": "degraded", "breakpoint": "all", "category": "duplicateContent", "selector": "section 'Veja também' (Duna - Parte 3 x3)", "source": "randomServices loader (server/services/service-detail-data)", "fix": "dedupe random items", "status": "reported" },
+    { "severity": "degraded", "breakpoint": "laptop/desktop", "category": "irrelevantControl", "selector": "busca filtros 'Faixa de preço (R$)'", "source": "search filter panel", "fix": "hide price range for groups without price", "status": "reported" },
+    { "severity": "polish", "breakpoint": "mobile/tablet", "category": "tinyTapTargets", "selector": "nav breadcrumb a ('Início', 'Notícias') 16px tall", "source": "kizuna-core/src/client/components/services/detail/service-detail-page.tsx:196", "fix": "py-1 on breadcrumb links", "status": "reported" },
+    { "severity": "polish", "breakpoint": "laptop/desktop", "category": "truncation", "selector": "busca news card titles (2-line clamp)", "source": "listing-result-card.tsx", "fix": "3 lines for news cards", "status": "reported" },
+    { "severity": "polish", "breakpoint": "mobile", "category": "misalignment", "selector": "carousel cards with/without subcategory line", "source": "service-carousel / listing-result-card", "fix": "reserve subcategory line", "status": "reported" },
+    { "severity": "polish", "breakpoint": "all", "category": "analytics", "selector": "related carousel links ?src=home on detail page", "source": "service-carousel-section", "fix": "pass detail as source", "status": "reported" },
+    { "severity": "polish", "breakpoint": "tablet+", "category": "copy", "selector": "header nav 'Inicio' without accent", "source": "site header", "fix": "Início", "status": "reported" },
+    { "severity": "polish", "breakpoint": "all", "category": "copy", "selector": "showcase noticia texts without accents; reactions without icons", "source": "kizuna-core/src/client/components/showcase/showcase-sections.ts", "fix": "accent copy; use real ServiceReactionButtons", "status": "reported" },
+    { "severity": "polish", "breakpoint": "laptop", "category": "fold", "selector": "figure (2:1) pushes lede below the fold with 3-line title", "source": "kizuna-core/src/client/components/content/article-figure.tsx", "fix": "optional max height relative to viewport on lg", "status": "reported" },
+    { "severity": "polish", "breakpoint": "tablet", "category": "inconsistency", "selector": "Compartilhar button without border next to bordered Gostei/Favoritar", "source": "ad-share-button.tsx", "fix": "match outline style", "status": "reported" },
+    { "severity": "polish", "breakpoint": "all", "category": "data", "selector": "Mega-Sena news kicker 'Cultura & Entretenimento'", "source": "data (category of the ad)", "fix": "editorial: recategorize", "status": "reported" },
+    { "severity": "polish", "breakpoint": "all", "category": "falsePositive", "selector": "overlaps in Fontes / inline body links", "source": "n/a", "fix": "none (inline links wrapping)", "status": "ignored" }
+  ],
+  "checks": { "tsc": "pass", "vitest": "16 files / 167 tests pass" }
+}

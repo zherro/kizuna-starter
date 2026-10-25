@@ -324,6 +324,8 @@
   --background: oklch(0.18 0.03 53);
   --background-white: oklch(0.18 0.03 53);
   --foreground: oklch(0.96 0.01 80);
+  /* o claro (0.32) some no fundo escuro: aqui o título é claro, com o mesmo calor do tema */
+  --foreground-display: oklch(0.93 0.03 60);
 
   --card: oklch(0.24 0.035 53);
   --card-foreground: oklch(0.96 0.01 80);

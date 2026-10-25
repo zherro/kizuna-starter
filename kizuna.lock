@@ -2,8 +2,8 @@
   "lockVersion": 1,
   "kizunaCore": {
     "version": "0.9.10",
-    "sha": "3ccc3aea2e53466637ae8449af3503314b4b8419",
-    "syncedAt": "2026-10-13T19:31:59.541Z"
+    "sha": "3531d770930aced5c364a3eade5499335544a541",
+    "syncedAt": "2026-10-25T17:49:00.615Z"
   },
   "template": {
     "version": "0.9.10",
@@ -72,7 +72,7 @@
       "src/components/home-page.tsx": "sha256:fe6e605d1cd93e8f2eee17c51f3ad332a0638866fdb56ccb8e413058a76ec1ae",
       "src/components/home/category-rail.tsx": "sha256:4df65b93f98035adf3d269f56d46c92dc070283fff04f22393fe64fab7f05b87",
       "src/components/home/category-rails.tsx": "sha256:4eb5b76be2127de770ccd95e0845e10b5158e2b4e10a4558c87718b4bdf7276f",
-      "src/components/home/home-hero.tsx": "sha256:0ec744b4fbf90d7a675eb296030cbb0ec464d49117c0f5bae984e3503d27f6c3",
+      "src/components/home/home-hero.tsx": "sha256:6c2d180027c5e60f172a14ca821f8580ca080e36acb9ac8b1c9794117f5a1585",
       "src/components/home/home-ink-config.ts": "sha256:fc72aa2eacec4d97e6d94ef6e4104f0052704a95d0305bed6322f99b180b5877",
       "src/components/home/home-ink-tone-picker.tsx": "sha256:cd948be8ae27cc386b75642e1c604c50ba57eeeba16f2662932fcb613c6d703f",
       "src/components/home/how-it-works.tsx": "sha256:6a0d1a8aae35c30dcfe11a3f90459568f9dc036ba2be481fe0b61395d5afd4f2",
@@ -111,8 +111,8 @@
       "shellFiles": {
         "src/app/api/storage/files/route.ts": "sha256:074414bc72788c9555faa46f8d46bd7f891200ddd45e781bb70bc7c37330fae5",
         "src/app/api/storage/files/[id]/route.ts": "sha256:d580d9b3e7914fdc9ee77f83647679e43b34ded8d89e6fb2ed5c710d2f07dbdd",
-        "src/app/api/storage/files/[id]/content/route.ts": "sha256:448ac50f4462ae18cc96b0c130a39c5614592ec44fc255ed6f1941d947362dac",
-        "src/app/api/public/storage/files/[id]/content/route.ts": "sha256:c3b927c252245ec1791d4eccbfdd8512704a00448ab341c61dd8306a1ef4870f",
+        "src/app/api/storage/files/[id]/content/route.ts": "sha256:558dc6e8998fe2bea2f0a01683baf4a8b6b8e850c013acb765b6d6ce0c4abe6b",
+        "src/app/api/public/storage/files/[id]/content/route.ts": "sha256:c07d3d2ac172bf6cf3651e7c2f89005a69867419a2c3b0c9b23d40a10c2f1ebb",
         "src/app/api/storage/admin/route.ts": "sha256:41970cf5f6da97f70883fc41e8d2a02f612aca61b5f5671371c42dcea507ca11"
       },
       "migrations": 6
@@ -158,7 +158,7 @@
       "migrations": 1
     },
     "core": {
-      "migrations": 32
+      "migrations": 34
     },
     "weather": {
       "shellFiles": {
@@ -171,7 +171,7 @@
         "src/app/busca/page.tsx": "sha256:7ad4c3e6d6c71b787991d284a02964050b2c4cf61646c2a90219950a473d4bbe",
         "src/app/api/ai/search-chat/route.ts": "sha256:b7fd44bbb09e8f0c2412a3d74e2a0b909b11ba8741eac9d9e17f3e8689e8a1be"
       },
-      "migrations": 4
+      "migrations": 11
     },
     "swipe": {
       "shellFiles": {
@@ -198,13 +198,13 @@
         "src/app/painel/administracao/aprovacoes/page.tsx": "sha256:ce76e71d93620cb9b229d093890e7ed596b3de352d83858364dae046bd09eb9a",
         "src/app/painel/administracao/aprovacoes/[id]/page.tsx": "sha256:a50365c0f2e802c50c01b1d74c0a00fa0521e6f14c5aec06012ec3a54733c914"
       },
-      "migrations": 9
+      "migrations": 16
     },
     "forms": {
       "migrations": 1
     },
     "taxonomy": {
-      "migrations": 4
+      "migrations": 5
     },
     "reviews": {
       "migrations": 1
@@ -226,12 +226,14 @@
     },
     "pedidos": {
       "migrations": 4
+    },
+    "ads": {
+      "migrations": 1
     }
   },
   "packageJson": {
     "ownedKeys": {
       "dependencies": {
-        "next": "16.2.6",
         "react": "19.2.4",
         "react-dom": "19.2.4",
         "jsonwebtoken": "^9.0.3",
@@ -262,8 +264,7 @@
         "@types/jsonwebtoken": "^9.0.10",
         "tailwindcss": "^4",
         "@tailwindcss/postcss": "^4",
-        "eslint": "^9",
-        "eslint-config-next": "16.2.6"
+        "eslint": "^9"
       },
       "scripts": {
         "kizuna": "node kizuna-core/cli",

@@ -22,6 +22,7 @@ export function CategoryRail({
       variant={variant}
       groupBy="group"
       onlyWithListings={onlyWithListings}
+      hideWhenEmpty
       title={t.categoriesTitle}
       allLabel={t.categoriesAll}
       allHref="/busca"

@@ -51,13 +51,13 @@ export function anuncioMetadata(data: ServiceDetailData, path: string): Metadata
 export function AnuncioDetail({ data: loaded, path }: { data: ServiceDetailData; path: string }) {
   const data = linkEditorialPlaces(loaded.service, loaded, findEditorialPlace);
   const photos = photosFor(data.service);
-  // Lugar (shopping, loja, parque): o anúncio fala do lugar, não de uma oferta — sem preço nem
+  // Lugar (shopping, loja, parque) e notícia: o anúncio não é uma oferta — sem preço nem
   // prestador no JSON-LD, como na tela.
-  const isPlace =
-    resolveServiceDetailVariant(
-      { slug: data.service.category?.slug, groupSlug: data.service.categoryGroup?.slug },
-      serviceDetailConfig
-    ) === 'lugar';
+  const variant = resolveServiceDetailVariant(
+    { slug: data.service.category?.slug, groupSlug: data.service.categoryGroup?.slug },
+    serviceDetailConfig
+  );
+  const isPlace = variant === 'lugar' || variant === 'noticia';
 
   const serviceLd = serviceJsonLd(SEO_SITE, {
     name: data.service.title,

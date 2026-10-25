@@ -323,7 +323,7 @@ export const messages: Record<AppLanguage, AppMessages> = {
       heroSub: 'Profissionais avaliados por quem já contratou, aqui na sua região.',
       searchPlaceholder: 'buscar serviço ou profissional',
       searchButton: 'Buscar',
-      categoriesTitle: 'Seu guia de entretenimento começa aqui!',
+      categoriesTitle: 'O que você quer fazer hoje?',
       categoriesAll: 'Ver todas',
       nearbyTitle: 'Quem está por perto',
       nearbySub: 'Uma amostra de quem está oferecendo serviço agora.',
