@@ -165,11 +165,6 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
       ]
     },
     {
-      "id": "evt_15_secao_compra", "key": "secao_compra", "name": "secao_compra", "type": "heading", "label": "Onde comprar",
-      "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-      "behavior": {}, "validation": {}, "appearance": {}
-    },
-    {
       "id": "evt_16_link_ingresso", "key": "link_ingresso", "name": "link_ingresso", "type": "url", "label": "Comprar ingresso (link)",
       "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
       "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "https://"

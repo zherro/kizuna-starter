@@ -8,7 +8,8 @@
 --     Respostas antigas com essas chaves continuam lidas pela pagina do evento.
 --   - Sessoes (`list`): data e horarios de cada dia do evento.
 --   - Ingressos (`list`): titulo, setor, tipo, pessoas (= pulseiras), lote, valor (mascara R$) e comprar (texto livre).
---   - Onde comprar: link de ingressos.
+--   - Ingressos tambem tem o link geral de compra (`link_ingresso`). A secao "Onde comprar" saiu: os pontos
+--     de venda ficam no passo de endereco.
 --   - Contato: telefone, WhatsApp e e-mail.
 --   Meia-entrada, acessibilidade, formas de pagamento e observacoes NAO tem campo: o assistente as resume na
 --   descricao do anuncio ("Informacoes uteis").
@@ -206,11 +207,6 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
           "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "Ex.: comprar no site, link ou ponto de venda"
         }
       ]
-    },
-    {
-      "id": "evt_15_secao_compra", "key": "secao_compra", "name": "secao_compra", "type": "heading", "label": "Onde comprar",
-      "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-      "behavior": {}, "validation": {}, "appearance": {}
     },
     {
       "id": "evt_16_link_ingresso", "key": "link_ingresso", "name": "link_ingresso", "type": "url", "label": "Comprar ingresso (link)",
