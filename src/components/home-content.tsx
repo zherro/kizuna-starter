@@ -35,6 +35,8 @@ type HomeContentProps = {
   inkLevel?: HomeInkLevel;
   /** carrosséis por categoria (Server Components montados na page) — vem de home.categoryRails */
   categoryRails?: ReactNode;
+  /** busca logo abaixo do swipe (Client Component montado na page) — vem de home.showSearch */
+  searchBar?: ReactNode;
   /** blocos de engajamento (Server Components montados na page): lugares da cidade e notícias — vêm de home.showPlaces / home.showNews */
   placeHighlights?: ReactNode;
   newsHighlights?: ReactNode;
@@ -54,6 +56,7 @@ export function HomeContent({
   inkPicker = HOME_INK_TONE_PICKER_ENABLED,
   inkLevel: defaultInkLevel = HOME_INK_FIXED_LEVEL,
   categoryRails,
+  searchBar,
   placeHighlights,
   newsHighlights,
   instagramUrl,
@@ -100,10 +103,11 @@ export function HomeContent({
         onlyWithListings={categoriesOnlyWithListings}
       />
       {showDiscover ? (
-        <div className="pb-6">
+        <div className="pb-4">
           <DiscoverCta />
         </div>
       ) : null}
+      {searchBar ? <div className="pb-8 pt-2">{searchBar}</div> : null}
       {categoryRails}
       <AdSlot slot="home-meio" city={cityName} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} />
       {placeHighlights}

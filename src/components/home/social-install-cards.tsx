@@ -73,23 +73,16 @@ const CARD = 'flex items-center gap-4 rounded-2xl p-4';
 
 function InstagramCard({ t, url }: { t: HomeMessages; url: string }) {
   return (
+    // Discreto de propósito: o público já chega pelo Instagram, então aqui é só um atalho.
     <a
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`group ${CARD} text-white transition-transform active:scale-[0.99]`}
-      style={{
-        backgroundImage: 'linear-gradient(135deg, #f58529 0%, #dd2a7b 45%, #8134af 75%, #515bd4 100%)',
-      }}
+      className="group flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-card px-4 py-2.5 text-foreground transition-colors hover:bg-muted"
     >
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15">
-        <InstagramGlyph className="h-6 w-6" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block font-semibold leading-tight">{t.instagramCta}</span>
-        <span className="mt-0.5 block text-sm text-white/85">{t.instagramText}</span>
-      </span>
-      <ArrowUpRight className="h-5 w-5 shrink-0 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+      <InstagramGlyph className="h-5 w-5 shrink-0 text-muted-foreground" />
+      <span className="min-w-0 flex-1 truncate text-sm font-medium">{t.instagramCta}</span>
+      <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
     </a>
   );
 }

@@ -5,7 +5,8 @@ import { HomeContent } from '@/components/home-content';
 import cfg from '@/../kizuna.config.json';
 import { HOME_INK_LEVELS, type HomeInkLevel } from '@/components/home/home-ink-config';
 import { CategoryRails, type CategoryRailConfig } from '@/components/home/category-rails';
-import { HomeNews, HomePlaces } from '@/components/home/home-engagement';
+import { HomeNews, HomePlaces, type PlacesMosaicConfig } from '@/components/home/home-engagement';
+import { HomeSearch } from '@kizuna/core/client/components/home/home-search';
 import type { ServiceDetailConfig } from '@kizuna/core/client/components/services/detail';
 import type { RoutableCity } from '@kizuna/core/shared/city-routing/city-slug';
 
@@ -18,7 +19,11 @@ const home = cfg.home as typeof cfg.home & {
   showNearby?: boolean;
   showPlaces?: boolean;
   showNews?: boolean;
+  showSearch?: boolean;
+  placesMosaic?: PlacesMosaicConfig;
 };
+// `search.ai` desliga o assistente também na busca da home (mesmo critério da /busca).
+const aiEnabled = (cfg as { search?: { ai?: boolean } }).search?.ai !== false;
 const categoryRails = ((home?.categoryRails ?? []) as CategoryRailConfig[]).filter((rail) => rail?.slug || rail?.group);
 const serviceDetailConfig = (cfg as { serviceDetail?: ServiceDetailConfig }).serviceDetail ?? null;
 const inkLevel = HOME_INK_LEVELS.includes(home?.inkLevel as HomeInkLevel)
@@ -37,7 +42,17 @@ export function HomePage({ city }: { city: RoutableCity | null }) {
       instagramUrl={home?.instagramUrl || undefined}
       showNearby={home?.showNearby !== false}
       cityName={city?.name}
-      placeHighlights={home?.showPlaces !== false ? <HomePlaces city={city} /> : null}
+      searchBar={
+        home?.showSearch !== false ? (
+          <HomeSearch
+            city={city ? { name: city.name, state: city.state, ibge: String(city.ibge) } : null}
+            aiEnabled={aiEnabled}
+          />
+        ) : null
+      }
+      placeHighlights={
+        home?.showPlaces !== false ? <HomePlaces city={city} {...home?.placesMosaic} /> : null
+      }
       newsHighlights={home?.showNews !== false ? <HomeNews city={city} /> : null}
       categoryRails={
         categoryRails.length > 0 ? (

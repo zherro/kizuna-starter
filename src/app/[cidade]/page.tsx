@@ -11,7 +11,7 @@ import { resolveCitySlug } from '@kizuna/core/server/location/cities';
 
 type Props = { params: Promise<{ cidade: string }> };
 
-export const revalidate = 300;
+export const revalidate = 900;
 // ISR de verdade: os loaders do core leem o PostgREST com `no-store` e alguns engolem erro com
 // `.catch(() => [])`, o que esconde do Next o "bail out" para dinâmico no 1º render e estoura
 // "Page changed from static to dynamic at runtime" em prd. `force-static` faz esses fetches
