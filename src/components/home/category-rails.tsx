@@ -75,7 +75,7 @@ export async function CategoryRails({
               detailConfig
             )}
             detailConfig={detailConfig}
-            className="mx-auto w-full max-w-[1600px] px-4 pb-8 sm:px-6"
+            className="mx-auto w-full max-w-[1600px] px-4 pb-14 sm:px-6 sm:pb-16"
             moreHref={hasMore ? `/busca?${searchFilter}${cityQuery}` : undefined}
             showCity={!city || rails[index].scope === 'region'}
             impressionRule={trackRule('service', 'impression')}

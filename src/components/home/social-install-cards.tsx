@@ -126,7 +126,7 @@ export function SocialInstallCards({ t, instagramUrl }: { t: HomeMessages; insta
 
   return (
     <section className="mx-auto w-full max-w-[1600px] px-4 pb-16 sm:px-6">
-      <h2 className="text-center font-display text-xl font-bold tracking-tight text-foreground-display">{t.followTitle}</h2>
+      <h2 className="text-center font-display text-2xl font-extrabold tracking-tight text-foreground-display sm:text-[1.75rem]">{t.followTitle}</h2>
       <p className="mt-1 text-center text-sm text-muted-foreground">{t.followText}</p>
       <div className={`mx-auto mt-5 grid gap-3 ${instagramUrl && showInstall ? 'max-w-4xl md:grid-cols-2' : 'max-w-md'}`}>
         {instagramUrl ? <InstagramCard t={t} url={instagramUrl} /> : null}

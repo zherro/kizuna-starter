@@ -22,6 +22,8 @@ import {
  */
 
 export const NEWS_GROUP_SLUG = 'noticias';
+/** Nome do grupo exibido na etiqueta neutra do card. */
+export const NEWS_GROUP_LABEL = 'Notícias';
 export const DEFAULT_HOME_NEWS_LIMIT = 6;
 /** Fuso em que o formulário grava `data_publicacao` (campo `datetime`, sem fuso). */
 export const NEWS_TIME_ZONE = 'America/Cuiaba';
@@ -94,6 +96,8 @@ export function buildHomeNewsItems(
     href: serviceHref(r),
     title: r.title.trim(),
     kicker: newsKicker(r),
+    group: NEWS_GROUP_LABEL,
+    category: r.category?.trim() || null,
     summary: newsSummary(detail?.description),
     image: r.cover_file_id ? fileUrl(r.cover_file_id, index === 0 ? 'full' : 'thumb') : null,
     publishedAt: date ? date.toISOString() : null,

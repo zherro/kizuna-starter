@@ -107,7 +107,12 @@ export function HomeContent({
           <DiscoverCta />
         </div>
       ) : null}
-      {searchBar ? <div className="pb-8 pt-2">{searchBar}</div> : null}
+      {/* busca centralizada (~700px) e com respiro: é o convite principal depois do swipe */}
+      {searchBar ? (
+        <div className="mx-auto w-full max-w-[calc(700px+2rem)] px-4 pb-14 pt-6 sm:max-w-[calc(700px+3rem)] sm:px-6 sm:pb-16 sm:pt-8">
+          {searchBar}
+        </div>
+      ) : null}
       {categoryRails}
       <AdSlot slot="home-meio" city={cityName} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} />
       {newsHighlights}

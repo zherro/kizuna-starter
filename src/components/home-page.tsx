@@ -48,6 +48,7 @@ export function HomePage({ city }: { city: RoutableCity | null }) {
           <HomeSearch
             city={city ? { name: city.name, state: city.state, ibge: String(city.ibge) } : null}
             aiEnabled={aiEnabled}
+            contained={false}
           />
         ) : null
       }
