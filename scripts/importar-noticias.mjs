@@ -133,7 +133,15 @@ const sha256 = (...parts) => {
 };
 
 /** Hash do que o painel deixa editar: se mudar no banco, alguém editou depois da importação. */
-const hashEditavel = (s) => sha256(s.title ?? '', '\n', s.description ?? '', '\n', String(s.category_id ?? ''), '\n', s.cover ?? '');
+const hashEditavel = (s) =>
+  sha256(s.title ?? '', '\n', s.description ?? '', '\n', String(s.category_id ?? ''), '\n', s.cover ?? '', '\n', s.expires ?? '');
+
+/** `expira_em` (hora de Cuiabá) → ISO com fuso; `expires` é o mesmo instante em segundos, como o banco devolve. */
+function validade(d) {
+  if (!d.expira_em) return { iso: null, expires: '' };
+  const iso = `${d.expira_em}:00-04:00`;
+  return { iso, expires: String(Math.floor(Date.parse(iso) / 1000)) };
+}
 
 function checkHtml(slug, html) {
   const problems = [];
@@ -159,6 +167,7 @@ function readNoticia(slug) {
   }
   if (!STATUS_ARTIGO.includes(d.status)) fail(`${rel}: status "${d.status}" (use ${STATUS_ARTIGO.join(', ')})`);
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(d.data_publicacao))) fail(`${rel}: data_publicacao no formato AAAA-MM-DDTHH:MM`);
+  if (d.expira_em && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(d.expira_em))) fail(`${rel}: expira_em no formato AAAA-MM-DDTHH:MM`);
   const html = body.trim();
   return { slug, dir, rel, raw, d, html };
 }
@@ -216,16 +225,23 @@ function saveIndex(index) {
 // ---------------------------------------------------------------------------------------------
 // Gravação
 // ---------------------------------------------------------------------------------------------
-async function gravar(client, ctx, form, n, existing) {
-  const { d, slug } = n;
-  const one = async (sql, params) => (await client.query(sql, params)).rows[0];
+/** Tudo o que precisa bater com o banco antes de gravar (roda também no --dry). */
+function validar(ctx, n) {
+  const { d } = n;
   const cat = ctx.categorias.get(d.categoria);
   if (!cat) fail(`${n.rel}: categoria "${d.categoria}" não existe ou não é do grupo ${GROUP}`);
   const sub = d.subcategoria ? ctx.subcategorias.get(`${d.categoria}/${d.subcategoria}`) : null;
   if (d.subcategoria && !sub) fail(`${n.rel}: subcategoria "${d.subcategoria}" inativa ou de outra categoria`);
   const ibge = ctx.cidades.get(`${norm(d.cidade)}/${String(d.uf).toUpperCase()}`);
   if (!ibge) fail(`${n.rel}: cidade "${d.cidade}/${d.uf}" sem código IBGE em location_city`);
-  checkHtml(slug, n.html);
+  checkHtml(n.slug, n.html);
+  return { cat, sub, ibge };
+}
+
+async function gravar(client, ctx, form, n, existing) {
+  const { d, slug } = n;
+  const one = async (sql, params) => (await client.query(sql, params)).rows[0];
+  const { cat, sub, ibge } = validar(ctx, n);
 
   const foto = fotoDe(n);
   const { full, thumb } = await optimize(foto.buf, `${n.rel} (${foto.nome})`);
@@ -249,6 +265,7 @@ async function gravar(client, ctx, form, n, existing) {
 
     const title = String(d.titulo).trim();
     const description = n.html;
+    const fim = validade(d);
     const fontes = fontesDe(d);
     const credito = Object.fromEntries(Object.entries({
       autor: d.foto_autor, licenca: d.foto_licenca, licenca_url: d.foto_licenca_url,
@@ -257,7 +274,7 @@ async function gravar(client, ctx, form, n, existing) {
     const extras = {
       origem: {
         fonte: FONTE, id_evento: slug, arquivo: n.rel, cidade_ibge: ibge,
-        hash_importado: hashEditavel({ title, description, category_id: cat.id, cover: fileRow.id }),
+        hash_importado: hashEditavel({ title, description, category_id: cat.id, cover: fileRow.id, expires: fim.expires }),
         importado_em: new Date().toISOString(),
       },
       images: [fileRow.id],
@@ -270,13 +287,14 @@ async function gravar(client, ctx, form, n, existing) {
     if (existing) {
       serviceId = existing.id;
       await client.query(`UPDATE public.services SET title = $1, category_group_id = $2, category_id = $3, description = $4,
-          extras = (extras - 'origem' - 'images' - 'coverFileId' - 'imagem_credito' - 'fontes') || $5::jsonb, updated_at = now()
-        WHERE id = $6`, [title, cat.group_id, cat.id, description, JSON.stringify(extras), serviceId]);
+          extras = (extras - 'origem' - 'images' - 'coverFileId' - 'imagem_credito' - 'fontes') || $5::jsonb,
+          expires_at = $7::timestamptz, updated_at = now()
+        WHERE id = $6`, [title, cat.group_id, cat.id, description, JSON.stringify(extras), serviceId, fim.iso]);
     } else {
       serviceId = (await one(`INSERT INTO public.services (title, category_group_id, category_id, description, starting_price,
-          price_unit, status, service_location, extras, tenant_id, created_by, created_at, active)
-        VALUES ($1,$2,$3,$4,0,'quote','active',NULL,$5::jsonb,$6,$7,$8::timestamptz,true) RETURNING id`,
-        [title, cat.group_id, cat.id, description, JSON.stringify(extras), ctx.tenant_uid, ctx.root_uid, `${d.data_publicacao}:00${ctx.offset}`])).id;
+          price_unit, status, service_location, extras, expires_at, tenant_id, created_by, created_at, active)
+        VALUES ($1,$2,$3,$4,0,'quote','active',NULL,$5::jsonb,$9::timestamptz,$6,$7,$8::timestamptz,true) RETURNING id`,
+        [title, cat.group_id, cat.id, description, JSON.stringify(extras), ctx.tenant_uid, ctx.root_uid, `${d.data_publicacao}:00${ctx.offset}`, fim.iso])).id;
     }
 
     // Endereço: a cidade da notícia (é o que a põe no filtro de cidade da home e da busca).
@@ -344,7 +362,8 @@ ctx.cidades = new Map((await client.query(`SELECT lc.id::text AS ibge, lc.name, 
 // Uma consulta só: o que esta fonte já gravou neste banco (inclusive inativo), com o necessário
 // para saber se foi editado no painel.
 const noBanco = new Map((await client.query(`SELECT s.id, s.status, s.active, s.title, s.description, s.category_id,
-    s.extras->>'coverFileId' AS cover, s.extras->'origem'->>'id_evento' AS slug, s.extras->'origem'->>'hash_importado' AS hash_importado
+    s.extras->>'coverFileId' AS cover, s.extras->'origem'->>'id_evento' AS slug,
+    coalesce(floor(extract(epoch FROM s.expires_at))::bigint::text, '') AS expires, s.extras->'origem'->>'hash_importado' AS hash_importado
   FROM public.services s WHERE s.tenant_id = $1 AND s.extras->'origem'->>'fonte' = $2`, [ctx.tenant_uid, FONTE])).rows.map((r) => [r.slug, r]));
 
 const resultado = [];
@@ -358,6 +377,8 @@ try {
   for (const slug of slugs) {
     const n = readNoticia(slug);
     if (n.d.status !== 'aprovado') { marca(slug, 'fora', `status ${n.d.status}`); continue; }
+    const fim = validade(n.d);
+    if (fim.iso && Date.parse(fim.iso) <= Date.now()) { marca(slug, 'vencida', `expira_em ${n.d.expira_em} já passou`); continue; }
 
     const foto = fotoDe(n);
     const hashArquivo = sha256(n.raw, foto.buf);
@@ -379,7 +400,7 @@ try {
         marca(slug, 'protegida', 'editada no painel depois da importação (ou importada sem hash)');
         continue;
       }
-      if (opts.dry) { marca(slug, 'atualizaria'); continue; }
+      if (opts.dry) { validar(ctx, n); await optimize(foto.buf, `${n.rel} (${foto.nome})`); marca(slug, 'atualizaria'); continue; }
       const id = await gravar(client, ctx, form, n, atual);
       index.data.noticias[slug] = { service_id: Number(id), hash_arquivo: hashArquivo, publicada_em: idx?.publicada_em ?? new Date().toISOString(), atualizada_em: new Date().toISOString() };
       marca(slug, 'atualizada', `service ${id}`);
@@ -387,7 +408,7 @@ try {
     }
 
     if (idx) { marca(slug, 'ausente', 'está no índice mas não no banco (apagada?) — remova do índice para recriar'); continue; }
-    if (opts.dry) { marca(slug, 'inseriria'); continue; }
+    if (opts.dry) { validar(ctx, n); await optimize(foto.buf, `${n.rel} (${foto.nome})`); marca(slug, 'inseriria'); continue; }
     const id = await gravar(client, ctx, form, n, null);
     index.data.noticias[slug] = { service_id: Number(id), hash_arquivo: hashArquivo, publicada_em: new Date().toISOString() };
     marca(slug, 'inserida', `service ${id}`);

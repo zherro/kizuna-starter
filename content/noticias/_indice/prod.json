@@ -1,0 +1,55 @@
+{
+  "banco": "d4e80e664d0211eb",
+  "noticias": {
+    "acao-vagas-emprego-atracoes-culturais-cuiaba": {
+      "service_id": 174,
+      "hash_arquivo": "0b5d78800eaf55d00e021685b222dbd9e56081eb7fe7fd18d1798bbadd7682fd",
+      "publicada_em": "2026-10-26T15:53:14.271Z"
+    },
+    "calendario-sorteios-especiais-mega-sena": {
+      "service_id": 175,
+      "hash_arquivo": "8cc4c6bb1ffa12a4db9722798c6f22d03ace3bbf4e53bb88b25baa1bccb33061",
+      "publicada_em": "2026-10-26T15:53:16.345Z"
+    },
+    "cuiaba-passa-de-mil-arvores-plantadas-outubro": {
+      "service_id": 170,
+      "hash_arquivo": "e6bfa05241ab6401a02eecdbcb4ee2399642b667059a49a575cde5d331698461",
+      "publicada_em": "2026-10-26T15:49:56.299Z"
+    },
+    "defesa-civil-orienta-alunos-queimadas-alagamentos": {
+      "service_id": 176,
+      "hash_arquivo": "a877549f739d182d71b416ec835b93863ff3e4f02e9cb2254f7ace7c952ced16",
+      "publicada_em": "2026-10-26T15:53:18.760Z"
+    },
+    "folga-dia-do-servidor-finados-o-que-funciona": {
+      "service_id": 171,
+      "hash_arquivo": "3e42eef6a49f5e0496c49a975e7489589ea056d4a34328345cabac8bee76791d",
+      "publicada_em": "2026-10-26T15:49:59.537Z"
+    },
+    "mega-sena-acumula-300-milhoes": {
+      "service_id": 177,
+      "hash_arquivo": "54764300cf00109b633f53805da44c8ac86d141497b688aba8506bee48ded376",
+      "publicada_em": "2026-10-26T15:53:20.979Z"
+    },
+    "nova-usf-bairro-doutor-fabio": {
+      "service_id": 172,
+      "hash_arquivo": "2d6f62e6c6e05e481c4f6cec810e43c575471a71fe0a45f5f29a10f719d7f1d1",
+      "publicada_em": "2026-10-26T15:50:03.290Z"
+    },
+    "piracema-2026-mato-grosso-regras": {
+      "service_id": 178,
+      "hash_arquivo": "42cb19fc660facd1b42b699dc03e85f635f558b52ef42f4e3337aa2fb7b18a1c",
+      "publicada_em": "2026-10-26T15:53:23.511Z"
+    },
+    "previsao-tempo-cuiaba-semana-chuva-calor": {
+      "service_id": 173,
+      "hash_arquivo": "7644b2bf3ffd12df3590568103fe24cfa07e3b9358c1b82335befe556aa47493",
+      "publicada_em": "2026-10-26T15:50:06.164Z"
+    },
+    "rota-dos-balnearios-cuiaba": {
+      "service_id": 179,
+      "hash_arquivo": "197a9cb18130f7818bc64a20c6a6fc28bab049520437fa230ae8ec18c839b57a",
+      "publicada_em": "2026-10-26T15:53:26.271Z"
+    }
+  }
+}

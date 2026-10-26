@@ -16,6 +16,7 @@ categoria: cidade                  # slug de categoria do grupo noticias
 subcategoria: noticias-de-cuiaba   # opcional; slug de subcategoria ATIVA da categoria
 status: revisao                    # rascunho | revisao | aprovado (só aprovado é importado)
 data_publicacao: 2026-10-25T08:00  # hora de Cuiabá, sem fuso
+expira_em: 2026-10-26T20:00        # opcional; hora de Cuiabá em que a notícia sai do site (evento, sorteio, previsão)
 autor: "Redação Bora Cuiabá"
 cidade: "Cuiabá"                   # nome em location_city + uf (põe a notícia no filtro de cidade)
 uf: MT
@@ -44,6 +45,7 @@ O texto aceita só `p`, `h2`, `h3`, `ul`, `ol`, `li`, `strong`, `em`, `a` e `br`
 | `titulo`, texto | `services.title`, `services.description` |
 | `categoria`, `subcategoria` | `services.category_group_id`/`category_id`, `service_categories_sub` |
 | `data_publicacao` | `services.created_at` (no insert) e `form_results.answers.data_publicacao` |
+| `expira_em` | `services.expires_at`: o site deixa de listar a notícia nessa hora |
 | `autor`, 1ª fonte | `answers.autor`, `answers.fonte`, `answers.link` (formulário `noticias`) |
 | `fontes` | `services.extras.fontes` (`[{nome, url}]`) |
 | `foto_*` | `files` (otimizada: até 1600 px + miniatura de 480 px), `extras.coverFileId`/`images`, `extras.imagem_credito` |
@@ -89,6 +91,7 @@ Em cada execução o script faz **uma** consulta com tudo o que a fonte `bora-re
 | Situação | O que acontece |
 |---|---|
 | `status` diferente de `aprovado` | fora |
+| `expira_em` já passou | vencida (não entra) |
 | não está no banco nem no índice | **inserida** |
 | no banco, arquivo igual ao do índice | pulada (sem ler foto) |
 | no banco, fora do índice | pulada e registrada no índice |
