@@ -37,7 +37,7 @@ type HomeContentProps = {
   categoryRails?: ReactNode;
   /** busca logo abaixo do swipe (Client Component montado na page) — vem de home.showSearch */
   searchBar?: ReactNode;
-  /** blocos de engajamento (Server Components montados na page): lugares da cidade e notícias — vêm de home.showPlaces / home.showNews */
+  /** blocos de engajamento (Server Components montados na page): notícias e, abaixo, lugares da cidade — vêm de home.showNews / home.showPlaces */
   placeHighlights?: ReactNode;
   newsHighlights?: ReactNode;
   /** URL do perfil no Instagram — vem de home.instagramUrl (sem ela o card do Instagram não aparece) */
@@ -110,8 +110,8 @@ export function HomeContent({
       {searchBar ? <div className="pb-8 pt-2">{searchBar}</div> : null}
       {categoryRails}
       <AdSlot slot="home-meio" city={cityName} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} />
-      {placeHighlights}
       {newsHighlights}
+      {placeHighlights}
       {showNearby ? <NearbyGrid t={t} /> : null}
       <HowItWorks t={t} />
       <SocialInstallCards t={t} instagramUrl={instagramUrl} />

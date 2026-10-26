@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAuthHeaderFromCookies, getSession } from '@kizuna/core/server';
 import { pgrstRpc } from '@kizuna/core/server';
+import { revalidateAfterRpc } from '@/lib/server/revalidate-ad-pages';
 
 export const runtime = 'nodejs';
 
@@ -88,5 +89,6 @@ export async function POST(request: Request) {
     );
   }
 
+  revalidateAfterRpc(functionName);
   return NextResponse.json({ status: response.status, payload }, { status: 200 });
 }

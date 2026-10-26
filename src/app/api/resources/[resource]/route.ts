@@ -7,6 +7,7 @@ import {
   listResource,
 } from '@kizuna/core/server';
 import { accountLevelsSetup } from '@/lib/server/account-levels';
+import { revalidateAfterResourceWrite } from '@/lib/server/revalidate-ad-pages';
 
 export const runtime = 'nodejs';
 
@@ -30,5 +31,5 @@ export async function POST(request: Request, { params }: Params) {
       return NextResponse.json({ error: 'level_required', can }, { status: 403 });
     }
   }
-  return createResource(resource, request);
+  return revalidateAfterResourceWrite(resource, await createResource(resource, request));
 }
