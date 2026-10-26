@@ -23,3 +23,6 @@ skills-lock.json
 
 # cache do TypeScript
 *.tsbuildinfo
+
+# Índice do importador de notícias do banco local (cada máquina tem o seu; o de prod é commitado)
+content/noticias/_indice/local.json
