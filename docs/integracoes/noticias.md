@@ -63,6 +63,23 @@ DATABASE_URL=... node scripts/importar-noticias.mjs --alvo prod --only <slug>
 
 `--alvo` é o nome do banco no índice (`local`, `prod`...).
 
+### `DATABASE_URL`
+
+Formato: `postgres://USUARIO:SENHA@HOST:PORTA/BANCO`. Exemplo com o Postgres local (usuário `myuser`, banco `bora`, porta 5432):
+
+```bash
+# Git Bash / Linux / macOS
+DATABASE_URL="postgres://myuser:minhasenha@localhost:5432/bora" node scripts/importar-noticias.mjs --alvo local --dry
+```
+
+```powershell
+# PowerShell
+$env:DATABASE_URL = "postgres://myuser:minhasenha@localhost:5432/bora"
+node scripts/importar-noticias.mjs --alvo local --dry
+```
+
+Para prod, troque usuário, senha, host e banco pelos do servidor e use `--alvo prod`. Se o banco não é acessível de fora, abra um túnel SSH antes e aponte para ele (ex.: `ssh -L 15432:localhost:5432 usuario@servidor` e `postgres://USUARIO:SENHA@localhost:15432/BANCO`). Senha com caracteres especiais (`@`, `:`, `/`, `#`) precisa ir codificada na URL (`@` vira `%40`). Não commite a URL com senha: defina-a só no terminal.
+
 ## Índice e proteção contra sobrescrita
 
 `content/noticias/_indice/<alvo>.json` guarda, por slug, o anúncio criado, quando foi publicado e o hash do arquivo (texto + foto). O índice guarda também uma impressão do banco: usar `--alvo prod` com o `DATABASE_URL` de outro banco aborta.
