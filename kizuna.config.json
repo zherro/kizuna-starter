@@ -256,7 +256,7 @@
           "byGroup": {
             "eventos": {
               "options": [
-                { "value": "no_estabelecimento", "model": "addresses", "maxAddresses": 1, "icon": "MapPin" },
+                { "value": "no_estabelecimento", "model": "addresses", "maxAddresses": 1, "requireZipCode": false, "icon": "MapPin" },
                 { "value": "remoto", "model": "identifier", "icon": "Globe" }
               ],
               "_comment_refs": "Vínculos com outros anúncios abaixo do endereço, gravados em services.extras[key]. groups = slugs de grupo onde a busca procura. multiple = lista [{nome: uid, link?}]; sem multiple = um uid. withLink (só com multiple) pede um link por item.",
