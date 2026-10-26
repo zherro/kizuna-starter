@@ -21,19 +21,20 @@ import { trackRule } from '@/lib/analytics';
 import { linkEditorialPlaces } from '@/lib/lugar-links';
 import { findEditorialPlace } from '@/lib/lugares';
 import cfg from '../../kizuna.config.json';
+import { AD_DETAIL_TAG } from '@/lib/server/revalidate-ad-pages';
 
 const serviceDetailConfig: ServiceDetailConfig | null =
   (cfg as { serviceDetail?: ServiceDetailConfig }).serviceDetail ?? null;
 
 /**
  * Carrega tudo que a página precisa num único cache por uid (ISR de 5 min — leitura 100% anônima
- * e pública; um anúncio editado aparece em até 5 min). `notFound()` fica fora daqui: não pode
+ * e pública). Salvar no painel expira a tag `AD_DETAIL_TAG` (`revalidate-ad-pages`). `notFound()` fica fora daqui: não pode
  * rodar dentro de `unstable_cache`.
  */
 export const loadAd = unstable_cache(
   (uid: string) => loadServiceDetail(uid),
   ['anuncio-detalhe'],
-  { revalidate: 300 }
+  { revalidate: 300, tags: [AD_DETAIL_TAG] }
 );
 
 export function anuncioMetadata(data: ServiceDetailData, path: string): Metadata {

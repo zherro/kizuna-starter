@@ -1,4 +1,4 @@
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 /**
  * As páginas de anúncio são ISR (`revalidate = 300`): sem isto, salvar no painel só aparece no
@@ -9,7 +9,11 @@ import { revalidatePath } from 'next/cache';
 const AD_RESOURCES = new Set(['services', 'service_addresses', 'service_categories_sub']);
 const AD_RPCS = new Set(['fn_form_result_upsert']);
 
+/** Tag do `unstable_cache` dos dados do detalhe (`loadAd`) — a página e os dados têm caches separados. */
+export const AD_DETAIL_TAG = 'anuncio-detalhe';
+
 function revalidateAdPages() {
+  revalidateTag(AD_DETAIL_TAG, { expire: 0 });
   revalidatePath('/anuncios/[uid]', 'page');
   revalidatePath('/[cidade]/anuncio/[uid]', 'page');
 }
