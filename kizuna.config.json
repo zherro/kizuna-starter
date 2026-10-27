@@ -256,7 +256,7 @@
           "byGroup": {
             "eventos": {
               "options": [
-                { "value": "no_estabelecimento", "model": "addresses", "maxAddresses": 1, "requireZipCode": false, "icon": "MapPin" },
+                { "value": "no_estabelecimento", "model": "addresses", "maxAddresses": 1, "requireZipCode": false, "addressFromRef": "local_ref", "icon": "MapPin" },
                 { "value": "remoto", "model": "identifier", "icon": "Globe" }
               ],
               "_comment_refs": "Vínculos com outros anúncios abaixo do endereço, gravados em services.extras[key]. groups = slugs de grupo onde a busca procura. multiple = lista [{nome: uid, link?}]; sem multiple = um uid. withLink (só com multiple) pede um link por item.",
@@ -264,7 +264,7 @@
                 {
                   "key": "local_ref",
                   "label": "Local do evento",
-                  "hint": "Escolha o lugar cadastrado onde o evento acontece. Ele aparece em \"Onde acontece\", com link para a página do lugar.",
+                  "hint": "Escolha o lugar cadastrado onde o evento acontece: o endereço dele é aplicado abaixo e ele aparece em \"Onde acontece\", com link para a página do lugar. Sem lugar, preencha o endereço.",
                   "groups": ["lugares"],
                   "placeholder": "Buscar lugar pelo nome…"
                 },
@@ -320,8 +320,9 @@
     "maxSlotsPerPage": 3
   },
   "analytics": {
-    "_comment": "Plugin analytics (métricas do anunciante). events = só os listados ligam. minVisibleMs = tempo contínuo em tela, em milissegundos, antes de contar (piso: view 500, impression 200; teto 60000). minVisibleRatio = fração do elemento visível (0..1). oncePerSession = conta no máximo 1x por sessão do navegador. 0 ms = conta na hora (cliques de ação). entities.<tipo>.events sobrescreve por tipo de entidade. enabled:false desliga; remova o bloco para usar os defaults.",
+    "_comment": "Plugin analytics (métricas do anunciante). events = só os listados ligam. minVisibleMs = tempo contínuo em tela, em milissegundos, antes de contar (piso: view 500, impression 200; teto 60000). minVisibleRatio = fração do elemento visível (0..1). oncePerSession = conta no máximo 1x por sessão do navegador. 0 ms = conta na hora (cliques de ação). entities.<tipo>.events sobrescreve por tipo de entidade. enabled:false desliga; remova o bloco para usar os defaults. collect = o que o servidor grava junto de cada evento (rota /api/analytics/track): device = tipo de aparelho (mobile/tablet/desktop); region = cidade e UF aproximadas, derivadas do IP (só Brasil); ip = grava o IP do acesso (dado pessoal: defina base legal e política de privacidade antes de ligar); encryptIp = cifra o IP com APP_ENCRYPTION_KEY (AES-256-GCM; perder ou trocar a chave deixa os IPs gravados ilegíveis; o painel só mostra IP mascarado); ipRetentionDays = dias até zerar o IP gravado (padrão 30; 0 = nunca zera). O prazo é lido do banco: ALTER DATABASE <banco> SET kizuna.analytics_ip_retention_days = '<dias>' (ver docs/plugins/analytics.md).",
     "enabled": true,
+    "collect": { "device": true, "region": true, "ip": true, "encryptIp": true, "ipRetentionDays": 30 },
     "events": {
       "impression": { "minVisibleMs": 500, "minVisibleRatio": 0.6, "oncePerSession": true },
       "view": { "minVisibleMs": 1500, "minVisibleRatio": 0.5, "oncePerSession": true },

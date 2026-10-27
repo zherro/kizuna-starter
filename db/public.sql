@@ -4877,7 +4877,7 @@ BEGIN
 END $$;
 
 -- Retenção do IP: zera ip/ip_masked/ip_key de linhas mais antigas que N dias. N vem da setting
--- kizuna.analytics_ip_retention_days (ALTER DATABASE ... SET, gravada pela CLI), lida na hora em
+-- kizuna.analytics_ip_retention_days (defina com ALTER DATABASE ... SET kizuna.analytics_ip_retention_days), lida na hora em
 -- que o job roda: ausente ou inválida = 30; 0 = nunca zera. Só com pg_cron.
 DO $$
 BEGIN
