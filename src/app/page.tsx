@@ -5,13 +5,22 @@
 // lista / sem padrão → home global, sem loop.
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { parseLocationConfig } from '@kizuna/core/server';
+import type { Metadata } from 'next';
+import { buildMetadata, parseLocationConfig } from '@kizuna/core/server';
+import { SEO_SITE } from '@/lib/seo';
+import { homeHeading } from '@/components/home/home-seo';
 import { CITY_COOKIE, cityPath } from '@kizuna/core/shared/city-routing/city-slug';
 import { HomePage } from '@/components/home-page';
 import { loadRoutableCities, resolveCitySlug } from '@kizuna/core/server/location/cities';
 import cfg from '@/../kizuna.config.json';
 
 const locationConfig = parseLocationConfig((cfg as { location?: unknown }).location);
+
+export const metadata: Metadata = buildMetadata(SEO_SITE, {
+  title: homeHeading(null),
+  description: SEO_SITE.defaultDescription,
+  path: '/',
+});
 
 export default async function Home() {
   const slug = (await cookies()).get(CITY_COOKIE)?.value;

@@ -6,6 +6,7 @@ import cfg from '@/../kizuna.config.json';
 import { HOME_INK_LEVELS, type HomeInkLevel } from '@/components/home/home-ink-config';
 import { CategoryRails, type CategoryRailConfig } from '@/components/home/category-rails';
 import { HomeNews, HomePlaces, type PlacesMosaicConfig } from '@/components/home/home-engagement';
+import { HomeSeo } from '@/components/home/home-seo';
 import { HomeSearch } from '@kizuna/core/client/components/home/home-search';
 import type { ServiceDetailConfig } from '@kizuna/core/client/components/services/detail';
 import type { RoutableCity } from '@kizuna/core/shared/city-routing/city-slug';
@@ -58,6 +59,7 @@ export function HomePage({ city }: { city: RoutableCity | null }) {
       newsHighlights={
         home?.showNews !== false ? <HomeNews city={city} leads={home?.newsLeads === 2 ? 2 : 1} /> : null
       }
+      seoContent={<HomeSeo city={city} showHero={cfg.home?.showHero !== false} />}
       categoryRails={
         categoryRails.length > 0 ? (
           <CategoryRails rails={categoryRails} detailConfig={serviceDetailConfig} city={city} />

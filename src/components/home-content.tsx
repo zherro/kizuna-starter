@@ -40,6 +40,8 @@ type HomeContentProps = {
   /** blocos de engajamento (Server Components montados na page): notícias e, abaixo, lugares da cidade — vêm de home.showNews / home.showPlaces */
   placeHighlights?: ReactNode;
   newsHighlights?: ReactNode;
+  /** bloco de SEO (h1, texto indexável, JSON-LD) — Server Component montado na page */
+  seoContent?: ReactNode;
   /** URL do perfil no Instagram — vem de home.instagramUrl (sem ela o card do Instagram não aparece) */
   instagramUrl?: string;
   /** mostra "Quem está por perto" (amostra de profissionais de exemplo) — vem de home.showNearby */
@@ -59,6 +61,7 @@ export function HomeContent({
   searchBar,
   placeHighlights,
   newsHighlights,
+  seoContent,
   instagramUrl,
   showNearby = true,
   cityName,
@@ -118,6 +121,7 @@ export function HomeContent({
       {newsHighlights}
       {placeHighlights}
       {showNearby ? <NearbyGrid t={t} /> : null}
+      {seoContent}
       <HowItWorks t={t} />
       <SocialInstallCards t={t} instagramUrl={instagramUrl} />
       {inkPicker ? (
