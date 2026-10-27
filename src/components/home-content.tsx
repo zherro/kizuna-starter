@@ -119,9 +119,9 @@ export function HomeContent({
       {categoryRails}
       <AdSlot slot="home-meio" city={cityName} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} />
       {newsHighlights}
+      {seoContent}
       {placeHighlights}
       {showNearby ? <NearbyGrid t={t} /> : null}
-      {seoContent}
       <HowItWorks t={t} />
       <SocialInstallCards t={t} instagramUrl={instagramUrl} />
       {inkPicker ? (

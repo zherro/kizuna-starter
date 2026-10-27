@@ -1,6 +1,6 @@
 // SEO da home (Server Component): o <h1> da página (a home sem hero não tinha nenhum), um texto
 // curto indexável e o JSON-LD (WebSite com busca + Organization). Tudo derivado de `site` no
-// kizuna.config.json e da cidade — nada de texto fixo de uma cidade específica.
+// kizuna.config.json e da cidade — o texto visível não cita cidade (o <h1> e o título já citam).
 import Link from 'next/link';
 import { jsonLdScript } from '@kizuna/core/server';
 import type { RoutableCity } from '@kizuna/core/shared/city-routing/city-slug';
@@ -20,7 +20,6 @@ export function homeHeading(city: RoutableCity | null): string {
 }
 
 export function HomeSeo({ city, showHero }: HomeSeoProps) {
-  const place = city ? `${city.name}, ${city.state}` : 'sua cidade';
   const searchHref = city
     ? `/busca?state=${city.state}&cityId=${city.ibge}&cityName=${encodeURIComponent(city.name)}`
     : '/busca';
@@ -56,25 +55,19 @@ export function HomeSeo({ city, showHero }: HomeSeoProps) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }} />
       {showHero ? null : <h1 className="sr-only">{homeHeading(city)}</h1>}
-      <section
-        aria-labelledby="home-seo-title"
-        className="mx-auto w-full max-w-[1600px] px-4 pb-14 sm:px-6 sm:pb-16"
-      >
-        <div className="max-w-3xl">
+      {/* Abre o bloco de lugares logo abaixo: mesmo container estreito (1280px) do mosaico. */}
+      <section aria-labelledby="home-seo-title" className="mx-auto w-full max-w-[1280px] px-4 pb-8 sm:px-6 sm:pb-10">
+        <div className="max-w-2xl">
           <h2 id="home-seo-title" className="font-display text-xl font-extrabold tracking-tight sm:text-2xl">
-            {city ? `Descubra ${city.name} com o ${SEO_SITE.name}` : `Descubra mais com o ${SEO_SITE.name}`}
+            Descubra mais com o {SEO_SITE.name}
           </h2>
           <p className="mt-3 text-sm leading-7 text-muted-foreground sm:text-base">
-            {SEO_SITE.defaultDescription} Aqui você encontra a programação de {place}, confere onde ir
-            e escolhe o que fazer hoje, no fim de semana ou no próximo feriado.
-          </p>
-          <p className="mt-3 text-sm leading-7 text-muted-foreground sm:text-base">
-            Use a{' '}
+            Eventos, lugares, lazer e cultura para escolher o que fazer hoje, no fim de semana ou no
+            feriado. Use a{' '}
             <Link href={searchHref} className="font-medium text-foreground underline underline-offset-4">
               busca
             </Link>{' '}
-            para filtrar por categoria, data e região, ou role a página pelos eventos, cinema e lugares
-            em destaque.
+            para filtrar por categoria, data e região.
           </p>
         </div>
       </section>
