@@ -30,7 +30,12 @@ export type PlacesMosaicConfig = {
   scope?: 'city' | 'region';
   /** Ordem aleatória a cada visita (embaralha no navegador). Padrão true. */
   random?: boolean;
+  /** Container mais estreito (1280px) e peças mais espaçadas. Padrão false. */
+  narrow?: boolean;
 };
+
+// Com `random`, busca mais lugares que o exibido: o navegador sorteia `limit` entre eles.
+const placesPool = (limit: number, random: boolean) => (random ? Math.max(limit * 3, 12) : limit);
 
 export async function HomePlaces({
   city,
@@ -40,20 +45,30 @@ export async function HomePlaces({
   category,
   scope = 'region',
   random = true,
+  narrow = false,
 }: { city: RoutableCity | null } & PlacesMosaicConfig) {
   const target = category ? { slug: category } : group ? { group } : null;
   if (!target) {
     const items = loadHomePlaces({
       citySlug: city ? citySlug(city.name, city.state) : undefined,
       cityName: city?.name,
-      limit,
+      limit: placesPool(limit, random),
     });
-    return <PlaceMosaic items={items} variant={variant} seed={mosaicDaySeed()} limit={limit} shuffle={random} />;
+    return (
+      <PlaceMosaic
+        items={items}
+        variant={variant}
+        seed={mosaicDaySeed()}
+        limit={limit}
+        shuffle={random}
+        narrow={narrow}
+      />
+    );
   }
 
   // Mesmo loader dos carrosséis: pool maior que `limit` (o navegador sorteia e corta).
   const data = await loadCategoryRail(target, {
-    limit,
+    limit: placesPool(limit, random),
     cityIbge: city?.ibge,
     cityIbges: city && scope === 'region' ? regionCitiesFor(regions, city.ibge) : undefined,
   }).catch(() => null);
@@ -69,6 +84,7 @@ export async function HomePlaces({
       seed={mosaicDaySeed()}
       limit={limit}
       shuffle={random}
+      narrow={narrow}
       moreHref={`/busca?${filter}${cityQuery}`}
     />
   );
@@ -78,15 +94,18 @@ export async function HomeNews({
   city,
   leads = 1,
   listLimit = 5,
+  narrow = false,
 }: {
   city: RoutableCity | null;
-  /** Manchetes em destaque (1 ou 2) — vem de home.newsLeads. */
-  leads?: 1 | 2;
+  /** Manchetes em destaque (1, 2 ou 4) — vem de home.newsLeads. */
+  leads?: 1 | 2 | 4;
   listLimit?: number;
+  /** Container mais estreito (1280px) e mais respiro — vem de home.newsNarrow. */
+  narrow?: boolean;
 }) {
   // Falha de rede/RPC não pode derrubar a home inteira: o bloco apenas some.
   const items = await loadHomeNews({ cityIbge: city?.ibge, limit: leads + listLimit }).catch(() => []);
   return (
-    <NewsHighlights items={items} moreHref={homeNewsMoreHref(city)} leadCount={leads} listLimit={listLimit} />
+    <NewsHighlights items={items} moreHref={homeNewsMoreHref(city)} leadCount={leads} listLimit={listLimit} narrow={narrow} />
   );
 }

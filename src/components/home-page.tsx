@@ -21,6 +21,7 @@ const home = cfg.home as typeof cfg.home & {
   showPlaces?: boolean;
   showNews?: boolean;
   newsLeads?: number;
+  newsNarrow?: boolean;
   showSearch?: boolean;
   placesMosaic?: PlacesMosaicConfig;
 };
@@ -57,7 +58,13 @@ export function HomePage({ city }: { city: RoutableCity | null }) {
         home?.showPlaces !== false ? <HomePlaces city={city} {...home?.placesMosaic} /> : null
       }
       newsHighlights={
-        home?.showNews !== false ? <HomeNews city={city} leads={home?.newsLeads === 2 ? 2 : 1} /> : null
+        home?.showNews !== false ? (
+          <HomeNews
+            city={city}
+            leads={home?.newsLeads === 4 ? 4 : home?.newsLeads === 2 ? 2 : 1}
+            narrow={home?.newsNarrow === true}
+          />
+        ) : null
       }
       seoContent={<HomeSeo city={city} showHero={cfg.home?.showHero !== false} />}
       categoryRails={
