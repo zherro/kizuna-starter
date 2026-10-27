@@ -61,7 +61,7 @@ export async function CategoryRails({
     <>
       {loaded.map((data, index) => {
         if (!data) return null;
-        const { kind, category, items, limit, hasMore } = data;
+        const { kind, category, items, limit } = data;
         const searchFilter =
           kind === 'group' ? `group=${category.slug}` : `categoryId=${category.id}`;
         return (
@@ -76,7 +76,8 @@ export async function CategoryRails({
             )}
             detailConfig={detailConfig}
             className="mx-auto w-full max-w-[1600px] px-4 pb-14 sm:px-6 sm:pb-16"
-            moreHref={hasMore ? `/busca?${searchFilter}${cityQuery}` : undefined}
+            // sempre: mesmo com poucos itens a busca traz filtros e datas que a trilha não tem
+            moreHref={`/busca?${searchFilter}${cityQuery}`}
             showCity={!city || rails[index].scope === 'region'}
             impressionRule={trackRule('service', 'impression')}
             source="home"

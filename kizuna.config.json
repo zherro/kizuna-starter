@@ -24,11 +24,18 @@
     "_comment": "Plugin search (/busca). \"ai\": liga/desliga a busca com IA (assistente Naví: botão, chat e título \"Buscar com IA\"). false = só busca por texto + filtros. Omitido = true. Ver kizuna-core/docs/plugins/search.md.",
     "ai": false,
     "_comment_defaults": "\"defaultGroup\": slug do grupo já selecionado quando a /busca abre sem grupo, categoria nem texto (\"Todas as categorias\" no filtro mostra tudo; a URL ganha ?group=todos). null = todos. \"orderByGroup\": ordenação por slug do grupo, \"default\" para os demais, no formato \"campo:asc|desc\" — campos: occurs_at (quando acontece; asc = próximos primeiro), created_at, expires_at, price, title; \"relevance\" = ordem de sempre. Só com \"Ordenar por: Relevância\". Requer services 0016 + search 0011.",
-    "defaultGroup": "eventos",
+    "defaultGroup": null,
     "orderByGroup": {
       "eventos": "occurs_at:asc",
       "default": "relevance"
-    }
+    },
+    "_comment_browseGroups": "\"browseGroups\": trilhas na ordem — slug de grupo (categories_group.slug) ou { \"groups\": [slugs], \"title\": \"...\" } para juntar vários grupos numa trilha só (itens alternados; sem title, os nomes dos grupos com \" e \"; o \"Ver mais\" leva ao primeiro grupo). Sem filtro além da cidade, a /busca mostra um carrossel por trilha (vitrine) em vez da lista misturada; buscar texto ou marcar qualquer filtro volta à lista. Cada trilha usa a ordenação do grupo em orderByGroup; grupo sem anúncio na cidade some. Vazio/omitido = sempre a lista. Com browseGroups, deixe defaultGroup null (senão a busca já abre filtrada e a vitrine não aparece).",
+    "browseGroups": [
+      { "groups": ["eventos", "cultura-e-arte"], "title": "Eventos e cultura" },
+      "cinema",
+      "noticias",
+      { "groups": ["bares-e-vida-noturna", "lugares"], "title": "Bares e lugares" }
+    ]
   },
   "header": {
     "_comment": "\"variant\": classic (padrão) | compact — layout do cabeçalho do site.",

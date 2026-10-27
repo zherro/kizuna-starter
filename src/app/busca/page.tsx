@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { SearchPage } from '@kizuna/core/client/components/search/search-page';
+import type { BrowseRailConfig } from '@kizuna/core/client/components/search/search-browse-rails';
 import type { ServiceDetailConfig } from '@kizuna/core/client/components/services/detail';
 import { trackRule } from '@/lib/analytics';
 import { AdSlot } from '@kizuna/core/client/ads';
@@ -20,12 +21,17 @@ const excludeFromMixedCategorySlugs = serviceDetailConfig?.excludeFromMixedCateg
 // `search.ai` no kizuna.config.json: false desativa a busca com IA (assistente). Omitido = ligado.
 const aiEnabled = (cfg as { search?: { ai?: boolean } }).search?.ai !== false;
 // `search.defaultGroup` (grupo marcado ao chegar sem filtro) e `search.orderByGroup` (ordem por grupo).
-const searchCfg = (cfg as { search?: { defaultGroup?: string | null; orderByGroup?: Record<string, string> } })
-  .search;
+const searchCfg = (
+  cfg as {
+    search?: { defaultGroup?: string | null; orderByGroup?: Record<string, string>; browseGroups?: BrowseRailConfig[] };
+  }
+).search;
 const searchDefaults = {
   defaultGroupSlug: searchCfg?.defaultGroup ?? null,
   orderByGroup: searchCfg?.orderByGroup,
 };
+// `search.browseGroups`: sem filtro além da cidade, um carrossel por item (grupo ou grupos juntos), nesta ordem.
+const browseGroups = searchCfg?.browseGroups ?? [];
 // Cidades vizinhas sugeridas abaixo dos resultados (kizuna.config.json → regions).
 const regions = parseRegions((cfg as { regions?: unknown }).regions);
 
@@ -89,6 +95,7 @@ export default function BuscaPage() {
         serviceDetailConfig={serviceDetailConfig}
         aiEnabled={aiEnabled}
         defaults={searchDefaults}
+        browseGroups={browseGroups}
         regions={regions}
         impressionRule={trackRule('service', 'impression')}
         sponsoredSlot={
