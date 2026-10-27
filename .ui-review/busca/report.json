@@ -1,0 +1,10 @@
+{ "url": "https://boracuiaba.com.br/busca?group=todos", "date": "2026-10-27", "mode": "standard",
+  "counts": { "broken": 0, "degraded": 3, "polish": 3 },
+  "findings": [
+    { "severity": "degraded", "breakpoint": "laptop", "category": "truncation", "selector": "listing-result-card footer (whenLabel/locationLabel)", "source": "kizuna-core/src/client/components/ui-better-soft/lists/listing-result-card.tsx:328", "fix": "5 colunas só a partir de ~1600px ou CTA abaixo da data em card estreito" },
+    { "severity": "degraded", "breakpoint": "all", "category": "emptyHeading", "selector": "h2 vazio do CategoryCarousel", "source": "kizuna-core/src/client/components/taxonomy/category-carousel.tsx:241", "fix": "não renderizar Header com title vazio" },
+    { "severity": "degraded", "breakpoint": "mobile", "category": "tinyTapTargets", "selector": "button (\"trocar\") 32x16", "source": "kizuna-core/src/client/components/search/search-page.tsx:668", "fix": "aumentar área de toque" },
+    { "severity": "polish", "breakpoint": "laptop", "category": "emptyMedia", "selector": "card sem imagem", "source": "kizuna-core/src/client/components/ui-better-soft/lists/media-result-card.tsx:61", "fix": "placeholder com ícone da categoria" },
+    { "severity": "polish", "breakpoint": "mobile", "category": "tinyTapTargets", "selector": "links do rodapé 20px", "source": "rodapé", "fix": "py-1" },
+    { "severity": "polish", "breakpoint": "all", "category": "network", "selector": "category_stats etc. 3-4x", "source": "taxonomia/busca", "fix": "deduplicar fetch" }
+  ] }
