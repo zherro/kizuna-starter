@@ -5,6 +5,9 @@ import { revalidateAfterRpc } from '@/lib/server/revalidate-ad-pages';
 
 export const runtime = 'nodejs';
 
+// Schemas que o app realmente chama por aqui (o resto fica fora, independente dos GRANTs do banco).
+const ALLOWED_SCHEMAS = new Set(['public', 'auth']);
+
 type RpcRequestBody = {
   schema?: string;
   functionName?: string;
@@ -60,6 +63,10 @@ export async function POST(request: Request) {
 
   if (!functionName) {
     return NextResponse.json({ message: 'Informe o nome da funcao.' }, { status: 400 });
+  }
+
+  if (!ALLOWED_SCHEMAS.has(schema)) {
+    return NextResponse.json({ message: 'Schema invalido.' }, { status: 400 });
   }
 
   if (!/^[a-zA-Z0-9_]+$/.test(functionName)) {

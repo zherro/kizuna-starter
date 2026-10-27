@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   // Build standalone para produção em Docker (ver Dockerfile na raiz).
   output: 'standalone',
 
+  // Não anuncia o framework no header `X-Powered-By`.
+  poweredByHeader: false,
+
   // Versões exibidas no rodapé (só pra conferir se o deploy subiu). Inlineadas no build:
   // a env (--build-arg no Docker) sobrescreve; sem ela vale o "version" de cada package.json,
   // que o scripts/publish.sh incrementa a cada push.
