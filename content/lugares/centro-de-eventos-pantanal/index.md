@@ -9,8 +9,6 @@ tipo: atracao
 endereco: "Avenida Bernardo Antônio de Oliveira Neto, s/n, Jardim Santa Marta, Cuiabá - MT"
 latitude: -15.5660034
 longitude: -56.1061515
-horario:
-  - "[A CONFIRMAR] horário de funcionamento; depende da agenda de cada evento"
 telefone: "(65) 3318-1600"
 preco: "Varia por evento. Para alugar espaços, consulte o Sebrae-MT"
 dicas_chegada: "Fica na Avenida Bernardo Antônio de Oliveira Neto, perto do Viaduto do Centro de Eventos do Pantanal, na Avenida Miguel Sutil. O estacionamento comporta cerca de 1.500 veículos, segundo o Pontos BR."

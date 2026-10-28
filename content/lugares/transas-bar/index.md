@@ -6,9 +6,6 @@ resumo: "Ficha em apuração: não achamos fonte confiável com endereço, horá
 status: rascunho
 atualizado_em: 2026-10-28
 tipo: comer
-endereco: "[A CONFIRMAR] endereço, Cuiabá - MT"
-horario:
-  - "[A CONFIRMAR] horário e dias de funcionamento"
 creditos: "Sem fotos ainda."
 ---
 

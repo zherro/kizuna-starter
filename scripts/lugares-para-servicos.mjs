@@ -44,6 +44,8 @@ const TAXONOMIA = {
   'buffet-infantil-mundo-magico': { grupo: 'lugares', categoria: 'festas-e-eventos', subs: ['buffets-infantis'] },
   'espaco-art-festas-e-eventos': { grupo: 'lugares', categoria: 'festas-e-eventos', subs: ['casas-de-festas'] },
   'musiva-cuiaba': { grupo: 'lugares', categoria: 'vida-noturna', subs: ['casas-noturnas'] },
+  'centro-de-eventos-pantanal': { grupo: 'lugares', categoria: 'festas-e-eventos', subs: ['espacos-de-eventos'] },
+  'transas-bar': { grupo: 'lugares', categoria: 'vida-noturna', subs: ['bares'] },
 };
 
 // Chaves do formulário `lugares` (db/extras/forms_seed_lugares.sql): gravadas em form_results.answers e
