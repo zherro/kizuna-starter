@@ -20,6 +20,9 @@ const siteLogo = cfg.site?.logo ?? undefined;
 
 const AUTH_ROUTES = new Set(["/login", "/registre-se"]);
 
+// Telas de tela cheia: só o header e o conteúdo (o mapa ocupa toda a altura útil).
+const FULLSCREEN_ROUTES = new Set(["/mapa"]);
+
 // Mesma chave do botão flutuante (kizuna.config.json → preferences.fab): desligada, o rodapé
 // também não mostra cor, idioma e modo escuro.
 const showPreferences =
@@ -50,6 +53,7 @@ export function Footer() {
   const isPainelRoute = pathname.startsWith("/painel");
   // Telas de entrada: sem rodapé, para o foco ficar no formulário.
   const isAuthRoute = AUTH_ROUTES.has(pathname.replace(/\/+$/, ""));
+  const isFullscreenRoute = FULLSCREEN_ROUTES.has(pathname.replace(/\/+$/, ""));
 
   const {
     language,
@@ -65,7 +69,7 @@ export function Footer() {
   } = useAppPreferences();
 
   // Rendered globally from the root layout; the painel has its own shell/chrome.
-  if (isPainelRoute || isAuthRoute) return null;
+  if (isPainelRoute || isAuthRoute || isFullscreenRoute) return null;
 
   const currentYear = new Date().getFullYear();
   const siteName = cfg.site?.name ?? messages.nav.title;

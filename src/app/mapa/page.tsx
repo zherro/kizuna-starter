@@ -14,7 +14,7 @@ export const metadata: Metadata = buildMetadata(SEO_SITE, {
   image: null,
 });
 
-/** Casco da tela: header e footer vêm do layout; o cliente busca os pinos pelo raio visível. */
+/** Casco da tela: só o header do layout (o rodapé some em /mapa); o cliente busca os pinos pelo raio visível. */
 export default function MapaPage() {
   return (
     <>

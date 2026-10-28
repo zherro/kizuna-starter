@@ -35,7 +35,7 @@ Home: uma chamada (cartão) para `/hoje`, com a data de hoje.
 
 ## Mapa
 
-Tela só com cabeçalho, rodapé e o mapa.
+Tela só com o cabeçalho e o mapa (o rodapé fica oculto nesta rota).
 
 - Mapa: estender o mapa próprio do core (tiles do OpenStreetMap, sem biblioteca), que já tem arrastar, pinça e zoom, com pinos.
 - Toque num pino: abre no topo uma barra com "Calcular rota" (a barra de rota do core) e "Ver mais".
