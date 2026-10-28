@@ -8,6 +8,8 @@ atualizado_em: 2026-10-28
 tipo: dormir
 tempo_visita: "Fim de semana"
 endereco: "Av. Penhasco, s/n, Jardim Bom Clima, Chapada dos Guimarães - MT, CEP 78195-000"
+latitude: -15.470725
+longitude: -55.755080
 telefone: "(65) 3612-4550"
 site: "https://penhasco.com.br/"
 preco: "Day use e diárias sob consulta. Valores: [A CONFIRMAR]"
@@ -46,3 +48,5 @@ O telefone de reservas divulgado na página da pousada no Facebook é (65) 3612-
 O site oficial não traz descrição textual das instalações, e o que existe vem de agregadores. Faltam número de quartos, valores, horários e foto de licença livre. Antes de publicar, confirme esses itens com a pousada.
 
 Dados parciais conferidos em 28 de outubro de 2026.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

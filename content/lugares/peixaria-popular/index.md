@@ -8,6 +8,8 @@ status: rascunho
 atualizado_em: 2026-10-28
 faixa_preco: "$$"
 endereco: "Av. São Sebastião, 2324, Goiabeiras, Cuiabá - MT"
+latitude: -15.594855
+longitude: -56.105126
 horario:
   - "[A CONFIRMAR]"
 ---
@@ -25,3 +27,5 @@ Endereço consultado: Av. São Sebastião, 2324, Goiabeiras. Horário, telefone,
 ## Dica
 
 A avenida concentra outras peixarias, como o Ximba na Manga, no número 2045; vale comparar.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: número do imóvel); conferir no mapa antes de aprovar.

@@ -8,6 +8,8 @@ atualizado_em: 2026-10-28
 tipo: atracao
 tempo_visita: "15 a 30 minutos"
 endereco: "Praça Pascoal Moreira Cabral, Centro, Cuiabá - MT [A CONFIRMAR] endereço completo"
+latitude: -15.600730
+longitude: -56.100331
 dicas_chegada: "Fica no centro de Cuiabá e vale combinar com outros pontos da região. [A CONFIRMAR] como chegar de ônibus e onde estacionar. Não confunda com o mirante de mesmo nome em Chapada dos Guimarães."
 ---
 
@@ -36,3 +38,5 @@ O Mirante do Centro Geodésico, em Chapada dos Guimarães, é outro lugar, com v
 A visita é rápida. Combine com a Praça da República e a Catedral, no centro. [A CONFIRMAR] iluminação noturna e segurança do entorno.
 
 Fontes: Correio Braziliense (Radar), Prefeitura de Cuiabá e Prefeitura de Chapada dos Guimarães, consultados em 2026-10-28. Sem foto de licença livre localizada.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

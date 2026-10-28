@@ -8,6 +8,8 @@ status: rascunho
 atualizado_em: 2026-10-28
 faixa_preco: "$$$"
 endereco: "Rua Presidente Castelo Branco, 359, Quilombo, Cuiabá - MT"
+latitude: -15.590173
+longitude: -56.103171
 horario:
   - "Segunda a quinta: 11h30 às 15h e 19h30 à meia-noite [A CONFIRMAR, listagem antiga]"
   - "Sexta e sábado: 11h30 às 15h e 19h30 à 1h [A CONFIRMAR]"
@@ -26,3 +28,5 @@ Endereço segundo evento divulgado pela casa: Rua Presidente Castelo Branco, 359
 ## Para quem
 
 Jantar especial, comemorações e quem quer provar a cozinha mato-grossense fora do buffet tradicional.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

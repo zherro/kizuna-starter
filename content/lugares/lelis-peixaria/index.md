@@ -8,6 +8,8 @@ status: rascunho
 atualizado_em: 2026-10-28
 faixa_preco: "$$"
 endereco: "Rua Marechal Mascarenhas de Moraes, 36, Duque de Caxias, Cuiabá - MT"
+latitude: -15.589078
+longitude: -56.109166
 horario:
   - "Segunda a sexta: 11h às 15h30 e 19h à meia-noite [A CONFIRMAR: fonte de 2013]"
   - "Sábado e domingo: 11h às 15h30 [A CONFIRMAR]"
@@ -26,3 +28,5 @@ Endereço: Rua Marechal Mascarenhas de Moraes, 36, Duque de Caxias. Telefone (65
 ## Para quem
 
 Quem quer provar peixe de rio em um restaurante dedicado ao tema. Confirme o rodízio e o preço atual.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

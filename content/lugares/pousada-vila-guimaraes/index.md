@@ -8,6 +8,8 @@ atualizado_em: 2026-10-28
 tipo: dormir
 tempo_visita: "Fim de semana"
 endereco: "Rua Neco Siqueira, 41, Centro, Chapada dos Guimarães - MT, CEP 78195-000"
+latitude: -15.462549
+longitude: -55.751692
 horario:
   - "Recepção presencial até as 23h"
   - "Check-in e check-out: [A CONFIRMAR]"
@@ -49,3 +51,5 @@ Telefone (65) 3301-1366, e-mail pousada_villaguimaraes@hotmail.com e Instagram @
 Faltam uma segunda fonte para endereço e contato, o número de quartos, os horários e uma foto de licença livre. A pousada não deve ser confundida com a Villa Glamour, que fica em outro bairro.
 
 Dados parciais conferidos no site oficial da pousada em 28 de outubro de 2026.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

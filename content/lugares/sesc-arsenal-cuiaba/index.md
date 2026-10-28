@@ -8,6 +8,8 @@ atualizado_em: 2026-10-28
 tipo: atracao
 tempo_visita: "1 a 3 horas, conforme a programação"
 endereco: "Rua 13 de Junho, Porto, Cuiabá - MT [A CONFIRMAR] número (cadastros divergem: s/n ou 1435)"
+latitude: -15.600674
+longitude: -56.097498
 horario:
   - "[A CONFIRMAR] horário de funcionamento e programação"
 site: "https://www.sescmt.com.br"
@@ -45,3 +47,5 @@ O prédio fica na Rua 13 de Junho, no Porto. Combine a visita com o Mercado do P
 Para quem gosta de cultura, de história e de passeios fáceis. Funciona bem para casais, famílias e visitantes que querem ver o prédio e a agenda do dia.
 
 Fontes: Wikipédia (verbete Sesc Arsenal), consultado em 2026-10-28. Site do Sesc-MT ainda por consultar.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

@@ -6,6 +6,8 @@ resumo: "Buffet para festas infantis na Avenida Fernando Corrêa da Costa, em Cu
 status: rascunho
 atualizado_em: 2026-10-11
 endereco: "Avenida Fernando Corrêa da Costa, 797, Jardim Guanabara, Cuiabá - MT"
+latitude: -15.610196
+longitude: -56.064483
 telefone: "(65) 3627-6363"
 instagram: "@mundomagicobuffet"
 site: "http://www.mundomagicomt.com.br/"
@@ -45,3 +47,5 @@ Segundo o site oficial, os canais da empresa são:
 O mesmo site traz um formulário de contato com campos para nome, e-mail, telefone, data, número de pessoas e mensagem.
 
 Não há horário de atendimento no site oficial, e listagens de terceiros divergem entre si. O mais seguro é ligar ou mandar mensagem antes de visitar o espaço.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: número do imóvel); conferir no mapa antes de aprovar.

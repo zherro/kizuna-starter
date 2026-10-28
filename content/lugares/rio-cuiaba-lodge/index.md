@@ -9,6 +9,8 @@ tipo: dormir
 melhor_epoca: "Pesca de fevereiro a setembro; dourado de abril ao fim de setembro (informação do lodge)"
 tempo_visita: "Fim de semana ou pacote de pesca de vários dias"
 endereco: "Av. Antártica, s/n, Lote 23, Quadra 01, Loteamento Tarumã, Distrito Sucuri, Ribeirão da Ponte, Cuiabá - MT, CEP 78040-500"
+latitude: -15.585713
+longitude: -56.114637
 telefone: "(31) 99646-7116 (WhatsApp)"
 instagram: "riocuiabalodge"
 site: "https://riocuiabalodge.com.br/"
@@ -47,3 +49,5 @@ O contato é por WhatsApp e telefone, (31) 99646-7116, e pelo e-mail riocuiabalo
 - Foto de licença livre ou autorizada pelo lodge.
 
 Lugar verificado como existente em 28 de outubro de 2026 pelo site oficial; texto em rascunho até a confirmação dos itens acima.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

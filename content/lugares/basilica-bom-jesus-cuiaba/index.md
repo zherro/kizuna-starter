@@ -8,6 +8,8 @@ atualizado_em: 2026-10-28
 tipo: atracao
 tempo_visita: "20 a 40 minutos"
 endereco: "Centro, Cuiabá - MT [A CONFIRMAR] logradouro e número"
+latitude: -15.610196
+longitude: -56.064483
 horario:
   - "[A CONFIRMAR] horários de missa e de visitação turística"
 dicas_chegada: "Fica no centro histórico, a pé de pontos como a Praça da República. Use roupa discreta ao entrar. [A CONFIRMAR] estacionamento e se há visita guiada."
@@ -44,3 +46,5 @@ A catedral fica no centro, em área de comércio e prédios históricos. Vá com
 Para quem gosta de história, de arte sacra e de arquitetura, e para quem faz o roteiro a pé pelo centro. A visita é curta e combina bem com a Praça da República e com o Museu de Arte Sacra.
 
 Fontes: Museu de Arte Sacra de MT (museudeartesacra.org.br), GCatholic e Structurae, consultados em 2026-10-28. Fonte oficial da Arquidiocese de Cuiabá ainda por consultar.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: número do imóvel); conferir no mapa antes de aprovar.

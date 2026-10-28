@@ -8,6 +8,8 @@ atualizado_em: 2026-10-28
 tipo: dormir
 tempo_visita: "Uma ou duas noites"
 endereco: "Av. Couto Magalhães, 400, Várzea Grande - MT, CEP 78110-400"
+latitude: -15.642173
+longitude: -56.123435
 instagram: "hotelportaldaamazonia"
 site: "https://www.hotelportaldaamazonia.com.br/"
 preco: "Consulte o hotel"
@@ -39,3 +41,5 @@ O hotel informa estar a cerca de 2 km do Aeroporto Internacional Marechal Rondon
 O site oficial não publica telefone (só formulário), número de apartamentos, piscina nem estacionamento. Avaliações de hóspedes citam um estacionamento onde se pode deixar o carro com segurança, mas isso não vem de fonte oficial. [A CONFIRMAR] Também falta uma foto de licença livre ou autorizada. Por isso o texto fica como rascunho.
 
 Dados parciais conferidos no site oficial do hotel em 28 de outubro de 2026.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

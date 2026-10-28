@@ -8,6 +8,8 @@ atualizado_em: 2026-10-28
 tipo: atracao
 tempo_visita: "30 minutos a 1 hora"
 endereco: "Praça da República, Centro, Cuiabá - MT, CEP 78005-240"
+latitude: -15.597894
+longitude: -56.095666
 dicas_chegada: "Fica no centro histórico, a pé de outros pontos do Centro. [A CONFIRMAR] linhas de ônibus e estacionamento. Pelo calor de Cuiabá, prefira o início da manhã ou o fim da tarde."
 creditos: "Fotos: Paixao 677, CC0 (praça); Prburley, CC BY 4.0 (2024). Ambas via Wikimedia Commons."
 ---
@@ -44,3 +46,5 @@ A praça fica no Centro, e vários pontos do centro histórico estão a poucos m
 Para quem gosta de história, de arquitetura e de caminhar. Boa parada para turistas na primeira visita à cidade e para moradores que querem ver o centro com outros olhos.
 
 Fontes: Wikipédia, verbete Praça da República (Cuiabá), consultado em 2026-10-28, usado só como pista. Fonte oficial (Iphan, Prefeitura) ainda por consultar.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

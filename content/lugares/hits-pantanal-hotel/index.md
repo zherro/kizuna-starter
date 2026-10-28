@@ -8,6 +8,8 @@ atualizado_em: 2026-10-28
 tipo: dormir
 tempo_visita: "Uma ou duas noites"
 endereco: "Av. Presidente Arthur Bernardes, 251, Jardim Aeroporto, Várzea Grande - MT"
+latitude: -15.656327
+longitude: -56.122649
 horario:
   - "Café da manhã: das 6h às 9h"
 telefone: "(65) 3363-9977"
@@ -49,3 +51,5 @@ Quem quer passear a pé pelo centro histórico de Cuiabá deve considerar outro 
 O telefone informado no site é (65) 3363-9977, e o e-mail de reservas, reservas@hitspantanal.com.br. O site também oferece WhatsApp. As tarifas não estão publicadas, então compare o valor direto com o hotel e com plataformas.
 
 Dados conferidos no site oficial do hotel em 28 de outubro de 2026. Plataformas de reserva divergem quanto ao número de quartos; vale o dado do site do hotel.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

@@ -6,6 +6,8 @@ resumo: "Bar com música ao vivo na Avenida Manoel José de Arruda, a avenida da
 status: rascunho
 atualizado_em: 2026-10-22
 endereco: "Avenida Manoel José de Arruda, Porto, Cuiabá - MT"
+latitude: -15.614949
+longitude: -56.106095
 instagram: "@seufranciscobar_reserva"
 ---
 
@@ -28,3 +30,5 @@ O endereço citado pelos guias é a Avenida Manoel José de Arruda, no Porto, CE
 ## Antes de ir
 
 As listagens de terceiros divergem no telefone e nos horários, e citam cobrança de entrada em algumas noites e limite de horário para menores. Para confirmar horário, valor de entrada e reserva de mesa, o caminho mais seguro é o Instagram do bar.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

@@ -8,6 +8,8 @@ atualizado_em: 2026-10-28
 tipo: dormir
 tempo_visita: "Uma noite"
 endereco: "Av. Senador Filinto Müller, 710, Várzea Grande - MT, CEP 78110-300 [A CONFIRMAR número: cadastro empresarial indica 750]"
+latitude: -15.651312
+longitude: -56.124354
 telefone: "(65) 3682-0347"
 instagram: "hotelrealvilles"
 preco: "Consulte o hotel"
@@ -32,3 +34,5 @@ Listagens de reserva descrevem recepção 24 horas, ar-condicionado, Wi-Fi e est
 Não foi encontrado site oficial do hotel, apenas o perfil no Instagram e anúncios de terceiros. Faltam número de apartamentos, política de transfer, preços, estacionamento e uma foto de licença livre. Antes de publicar, confirme esses itens com o hotel e, se possível, publique um endereço único.
 
 Dados conferidos em fontes de terceiros e no perfil do Instagram em 28 de outubro de 2026.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

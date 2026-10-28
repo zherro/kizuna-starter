@@ -9,6 +9,8 @@ tipo: atracao
 melhor_epoca: "Abril a setembro (período mais seco); a floração do cerrado é mais visível por volta de agosto"
 tempo_visita: "1 a 2 horas"
 endereco: "Avenida Miguel Sutil, Cuiabá - MT (próximo ao bairro Santa Helena)"
+latitude: -15.609686
+longitude: -56.082479
 horario:
   - "[A CONFIRMAR] guia de turismo cita todos os dias, das 6h às 18h; reportagem antiga fala em fechamento ao meio-dia nos fins de semana e feriados"
 dicas_chegada: "A entrada fica na Avenida Miguel Sutil, uma das principais vias de Cuiabá. [A CONFIRMAR] estacionamento e ônibus. Use calçado fechado e repelente."
@@ -44,3 +46,5 @@ O acesso é pela Avenida Miguel Sutil. Leve água, protetor solar e repelente. V
 Para quem mora na cidade e quer caminhar sem sair de Cuiabá, para famílias com crianças e para visitantes com poucas horas livres.
 
 Fontes: Wikipédia (verbete do parque), Portal Amazônia, UFMT (artigos acadêmicos), consultados em 2026-10-28. Página oficial da Sema-MT não localizada.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

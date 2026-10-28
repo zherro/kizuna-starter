@@ -8,6 +8,8 @@ atualizado_em: 2026-10-28
 tipo: dormir
 tempo_visita: "Diária ou estadia de negócios"
 endereco: "Av. Miguel Sutil, 2050, Jardim Leblon, Cuiabá - MT, CEP 78060-000"
+latitude: -15.604821
+longitude: -56.077180
 horario:
   - "Check-in e check-out: [A CONFIRMAR] (fontes divergem; consulte a página oficial da IHG)"
 telefone: "(65) 3055-8500"
@@ -49,3 +51,5 @@ Fontes de terceiros descrevem o Holiday Inn como o primeiro hotel de serviço co
 Este texto está em rascunho porque o acesso à página completa da IHG (restaurante, piscina, academia, café da manhã, estacionamento e política de pets) não foi possível durante a apuração. Antes de publicar, confirme esses itens, os horários de check-in e o número de apartamentos, e escolha uma foto de licença livre ou fornecida pelo hotel.
 
 Dados parciais conferidos na página da IHG em 28 de outubro de 2026.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: número do imóvel); conferir no mapa antes de aprovar.

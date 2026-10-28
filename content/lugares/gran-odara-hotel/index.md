@@ -8,6 +8,8 @@ atualizado_em: 2026-10-28
 tipo: dormir
 tempo_visita: "Diária ou estadia de negócios"
 endereco: "Av. Miguel Sutil, 8344, Ribeirão da Ponte, Cuiabá - MT"
+latitude: -15.609079
+longitude: -56.081934
 telefone: "(65) 3616-2014"
 instagram: "hotelgranodaracuiaba"
 site: "https://www.hotelgranodara.com.br/"
@@ -56,3 +58,5 @@ O hotel divide o atendimento por WhatsApp: reservas, recepção, restaurante e c
 O site não publica tabela de diárias. Compare o valor direto com o hotel e com as plataformas, pergunte o que está incluso (café da manhã, estacionamento) e confira política de pets e de crianças no momento da reserva, porque o site não informa esses itens.
 
 Dados conferidos no site oficial do hotel em 28 de outubro de 2026.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

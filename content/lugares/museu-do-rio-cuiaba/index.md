@@ -8,6 +8,8 @@ atualizado_em: 2026-10-28
 tipo: atracao
 tempo_visita: "1 hora"
 endereco: "Avenida Manoel José de Arruda, Porto, Cuiabá - MT [A CONFIRMAR] número"
+latitude: -15.614949
+longitude: -56.106095
 horario:
   - "[A CONFIRMAR] horário e se o museu está aberto ao público"
 dicas_chegada: "Fica no Porto, perto do Mercado do Porto e do Sesc Arsenal. [A CONFIRMAR] estacionamento e acessibilidade."
@@ -32,3 +34,5 @@ Para entender como o rio sustentou a cidade: a pesca, a feira, a ocupação do P
 Consulte as redes da Secretaria de Cultura de Cuiabá. [A CONFIRMAR] preço de entrada, dias de funcionamento e regras de visita.
 
 Fontes: Assembleia Legislativa de MT, Buser e Fodor's, consultados em 2026-10-28. Sem fonte oficial atual e sem foto de licença livre. Não publicar sem conferir.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

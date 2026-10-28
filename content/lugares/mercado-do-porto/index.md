@@ -8,6 +8,8 @@ atualizado_em: 2026-10-28
 tipo: atracao
 tempo_visita: "1 a 2 horas"
 endereco: "Avenida Oito de Abril, Porto, Cuiabá - MT, CEP 78045-700"
+latitude: -15.595578
+longitude: -56.108385
 horario:
   - "[A CONFIRMAR] horário de funcionamento por dia da semana"
 dicas_chegada: "O mercado fica no bairro do Porto, perto do Rio Cuiabá e do Sesc Arsenal. [A CONFIRMAR] estacionamento e linhas de ônibus. O movimento costuma ser maior pela manhã: registros mais antigos apontam o pico entre 8h e 14h."
@@ -46,3 +48,5 @@ O endereço é Avenida Oito de Abril, no Porto. A região fica perto do Sesc Ars
 Para quem quer sentir a rotina da cidade, comprar produto da terra e fotografar com respeito. Peça licença antes de fotografar pessoas.
 
 Fontes: Assembleia Legislativa de MT (documentos de 2015 e 2020) e Buser (endereço), consultados em 2026-10-28. Horário oficial não localizado.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

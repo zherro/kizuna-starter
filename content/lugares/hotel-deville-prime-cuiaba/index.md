@@ -8,6 +8,8 @@ atualizado_em: 2026-10-28
 tipo: dormir
 tempo_visita: "Diária ou estadia de negócios"
 endereco: "Av. Isaac Póvoas, 1000, Centro, Cuiabá - MT, CEP 78032-015"
+latitude: -15.597554
+longitude: -56.099553
 horario:
   - "Check-in a partir das 14h"
   - "Check-out até as 12h"
@@ -61,3 +63,5 @@ O hotel aceita animais de estimação, conforme sua política "Pet Amigo", cujas
 O site não traz valores fixos para os quartos Luxo, só a opção de consultar a tarifa, e pede que as suítes sejam tratadas pela central de atendimento. Por isso, nenhuma diária aparece aqui. O telefone é +55 65 3319-3000 e o e-mail da recepção é recep.cgb@deville.com.br. O horário de check-in é a partir das 14h e o check-out, até as 12h.
 
 Dados conferidos no site oficial do hotel em 28 de outubro de 2026.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

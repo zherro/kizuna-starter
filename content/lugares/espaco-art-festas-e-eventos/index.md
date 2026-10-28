@@ -6,6 +6,8 @@ resumo: "Espaço de eventos no bairro Doutor Fábio Leite, em Cuiabá, com pisci
 status: rascunho
 atualizado_em: 2026-10-11
 endereco: "Avenida Airton Senna, 77, Quadra 90, Doutor Fábio Leite, Cuiabá - MT"
+latitude: -15.644838
+longitude: -56.034022
 horario:
   - "Atendimento: seg a sex, 8h às 18h"
   - "WhatsApp: 24 horas"
@@ -50,3 +52,5 @@ Outros horários podem ser consultados com o espaço.
 ## Reservas e contato
 
 O atendimento do espaço é de segunda a sexta-feira, das 8h às 18h, e o WhatsApp (65) 99699-9749 funciona 24 horas, segundo o site oficial. O mesmo site mantém uma página de agenda, com calendário mensal de reservas. O espaço também tem perfil no Instagram, @espacoarteventos.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

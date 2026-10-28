@@ -8,6 +8,8 @@ atualizado_em: 2026-10-28
 tipo: dormir
 tempo_visita: "Day use de um dia ou fim de semana"
 endereco: "Rua Antônio Dorileo, 1100, Cophema, Coxipó, Cuiabá - MT"
+latitude: -15.626654
+longitude: -56.058610
 horario:
   - "Day use: das 9h às 17h"
   - "Check-in a partir das 14h; check-out até as 12h"
@@ -55,3 +57,5 @@ O hotel informa que não oferece transfer. Quem não tem carro pode usar táxi, 
 - Grupos de amigos que querem passar o dia na piscina com almoço.
 
 Dados conferidos no site oficial do hotel em 28 de outubro de 2026. Um telefone diferente, (65) 4042-0054, circulou em notícias de 2021; o número vigente no site é o primeiro citado acima.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.

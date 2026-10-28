@@ -8,6 +8,8 @@ atualizado_em: 2026-10-28
 tipo: dormir
 tempo_visita: "Fim de semana"
 endereco: "Rua das Hortênsias, Jardim Aclimação, Chapada dos Guimarães - MT [A CONFIRMAR número: 01 ou 110]"
+latitude: -15.460144
+longitude: -55.739234
 telefone: "(65) 99963-7457"
 instagram: "pousadavillaglamour"
 site: "https://pousadavillaglamour.com.br/"
@@ -37,3 +39,5 @@ Não confunda a Villa Glamour com a Pousada Vila Guimarães, que fica no centro,
 O site oficial da pousada não pôde ser lido durante a apuração. Falta confirmar o endereço, os tipos de quarto, a estrutura de lazer, os horários, os preços e uma foto de licença livre ou fornecida pela pousada.
 
 Dados parciais conferidos na lista de hospedagens da prefeitura e em agregadores, em 28 de outubro de 2026.
+
+[A CONFIRMAR] coordenadas (geocodificadas do endereço, precisão: só a rua, ponto aproximado); conferir no mapa antes de aprovar.
