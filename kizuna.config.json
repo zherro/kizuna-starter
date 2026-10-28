@@ -47,16 +47,10 @@
   },
   "regions": [
     {
-      "_comment": "Regiões: cidades irmãs (códigos IBGE em cities) funcionam como UMA praça — todo filtro por uma delas inclui as outras (busca, swipe, carrosséis da home), com a cidade selecionada primeiro; o seletor continua escolhendo uma cidade só. suggestTo = regiões cujos visitantes veem esta como SUGESTÃO (seção à parte abaixo dos resultados da busca).",
+      "_comment": "Regiões: cidades irmãs (códigos IBGE em cities) funcionam como UMA praça — todo filtro por uma delas inclui as outras (busca, swipe, carrosséis da home), com a cidade selecionada primeiro; o seletor continua escolhendo uma cidade só. suggestTo = regiões cujos visitantes veem esta como SUGESTÃO (seção à parte abaixo dos resultados da busca). Chapada dos Guimarães (5103007) faz parte da praça de Cuiabá e Várzea Grande.",
       "key": "grande-cuiaba",
       "title": "Também na Grande Cuiabá",
-      "cities": ["5103403", "5108402"]
-    },
-    {
-      "key": "chapada",
-      "title": "Para o fim de semana em Chapada",
-      "cities": ["5103007"],
-      "suggestTo": ["grande-cuiaba"]
+      "cities": ["5103403", "5108402", "5103007"]
     }
   ],
   "location": {

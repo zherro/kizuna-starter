@@ -5,6 +5,7 @@ import { loadRoutableCities } from '@kizuna/core/server/location/cities';
 import { runServiceSearch } from '@kizuna/core/server/services/service-search';
 import { loadEntries } from '@kizuna/core/server/content';
 import { LUGARES } from '@/lib/lugares';
+import { loadTurismo } from '@/lib/turismo';
 
 // Sitemap vivo: anúncios novos entram em até 1h (sem rebuild).
 export const revalidate = 3600;
@@ -38,6 +39,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: 'monthly' as const,
     priority: 0.6,
   }));
+  const turismo = loadTurismo();
+  const toEntry = (path: string, priority: number) => ({ url: `${url}${path}`, changeFrequency: 'monthly' as const, priority });
   return [
     { url: `${url}/`, changeFrequency: 'daily', priority: 1 },
     { url: `${url}/descobrir`, changeFrequency: 'daily', priority: 0.7 },
@@ -51,6 +54,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     })),
     ...lugares,
+    ...['/turismo', '/turismo/rotas', '/turismo/dormir', '/turismo/comer', '/turismo/o-que-fazer', '/turismo/regioes'].map((p) => toEntry(p, p === '/turismo' ? 0.8 : 0.6)),
+    ...turismo.rotas.map((r) => toEntry(r.href, 0.6)),
+    ...turismo.regioes.map((r) => toEntry(r.href, 0.6)),
     ...ads,
   ];
 }

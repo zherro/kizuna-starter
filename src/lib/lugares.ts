@@ -36,6 +36,12 @@ export const LUGARES = defineCollection({
     preco: { type: 'string' },
     dicas_chegada: { type: 'string' },
     creditos: { type: 'string' },
+    // Turismo (opcionais): lugar sem `tipo` segue válido e fora das listas de turismo.
+    tipo: { type: 'enum', values: ['dormir', 'comer', 'atracao'] },
+    faixa_preco: { type: 'enum', values: ['$', '$$', '$$$'] },
+    regiao: { type: 'string' },
+    melhor_epoca: { type: 'string' },
+    tempo_visita: { type: 'string' },
   },
   publishWhen: { field: 'status', equals: 'aprovado' },
   validate: (d) =>

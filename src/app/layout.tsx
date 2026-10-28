@@ -6,6 +6,7 @@ import {
   Home,
   LayoutDashboard,
   LogIn,
+  Map,
   Megaphone,
   Search,
   UserCircle,
@@ -187,6 +188,7 @@ export default function RootLayout({
               }
               navLinks={[
                 { href: '/busca', label: 'Buscar', icon: <Search /> },
+                { href: '/turismo', label: 'Turismo', icon: <Map /> },
                 { href: '/painel', label: 'Divulgar', icon: <Megaphone /> },
               ]}
             />
