@@ -48,8 +48,8 @@ export function HomePage({ city }: { city: RoutableCity | null }) {
       instagramUrl={home?.instagramUrl || undefined}
       showNearby={home?.showNearby !== false}
       cityName={city?.name}
-      todayCallout={<TodayCallout href={city ? cityPath(city, '/hoje') : '/hoje'} />}
-      mapCallout={<MapCallout href="/mapa" />}
+      todayCallout={<TodayCallout contained={false} href={city ? cityPath(city, '/hoje') : '/hoje'} />}
+      mapCallout={<MapCallout contained={false} href="/mapa" />}
       searchBar={
         home?.showSearch !== false ? (
           <HomeSearch

@@ -111,13 +111,18 @@ export function HomeContent({
         variant={categoriesVariant}
         onlyWithListings={categoriesOnlyWithListings}
       />
-      {showDiscover ? (
-        <div className="pb-4">
-          <DiscoverCta />
+      {/* Chamadas: celular = "hoje" em linha cheia e, abaixo, mapa e swipe lado a lado; desktop = 3 colunas. */}
+      {showDiscover || todayCallout || mapCallout ? (
+        <div className="mx-auto grid w-full max-w-[1600px] grid-cols-2 gap-3 px-4 pb-10 pt-4 sm:gap-4 sm:px-6 sm:pb-12 lg:grid-cols-3">
+          {showDiscover ? (
+            <div className="order-3 lg:order-1">
+              <DiscoverCta contained={false} />
+            </div>
+          ) : null}
+          {todayCallout ? <div className="order-1 col-span-2 lg:order-2 lg:col-span-1">{todayCallout}</div> : null}
+          {mapCallout ? <div className="order-2 lg:order-3">{mapCallout}</div> : null}
         </div>
       ) : null}
-      {todayCallout}
-      {mapCallout}
       {/* busca centralizada (~700px) e com respiro: é o convite principal depois do swipe */}
       {searchBar ? (
         <div className="mx-auto w-full max-w-[calc(700px+2rem)] px-4 pb-14 pt-6 sm:max-w-[calc(700px+3rem)] sm:px-6 sm:pb-16 sm:pt-8">
