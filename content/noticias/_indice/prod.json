@@ -26,6 +26,11 @@
       "hash_arquivo": "3e42eef6a49f5e0496c49a975e7489589ea056d4a34328345cabac8bee76791d",
       "publicada_em": "2026-10-26T15:49:59.537Z"
     },
+    "marco-centro-geodesico-cuiaba": {
+      "service_id": 180,
+      "hash_arquivo": "3b5270e0182baab3d04b20bf51efc93d30328ff1f6beff125e990629abc3a346",
+      "indexada_em": "2026-10-28T20:00:22.053Z"
+    },
     "mega-sena-acumula-300-milhoes": {
       "service_id": 177,
       "hash_arquivo": "54764300cf00109b633f53805da44c8ac86d141497b688aba8506bee48ded376",
@@ -35,6 +40,11 @@
       "service_id": 172,
       "hash_arquivo": "2d6f62e6c6e05e481c4f6cec810e43c575471a71fe0a45f5f29a10f719d7f1d1",
       "publicada_em": "2026-10-26T15:50:03.290Z"
+    },
+    "pantanal-patrimonio-unesco": {
+      "service_id": 181,
+      "hash_arquivo": "1b9dbca5b54ac0f03e654b010ee7d809783e8b9f645af32ae140a3be2f11e59b",
+      "publicada_em": "2026-10-28T20:00:27.751Z"
     },
     "piracema-2026-mato-grosso-regras": {
       "service_id": 178,
@@ -50,6 +60,21 @@
       "service_id": 179,
       "hash_arquivo": "197a9cb18130f7818bc64a20c6a6fc28bab049520437fa230ae8ec18c839b57a",
       "publicada_em": "2026-10-26T15:53:26.271Z"
+    },
+    "salgadeira": {
+      "service_id": 182,
+      "hash_arquivo": "077b6fe74152cc3dcc87847d0d403e35ff89febda830d63e238ae2c9a6cd2d20",
+      "publicada_em": "2026-10-28T20:00:34.121Z"
+    },
+    "veu-de-noiva-chapada": {
+      "service_id": 183,
+      "hash_arquivo": "2b2b75e82f2b97a09c0444b7fd4f9cbd7bce60782d697920f1c80e3df4b896ec",
+      "publicada_em": "2026-10-28T20:00:39.121Z"
+    },
+    "viola-de-cocho": {
+      "service_id": 184,
+      "hash_arquivo": "80da4260275d9a05368d431787c34f1a574d90b27ca67bd3dffa4a53deb91021",
+      "publicada_em": "2026-10-28T20:00:41.777Z"
     }
   }
 }
