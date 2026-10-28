@@ -321,6 +321,7 @@
       },
       "finishHrefByMode": {
         "create": "/painel/meus-servicos",
+        "edit": "/painel/meus-servicos",
         "review": "/painel/administracao/aprovacoes"
       }
     }
