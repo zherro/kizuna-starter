@@ -54,6 +54,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     })),
     ...lugares,
+    ...[`/hoje`, ...cities.map((c) => cityPath(c, '/hoje'))].map((p) => ({ url: `${url}${p}`, changeFrequency: 'daily' as const, priority: 0.7 })),
+    { url: `${url}/mapa`, changeFrequency: 'weekly' as const, priority: 0.6 },
     ...['/turismo', '/turismo/rotas', '/turismo/dormir', '/turismo/comer', '/turismo/o-que-fazer', '/turismo/regioes'].map((p) => toEntry(p, p === '/turismo' ? 0.8 : 0.6)),
     ...turismo.rotas.map((r) => toEntry(r.href, 0.6)),
     ...turismo.regioes.map((r) => toEntry(r.href, 0.6)),

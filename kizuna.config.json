@@ -167,6 +167,15 @@
       { "slug": "cinema", "title": "Cinema em cartaz", "limit": 10, "scope": "region" }
     ]
   },
+  "today": {
+    "_comment": "Página /hoje (e /{cidade}/hoje): o que fazer hoje, na ordem de relevância (a ordem do array). Mesmo formato de home.categoryRails: slug (categories.slug) OU group (categories_group.slug), title, limit (default 8), scope city|region; mais onlyToday: só anúncios cujo início cai hoje (fuso America/Cuiaba), do mais cedo ao mais tarde. Seção sem item some; sem nenhuma, a página mostra o estado vazio.",
+    "sections": [
+      { "group": "eventos", "title": "Eventos de hoje", "onlyToday": true, "scope": "region", "limit": 12 },
+      { "slug": "cinema", "title": "Cinema em cartaz", "scope": "region", "limit": 10 },
+      { "slug": "bares", "title": "Bares", "scope": "region", "limit": 10 },
+      { "slug": "parques", "title": "Parques para ir hoje", "scope": "region", "limit": 10 }
+    ]
+  },
   "serviceDetail": {
     "_comment": "Layout/cor da tela de detalhe do anúncio (/anuncios/[uid]) por categoria. \"variantByCategorySlug\": slug da categoria -> variant (\"service\" é o default, sempre disponível; \"cinema\" mostra sessões/gêneros/duração em vez da faixa de facts genérica, e some com o preço no card de resumo). \"variantByGroupSlug\": slug do grupo de categorias (categories_group.slug) -> variant, para todas as categorias do grupo sem entrada própria (a categoria tem precedência; ex. o grupo eventos usa o layout evento; requer search 0005, que devolve category_group_slug). Sem entrada de categoria nem de grupo cai em \"defaultVariant\". \"colors\": hue OKLCH (0-360) do acento (marcador de seção, faixa do hero), por slug da categoria e depois por slug do grupo; \"default\" vale pra quem não tem entrada própria. \"excludeFromMixedCategorySlugs\": slugs fora da busca/home quando não há filtro de categoria — a categoria continua acessível sozinha (ex. pelo carrossel). Vazio = nada escondido (comportamento atual). \"reactions\": botões Gostei/Favoritar do detalhe (plugin swipe) — icon (nome lucide-react), label, labelActive; remova um bloco para esconder o botão. \"sectionTitles\": títulos das seções do detalhe por slug da categoria, depois do grupo, depois \"default\" (cada chave resolve sozinha): about (descrição, padrão \"Sobre o serviço\") e details (quadro de informações, padrão \"Detalhes do serviço\"); cinema mantém \"Sinopse\"/\"Onde assistir\". Variant \"noticia\" (grupo noticias): a página vira matéria — chapéu (subcategoria), título, autor/data de publicação/tempo de leitura, foto de capa com legenda e crédito (extras.imagem_credito), corpo em largura de leitura e fontes no fim (extras.fontes, senão fonte + link do formulário); sem preço, avaliações, prestador nem mapa; card sem preço com \"Ler notícia\". \"timeZone\": fuso IANA das datas sem fuso do formulário (data_publicacao), default America/Sao_Paulo.",
     "timeZone": "America/Cuiaba",

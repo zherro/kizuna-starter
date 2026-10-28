@@ -35,6 +35,10 @@ type HomeContentProps = {
   inkLevel?: HomeInkLevel;
   /** carrosséis por categoria (Server Components montados na page) — vem de home.categoryRails */
   categoryRails?: ReactNode;
+  /** chamada "O que tem pra hoje" (Server Component montado na page), logo abaixo do swipe */
+  todayCallout?: ReactNode;
+  /** chamada "Mapa: o que tem perto de você" (Server Component montado na page), logo abaixo da do Hoje */
+  mapCallout?: ReactNode;
   /** busca logo abaixo do swipe (Client Component montado na page) — vem de home.showSearch */
   searchBar?: ReactNode;
   /** blocos de engajamento (Server Components montados na page): notícias e, abaixo, lugares da cidade — vêm de home.showNews / home.showPlaces */
@@ -58,6 +62,8 @@ export function HomeContent({
   inkPicker = HOME_INK_TONE_PICKER_ENABLED,
   inkLevel: defaultInkLevel = HOME_INK_FIXED_LEVEL,
   categoryRails,
+  todayCallout,
+  mapCallout,
   searchBar,
   placeHighlights,
   newsHighlights,
@@ -110,6 +116,8 @@ export function HomeContent({
           <DiscoverCta />
         </div>
       ) : null}
+      {todayCallout}
+      {mapCallout}
       {/* busca centralizada (~700px) e com respiro: é o convite principal depois do swipe */}
       {searchBar ? (
         <div className="mx-auto w-full max-w-[calc(700px+2rem)] px-4 pb-14 pt-6 sm:max-w-[calc(700px+3rem)] sm:px-6 sm:pb-16 sm:pt-8">

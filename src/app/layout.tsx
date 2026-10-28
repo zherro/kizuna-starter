@@ -7,8 +7,10 @@ import {
   LayoutDashboard,
   LogIn,
   Map,
+  MapPin,
   Megaphone,
   Search,
+  Sun,
   UserCircle,
 } from 'lucide-react';
 import { PwaRegister } from '@kizuna/core/client/components/pwa-register';
@@ -188,6 +190,8 @@ export default function RootLayout({
               }
               navLinks={[
                 { href: '/busca', label: 'Buscar', icon: <Search /> },
+                { href: '/hoje', label: 'Hoje', icon: <Sun /> },
+                { href: '/mapa', label: 'Mapa', icon: <MapPin /> },
                 { href: '/turismo', label: 'Turismo', icon: <Map /> },
                 { href: '/painel', label: 'Divulgar', icon: <Megaphone /> },
               ]}

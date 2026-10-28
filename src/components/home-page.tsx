@@ -7,6 +7,9 @@ import { HOME_INK_LEVELS, type HomeInkLevel } from '@/components/home/home-ink-c
 import { CategoryRails, type CategoryRailConfig } from '@/components/home/category-rails';
 import { HomeNews, HomePlaces, type PlacesMosaicConfig } from '@/components/home/home-engagement';
 import { HomeSeo } from '@/components/home/home-seo';
+import { TodayCallout } from '@kizuna/core/client/components/today';
+import { MapCallout } from '@kizuna/core/client/components/map';
+import { cityPath } from '@kizuna/core/shared/city-routing/city-slug';
 import { HomeSearch } from '@kizuna/core/client/components/home/home-search';
 import type { ServiceDetailConfig } from '@kizuna/core/client/components/services/detail';
 import type { RoutableCity } from '@kizuna/core/shared/city-routing/city-slug';
@@ -45,6 +48,8 @@ export function HomePage({ city }: { city: RoutableCity | null }) {
       instagramUrl={home?.instagramUrl || undefined}
       showNearby={home?.showNearby !== false}
       cityName={city?.name}
+      todayCallout={<TodayCallout href={city ? cityPath(city, '/hoje') : '/hoje'} />}
+      mapCallout={<MapCallout href="/mapa" />}
       searchBar={
         home?.showSearch !== false ? (
           <HomeSearch
