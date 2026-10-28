@@ -90,6 +90,7 @@ export function AnuncioDetail({ data: loaded, path }: { data: ServiceDetailData;
         detailConfig={serviceDetailConfig}
         path={path}
         analytics={{ viewRule: trackRule('service', 'view') }}
+        editHref={`/painel/meus-servicos/${data.service.id}`}
       />
     </>
   );
