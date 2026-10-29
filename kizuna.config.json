@@ -306,6 +306,20 @@
             }
           }
         },
+        "_comment_dynamic-form": "Validade do anúncio (services.expires_at) no TOPO do passo do formulário dinâmico. Nos eventos é a data em que o evento acontece (o anúncio deixa de aparecer depois dela). expiresAt: required | optional | false. Obrigatório por categoria: adicione byCategory.<slug-da-categoria> com o perfil inteiro (substitui o do grupo, sem merge); precedência categoria > grupo > default.",
+        "dynamic-form": {
+          "byGroup": {
+            "eventos": {
+              "expiresAt": "required",
+              "expiresAtLabels": {
+                "label": "Acontece em",
+                "hint": "Data em que o evento acontece. Depois dela o anúncio sai da busca. Em eventos de vários dias, use o último dia.",
+                "required": "Informe a data em que o evento acontece",
+                "past": "A data do evento não pode estar no passado"
+              }
+            }
+          }
+        },
         "price": {
           "default": {
             "options": [
