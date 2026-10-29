@@ -1990,12 +1990,16 @@ COMMIT;
 -- db/extras/forms_seed_eventos.sql
 --
 -- Seed do formulario `eventos` (plugin forms). Um anuncio = um evento:
---   - Evento: data, realizador, link, endereco em texto, local cadastrado (`local_ref`, tipo
---     `service-ref`: uid ou codigo do anuncio-lugar; grupo `lugares`
---     de db/extras/lugares_import.sql), classificacao, gratuito e artistas.
+--   - Evento: data, realizador, link, classificacao, gratuito e artistas.
+--     Endereco, local cadastrado (`local_ref`) e pontos de venda (`pontos_de_venda`) NAO ficam no formulario:
+--     o wizard os edita no passo de endereco (endereco em service_addresses; local e pontos de venda em
+--     services.extras, via kizuna.config.json stepProfiles.location.byGroup.eventos.refs).
+--     Respostas antigas com essas chaves continuam lidas pela pagina do evento.
 --   - Sessoes (`list`): data e horarios de cada dia do evento.
 --   - Ingressos (`list`): titulo, setor, tipo, pessoas (= pulseiras), lote, valor (mascara R$) e comprar (texto livre).
---   - Onde comprar: link de ingressos e pontos de venda (`list` de um campo de texto livre, como artistas).
+--   - O link geral de compra (`link_ingresso`) e a secao "Onde comprar" sairam: os pontos de venda (cada um
+--     com seu link) ficam no passo de endereco. Respostas antigas com `link_ingresso` continuam lidas pela
+--     pagina do evento.
 --   - Contato: telefone, WhatsApp e e-mail.
 --   Meia-entrada, acessibilidade, formas de pagamento e observacoes NAO tem campo: o assistente as resume na
 --   descricao do anuncio ("Informacoes uteis").
@@ -2074,21 +2078,6 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
       "id": "evt_05_link", "key": "link", "name": "link", "type": "url", "label": "Link do evento",
       "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6, "2xl": 6 },
       "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "https://"
-    },
-    {
-      "id": "evt_06_endereco", "key": "endereco", "name": "endereco", "type": "text", "label": "Endereço",
-      "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-      "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "Local, rua, número, bairro"
-    },
-    {
-      "id": "evt_07_local_ref", "key": "local_ref", "name": "local_ref", "type": "service-ref", "label": "Local cadastrado",
-      "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-      "behavior": {}, "validation": {},
-      "appearance": { "helpText": "Se o evento acontece num lugar já anunciado, escolha-o: a página do evento mostra \"Onde acontece\" com link." },
-      "placeholder": "Busque o lugar pelo nome",
-      "serviceRef": {
-        "groupSlugs": ["lugares"]
-      }
     },
     {
       "id": "evt_10_classificacao_indicativa", "key": "classificacao_indicativa", "name": "classificacao_indicativa", "type": "select", "label": "Classificação indicativa",
@@ -2206,29 +2195,6 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
           "id": "ing_comprar", "key": "comprar", "name": "comprar", "type": "text", "label": "Comprar",
           "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6, "2xl": 6 },
           "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "Ex.: comprar no site, link ou ponto de venda"
-        }
-      ]
-    },
-    {
-      "id": "evt_15_secao_compra", "key": "secao_compra", "name": "secao_compra", "type": "heading", "label": "Onde comprar",
-      "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-      "behavior": {}, "validation": {}, "appearance": {}
-    },
-    {
-      "id": "evt_16_link_ingresso", "key": "link_ingresso", "name": "link_ingresso", "type": "url", "label": "Comprar ingresso (link)",
-      "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-      "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "https://"
-    },
-    {
-      "id": "evt_20_pontos_de_venda", "key": "pontos_de_venda", "name": "pontos_de_venda", "type": "list", "label": "Pontos de venda",
-      "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-      "behavior": {}, "validation": {}, "appearance": {},
-      "itemLabel": "Ponto de venda",
-      "itemFields": [
-        {
-          "id": "pdv_nome", "key": "nome", "name": "nome", "type": "text", "label": "Ponto de venda",
-          "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-          "behavior": { "required": true }, "validation": {}, "appearance": {}
         }
       ]
     },

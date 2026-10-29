@@ -26,8 +26,12 @@
     "_comment_defaults": "\"defaultGroup\": slug do grupo já selecionado quando a /busca abre sem grupo, categoria nem texto (\"Todas as categorias\" no filtro mostra tudo; a URL ganha ?group=todos). null = todos. \"orderByGroup\": ordenação por slug do grupo, \"default\" para os demais, no formato \"campo:asc|desc\" — campos: occurs_at (quando acontece; asc = próximos primeiro), created_at, expires_at, price, title; \"relevance\" = ordem de sempre. Só com \"Ordenar por: Relevância\". Requer services 0016 + search 0011.",
     "defaultGroup": null,
     "orderByGroup": {
-      "eventos": "occurs_at:asc",
+      "eventos": "expires_at:asc",
       "default": "relevance"
+    },
+    "_comment_expired": "\"expired\": grupos que seguem na busca por alguns dias depois de vencer (services.expires_at), sempre depois dos não vencidos, com o card apagado e um selo. \"days\" = quantos dias depois do vencimento (1 a 365); \"label\" = texto do selo (padrão \"Encerrado\"). Sem o grupo aqui, vencido some da busca. Ver kizuna-core/docs/plugins/search.md.",
+    "expired": {
+      "eventos": { "days": 2, "label": "Já aconteceu" }
     },
     "_comment_browseGroups": "\"browseGroups\": trilhas na ordem — slug de grupo (categories_group.slug) ou { \"groups\": [slugs], \"title\": \"...\" } para juntar vários grupos numa trilha só (itens alternados; sem title, os nomes dos grupos com \" e \"; o \"Ver mais\" leva ao primeiro grupo). Sem filtro além da cidade, a /busca mostra um carrossel por trilha (vitrine) em vez da lista misturada; buscar texto ou marcar qualquer filtro volta à lista. Cada trilha usa a ordenação do grupo em orderByGroup; grupo sem anúncio na cidade some. Vazio/omitido = sempre a lista. Com browseGroups, deixe defaultGroup null (senão a busca já abre filtrada e a vitrine não aparece).",
     "browseGroups": [

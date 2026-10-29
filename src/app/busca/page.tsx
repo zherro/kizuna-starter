@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { SearchPage } from '@kizuna/core/client/components/search/search-page';
 import type { BrowseRailConfig } from '@kizuna/core/client/components/search/search-browse-rails';
+import type { ExpiredByGroup } from '@kizuna/core/client/components/search/expired';
 import type { ServiceDetailConfig } from '@kizuna/core/client/components/services/detail';
 import { trackRule } from '@/lib/analytics';
 import { AdSlot } from '@kizuna/core/client/ads';
@@ -23,12 +24,19 @@ const aiEnabled = (cfg as { search?: { ai?: boolean } }).search?.ai !== false;
 // `search.defaultGroup` (grupo marcado ao chegar sem filtro) e `search.orderByGroup` (ordem por grupo).
 const searchCfg = (
   cfg as {
-    search?: { defaultGroup?: string | null; orderByGroup?: Record<string, string>; browseGroups?: BrowseRailConfig[] };
+    search?: {
+      defaultGroup?: string | null;
+      orderByGroup?: Record<string, string>;
+      browseGroups?: BrowseRailConfig[];
+      expired?: ExpiredByGroup;
+    };
   }
 ).search;
 const searchDefaults = {
   defaultGroupSlug: searchCfg?.defaultGroup ?? null,
   orderByGroup: searchCfg?.orderByGroup,
+  // `search.expired`: grupos que mostram vencidos recentes, com selo (ex. eventos "Já aconteceu").
+  expiredByGroup: searchCfg?.expired,
 };
 // `search.browseGroups`: sem filtro além da cidade, um carrossel por item (grupo ou grupos juntos), nesta ordem.
 const browseGroups = searchCfg?.browseGroups ?? [];

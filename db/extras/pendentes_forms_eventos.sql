@@ -1,8 +1,8 @@
 -- db/extras/pendentes_forms_eventos.sql
 --
 -- Atualiza o formulario `eventos` de um banco existente para o schema de db/extras/forms_seed_eventos.sql
--- (sessoes, ingressos com setor/tipo/pessoas/lote/comprar, link de compra e contato; endereco, local_ref e
--- pontos_de_venda sairam do formulario: ficam no passo de endereco do wizard), sem apagar
+-- (sessoes, ingressos com setor/tipo/pessoas/lote/comprar e contato; endereco, local_ref e
+-- pontos_de_venda sairam do formulario: ficam no passo de endereco do wizard; link_ingresso saiu), sem apagar
 -- o formulario nem as respostas. As chaves antigas continuam iguais; as respostas ja gravadas seguem validas.
 -- O trigger do plugin forms incrementa `version`. Opcoes acrescentadas pelo importador sao substituidas
 -- pelas do seed (o importador as acrescenta de novo na proxima Fase 1).
@@ -15,24 +15,14 @@ BEGIN;
 -- 1) Formulario -------------------------------------------------------------------------------------
 INSERT INTO public.forms (tenant_id, form_key, title, description, schema, active, created_by)
 SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
-       'Data, sessões, ingressos, onde comprar e contato do evento.', $schema$
+       'Horários, ingressos, onde comprar e contato do evento.', $schema$
 {
   "title": "Eventos — detalhes e ingressos",
-  "description": "Data, sessões, ingressos, onde comprar e contato do evento.",
+  "description": "Horários, ingressos, onde comprar e contato do evento.",
   "fields": [
     {
       "id": "evt_01_secao_evento", "key": "secao_evento", "name": "secao_evento", "type": "heading", "label": "Evento",
       "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-      "behavior": {}, "validation": {}, "appearance": {}
-    },
-    {
-      "id": "evt_02_data_inicio", "key": "data_inicio", "name": "data_inicio", "type": "datetime", "label": "Data e hora de início",
-      "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6, "2xl": 6 },
-      "behavior": { "required": true }, "validation": {}, "appearance": {}
-    },
-    {
-      "id": "evt_03_data_fim", "key": "data_fim", "name": "data_fim", "type": "datetime", "label": "Data e hora de término",
-      "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6, "2xl": 6 },
       "behavior": {}, "validation": {}, "appearance": {}
     },
     {
@@ -77,34 +67,29 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
       ]
     },
     {
-      "id": "evt_13_secao_sessoes", "key": "secao_sessoes", "name": "secao_sessoes", "type": "heading", "label": "Datas e horários",
+      "id": "evt_13_secao_sessoes", "key": "secao_sessoes", "name": "secao_sessoes", "type": "heading", "label": "Horários",
       "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
       "behavior": {}, "validation": {}, "appearance": {}
     },
     {
-      "id": "evt_14_sessoes", "key": "sessoes", "name": "sessoes", "type": "list", "label": "Sessões",
+      "id": "evt_14_sessoes", "key": "sessoes", "name": "sessoes", "type": "list", "label": "Horários",
       "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
       "behavior": {}, "validation": {}, "appearance": {},
-      "itemLabel": "Sessão",
+      "itemLabel": "Horário",
       "itemFields": [
         {
-          "id": "ses_data", "key": "data", "name": "data", "type": "date", "label": "Data",
-          "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 3, "xl": 3, "2xl": 3 },
-          "behavior": { "required": true }, "validation": {}, "appearance": {}
-        },
-        {
           "id": "ses_abertura_portoes", "key": "abertura_portoes", "name": "abertura_portoes", "type": "time", "label": "Abertura dos portões",
-          "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 3, "xl": 3, "2xl": 3 },
+          "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4, "2xl": 4 },
           "behavior": {}, "validation": {}, "appearance": {}
         },
         {
           "id": "ses_hora_inicio", "key": "hora_inicio", "name": "hora_inicio", "type": "time", "label": "Início",
-          "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 3, "xl": 3, "2xl": 3 },
+          "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4, "2xl": 4 },
           "behavior": {}, "validation": {}, "appearance": {}
         },
         {
           "id": "ses_hora_fim", "key": "hora_fim", "name": "hora_fim", "type": "time", "label": "Término",
-          "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 3, "xl": 3, "2xl": 3 },
+          "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4, "2xl": 4 },
           "behavior": {}, "validation": {}, "appearance": {}
         }
       ]
@@ -163,11 +148,6 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
           "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "Ex.: comprar no site, link ou ponto de venda"
         }
       ]
-    },
-    {
-      "id": "evt_16_link_ingresso", "key": "link_ingresso", "name": "link_ingresso", "type": "url", "label": "Comprar ingresso (link)",
-      "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-      "behavior": {}, "validation": {}, "appearance": {}, "placeholder": "https://"
     },
     {
       "id": "evt_21_secao_contato", "key": "secao_contato", "name": "secao_contato", "type": "heading", "label": "Contato",

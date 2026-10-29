@@ -15,7 +15,7 @@ Instruções para o robô que lê o payload do evento montado no assistente de p
 - **Subcategoria** (`taxonomia.subcategorias[]`) que faltar é inserida **sempre com `active = false`**. O robô **nunca** ativa, edita ou apaga taxonomia; quem ativa é a pessoa responsável, pela UI. **Nenhum anúncio é gravado enquanto houver subcategoria usada pelos arquivos que não esteja `active = true`.**
 - **Opções de formulário** (`ingressos.tipo`): o robô **acrescenta ao `forms.schema`** a opção que faltar (passo 1.5) e segue. Nunca remova nem renomeie opção existente. `classificacao_indicativa` tem opções fixas: valor fora delas é omitido e reportado.
 - **Validade:** só por `services.expires_at` (a plataforma já a vigia: expirou, está inativo). O assistente não emite `encerrado` nem `esgotado`.
-- **`expires_at` é o "Acontece em":** o card e o detalhe do evento mostram o **dia** dele (lido no fuso de Cuiabá), e o formulário do painel o pede no topo do passo "Detalhes do evento" (fim do dia escolhido). Por isso grave sempre o fuso do local (ver `fuso` no cálculo de `expira_em`); `data_inicio`/`data_fim` do formulário seguem valendo para horários e programação, mas não definem mais a data exibida.
+- **`expires_at` é o "Acontece em":** o card e o detalhe do evento mostram o **dia** dele (lido no fuso de Cuiabá), e o formulário do painel o pede no topo do passo "Detalhes do evento" (fim do dia escolhido). Por isso grave sempre o fuso do local (ver `fuso` no cálculo de `expira_em`); O formulário do painel não pede mais `data_inicio`, `data_fim` nem a data de cada sessão (as sessões viraram só "Horários", sem data); o robô pode continuar gravando esses campos, que servem de reserva quando o anúncio não tem `expires_at`.
 - **Sem campo no formulário:** meia-entrada, acessibilidade, formas de pagamento, canais de venda e observações. O assistente as resume na descrição do anúncio ("Informações úteis"), então `description` já as traz.
 - **Descrição revisada por IA não é sobrescrita:** no UPDATE, `description` só muda se o serviço **não** tiver linha em `public.service_text_revisions` com `field = 'description'` e `status = 'approved'`.
 - Grave em `public.form_results` direto; não use `fn_form_result_upsert`.
@@ -41,7 +41,8 @@ Só os caminhos abaixo têm destino; qualquer outro vai em `campos_nao_mapeados`
 | `local.cidade`, `local.uf` | text | sim | resolvem o IBGE |
 | `local.cep`, `local.latitude`, `local.longitude` | text, number | não | |
 | `contato.telefone`, `contato.whatsapp`, `contato.email` | text | não | |
-| `contato.site`, `contato.link_ingresso` | URL | não | `site` vira `answers.link` |
+| `contato.site` | URL | não | vira `answers.link` |
+| `contato.link_ingresso` | URL | não | não é gravado (ver "Sem destino") |
 | `midia.capa`, `midia.imagens_locais[]` | caminho | não | arquivos do assistente (`/media/<arquivo>`); a capa é a primeira |
 | `detalhes.organizador` | text | não | vira `realizador` |
 | `detalhes.classificacao_indicativa` | text | não | `livre`, `10`, `12`, `14`, `16` ou `18` (aceita `18+`, `18 anos`) |
@@ -79,7 +80,7 @@ Confira no `schema_snapshot` que existem estes campos (por `key`) e subcampos (`
 
 ```
 data_inicio data_fim realizador link classificacao_indicativa gratuito
-link_ingresso contato_telefone contato_whatsapp contato_email
+contato_telefone contato_whatsapp contato_email
 artistas: nome
 sessoes: data abertura_portoes hora_inicio hora_fim
 ingressos: titulo setor tipo pessoas lote valor comprar
@@ -312,7 +313,6 @@ LIMIT 1;
 | `contato.whatsapp` | `answers.contato_whatsapp` | direto |
 | `contato.email` | `answers.contato_email` | minúsculo |
 | `contato.site` | `answers.link` | direto |
-| `contato.link_ingresso` | `answers.link_ingresso` | direto |
 | `detalhes.organizador` | `answers.realizador` | direto |
 | `detalhes.classificacao_indicativa` | `answers.classificacao_indicativa` | ver "Formulário" |
 | `detalhes.gratuito` | `answers.gratuito` | `true` só quando `true` |
@@ -344,7 +344,6 @@ Objeto JSON com chaves planas, montado inteiro a cada execução; o upsert subst
     { "titulo": "Camarote (15 pessoas)", "setor": "Camarote", "pessoas": 15, "valor": 1600, "comprar": "Comprar ❯" },
     { "titulo": "Pista em pé — Meia", "setor": "Pista em pé", "tipo": "Meia", "pessoas": 1, "valor": 70 }
   ],
-  "link_ingresso": "https://exemplo.com.br/eventos/celebration-flashback/ingressos",
   "contato_telefone": "(65) 9.9953-1935",
   "contato_whatsapp": "(65) 9.9953-1935"
 }
@@ -469,4 +468,5 @@ CREATE UNIQUE INDEX IF NOT EXISTS services_origem_eventos_uq ON public.services
 - Evento gratuito: `starting_price = 0` aparece no site como "Sob consulta" (não há rótulo "Gratuito" no preço); o formulário guarda `gratuito = true`.
 - `price_unit = 'unit'` aparece como "por unidade": não há unidade "por ingresso" nem "a partir de".
 - Artistas são texto livre (`answers.artistas[].nome`). Pontos de venda são código de lugar ou texto (`extras.pontos_de_venda[].nome`); nenhum dos dois grava endereço. `service_addresses` guarda só o local do evento.
-- Chaves antigas do formulário (`endereco`, `local_ref`, `pontos_de_venda`, `secao_compra`): não grave mais em `answers`. Respostas já gravadas com elas continuam no banco e a página as lê como reserva, mas o formulário atual não as mostra.
+- `contato.link_ingresso`: não é gravado. Link de compra só vai no ponto de venda (`extras.pontos_de_venda[].link`), quando a fonte o traz ligado a um ponto.
+- Chaves antigas do formulário (`endereco`, `local_ref`, `pontos_de_venda`, `secao_compra`, `link_ingresso`): não grave mais em `answers`. Respostas já gravadas com elas continuam no banco e a página as lê como reserva, mas o formulário atual não as mostra.
