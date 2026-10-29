@@ -46,6 +46,10 @@ const TAXONOMIA = {
   'musiva-cuiaba': { grupo: 'lugares', categoria: 'vida-noturna', subs: ['casas-noturnas'] },
   'centro-de-eventos-pantanal': { grupo: 'lugares', categoria: 'festas-e-eventos', subs: ['espacos-de-eventos'] },
   'transas-bar': { grupo: 'lugares', categoria: 'vida-noturna', subs: ['bares'] },
+  // Nenhuma subcategoria de `esporte` serve a um haras (estádios/ginásios): fica só na categoria.
+  'haras-twin-brothers': { grupo: 'lugares', categoria: 'esporte', subs: [], tag: 'hipismo' },
+  // Bilheteria só online (vende ingressos dos eventos): nenhuma subcategoria de festas-e-eventos serve.
+  'prime-eventos-cuiaba': { grupo: 'lugares', categoria: 'festas-e-eventos', subs: [], tag: 'bilheterias' },
 };
 
 // Chaves do formulário `lugares` (db/extras/forms_seed_lugares.sql): gravadas em form_results.answers e
