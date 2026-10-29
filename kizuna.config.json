@@ -318,6 +318,8 @@
               "expiresAtLabels": {
                 "label": "Acontece em",
                 "hint": "Data em que o evento acontece. Depois dela o anúncio sai da busca. Em eventos de vários dias, use o último dia.",
+                "timeLabel": "Hora de término (opcional)",
+                "timeHint": "Com a hora, o evento fica na busca até acabar. Sem hora, vale até o fim do dia.",
                 "required": "Informe a data em que o evento acontece",
                 "past": "A data do evento não pode estar no passado"
               }
