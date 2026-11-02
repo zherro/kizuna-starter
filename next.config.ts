@@ -24,6 +24,13 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // Logo e imagens da marca (public/brand): sem isto o Next serve `max-age=0`. 30 dias + SWR.
+        source: '/brand/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=2592000, stale-while-revalidate=86400' },
+        ],
+      },
+      {
         source: '/:path*',
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },

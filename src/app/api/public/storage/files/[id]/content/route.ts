@@ -79,7 +79,9 @@ export async function GET(request: Request, { params }: Params) {
     status: 200,
     headers: {
       ...storageContentHeaders(mimeType, found.original_name ?? `file-${cleanId}`),
-      'Cache-Control': 'public, max-age=3600, immutable',
+      // 30 dias: o id (uuid) está na URL e vira outro arquivo ao trocar a imagem; o PageSpeed só
+      // considera "cache eficiente" a partir de ~28 dias (1 h era o que mais pesava no relatório).
+      'Cache-Control': 'public, max-age=2592000, immutable',
     },
   });
 }
