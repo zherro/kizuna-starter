@@ -172,9 +172,11 @@
     ]
   },
   "today": {
-    "_comment": "Página /hoje (e /{cidade}/hoje): o que fazer hoje, na ordem de relevância (a ordem do array). Mesmo formato de home.categoryRails: slug (categories.slug) OU group (categories_group.slug), title, limit (default 8), scope city|region; mais onlyToday: só anúncios cujo início cai hoje (fuso America/Cuiaba), do mais cedo ao mais tarde. Seção sem item some; sem nenhuma, a página mostra o estado vazio.",
+    "_comment": "Página /hoje (e /{cidade}/hoje): o que fazer hoje, na ordem de relevância (a ordem do array). Mesmo formato de home.categoryRails: slug (categories.slug) OU group (categories_group.slug), title, limit (default 8); mais when: today (começa hoje) | week (hoje e os próximos 6 dias) | upcoming (de amanhã em diante), pelo início do evento no fuso America/Cuiaba, do mais cedo ao mais tarde; scope: city (só a cidade) | region (cidade + irmãs de regions) | nearby (só as irmãs); emptyText: a seção aparece mesmo vazia, com esse aviso. Seção vazia sem emptyText some; nearby sem cidade irmã some.",
     "sections": [
-      { "group": "eventos", "title": "Eventos de hoje", "onlyToday": true, "scope": "region", "limit": 12 },
+      { "group": "eventos", "title": "Acontece hoje", "when": "today", "scope": "city", "limit": 12, "emptyText": "Não há eventos marcados para hoje na cidade. Veja abaixo o que acontece perto de você e nos próximos dias." },
+      { "group": "eventos", "title": "Acontece perto de você", "when": "week", "scope": "nearby", "limit": 12 },
+      { "group": "eventos", "title": "O que vem por aí", "when": "upcoming", "scope": "city", "limit": 12 },
       { "slug": "cinema", "title": "Cinema em cartaz", "scope": "region", "limit": 10 },
       { "slug": "bares", "title": "Bares", "scope": "region", "limit": 10 },
       { "slug": "parques", "title": "Parques para ir hoje", "scope": "region", "limit": 10 }

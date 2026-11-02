@@ -29,10 +29,10 @@ export async function HojeContent({ city }: { city: RoutableCity | null }) {
       <TodayHero
         cityName={cityName}
         now={now}
-        summary="Eventos, cinema, bares e passeios para aproveitar o dia, do que mais vale a pena ao resto."
+        summary="O que acontece hoje na cidade, perto de você e nos próximos dias, além do cinema em cartaz."
         weather={cfg.weather ? <WeatherWidget forecastModal={false} /> : undefined}
       />
-      {feed.length === 0 ? (
+      {feed.every((section) => section.items.length === 0) ? (
         <TodayEmpty href="/busca" />
       ) : (
         <div className="pb-14 sm:pb-16">
