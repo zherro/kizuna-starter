@@ -291,7 +291,7 @@ export const messages: Record<AppLanguage, AppMessages> = {
   'pt-BR': {
     wizard: WIZARD_PT_BR,
     nav: {
-      title: 'Foco Total',
+      title: 'Bora Cuiabá',
       signIn: 'Entrar',
       signUp: 'Registrar-se',
       login: 'Login',
@@ -391,7 +391,7 @@ export const messages: Record<AppLanguage, AppMessages> = {
   'en-US': {
     wizard: WIZARD_PT_BR,
     nav: {
-      title: 'Foco Total',
+      title: 'Bora Cuiabá',
       signIn: 'Sign In',
       signUp: 'Sign Up',
       login: 'Login',
@@ -491,7 +491,7 @@ export const messages: Record<AppLanguage, AppMessages> = {
   'es-ES': {
     wizard: WIZARD_PT_BR,
     nav: {
-      title: 'Foco Total',
+      title: 'Bora Cuiabá',
       signIn: 'Iniciar sesión',
       signUp: 'Registrarse',
       login: 'Login',

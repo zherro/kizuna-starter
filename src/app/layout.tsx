@@ -66,9 +66,12 @@ const robotoSans = Roboto({
   display: 'swap',
 });
 
+// Fontes que a 1ª pintura não usa (mono, título alternativo, estilo soft): sem `preload`, o navegador
+// só baixa quando algum texto as pede — menos 3 woff2 disputando banda com o LCP.
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
+  preload: false,
 });
 
 const bricolage = Bricolage_Grotesque({
@@ -76,6 +79,7 @@ const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
   weight: ['600', '700', '800'],
   display: 'swap',
+  preload: false,
 });
 
 // Fonte de títulos (Typography font="display") — ver --font-display em globals.css.
@@ -93,6 +97,7 @@ const baloo = Baloo_2({
   subsets: ['latin'],
   weight: ['500', '600', '700'],
   display: 'swap',
+  preload: false,
 });
 
 const site = cfg.site;
