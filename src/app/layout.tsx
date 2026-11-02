@@ -189,7 +189,7 @@ export default function RootLayout({
                 cfg.weather ? (
                   // Clima só a partir de tablet: no celular o header fica só com logo e conta.
                   <div className="hidden md:flex">
-                    <WeatherWidget forecastModal={cfg.weather.forecastModal !== false} />
+                    <WeatherWidget forecastModal={cfg.weather.forecastModal !== false} minWidth={768} />
                   </div>
                 ) : undefined
               }

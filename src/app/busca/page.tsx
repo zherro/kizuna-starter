@@ -1,13 +1,17 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { SearchPage } from '@kizuna/core/client/components/search/search-page';
-import type { BrowseRailConfig } from '@kizuna/core/client/components/search/search-browse-rails';
+import { SearchBrowseRailsStatic } from '@kizuna/core/client/components/search/search-browse-rails-static';
+import { normalizeBrowseRails, type BrowseRailConfig } from '@kizuna/core/shared/search/browse-rails';
 import type { ExpiredByGroup } from '@kizuna/core/client/components/search/expired';
 import type { ServiceDetailConfig } from '@kizuna/core/client/components/services/detail';
 import { trackRule } from '@/lib/analytics';
 import { AdSlot } from '@kizuna/core/client/ads';
 import { adsConfig } from '@/lib/ads';
-import { parseRegions } from '@kizuna/core/shared/regions';
+import { parseRegions, regionCitiesFor } from '@kizuna/core/shared/regions';
+import { buildMetadata, loadBrowseRails, parseLocationConfig } from '@kizuna/core/server';
+import { loadRoutableCities } from '@kizuna/core/server/location/cities';
+import { SEO_SITE } from '@/lib/seo';
 import cfg from '@/../kizuna.config.json';
 
 // O carrossel de categorias da busca segue EXATAMENTE a regra do da home: as mesmas chaves de
@@ -43,54 +47,57 @@ const browseGroups = searchCfg?.browseGroups ?? [];
 // Cidades vizinhas sugeridas abaixo dos resultados (kizuna.config.json → regions).
 const regions = parseRegions((cfg as { regions?: unknown }).regions);
 
-type Props = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
+// Casca estática (ISR): sem searchParams no servidor — filtros da URL são lidos no cliente. As trilhas do
+// estado "sem filtro" vão renderizadas no servidor (cidade padrão) como fallback do Suspense, que é o que
+// vai no HTML estático (useSearchParams faz o resto cair em CSR até esse limite).
+export const revalidate = 300;
+export const dynamic = 'force-static';
 
-function firstValue(value: string | string[] | undefined): string | null {
-  const v = Array.isArray(value) ? value[0] : value;
-  return v?.trim() || null;
+const locationConfig = parseLocationConfig((cfg as { location?: unknown }).location);
+
+export const metadata: Metadata = buildMetadata(SEO_SITE, {
+  title: 'Buscar eventos, lugares e lazer',
+  description: 'Eventos, lugares e dicas de lazer perto de você, com filtros por categoria e preço.',
+  path: '/busca',
+  image: null,
+});
+
+/** Trilhas da vitrine para a cidade padrão do projeto; qualquer falha = null (cliente busca como sempre). */
+async function loadInitialRails() {
+  try {
+    const rails = normalizeBrowseRails(browseGroups);
+    if (!rails.length || !locationConfig.defaultCityIbge) return null;
+    const cities = await loadRoutableCities().catch(() => []);
+    const city = cities.find((c) => c.ibge === locationConfig.defaultCityIbge);
+    if (!city) return null;
+    return await loadBrowseRails({
+      rails,
+      cityIbge: city.ibge,
+      cityIbges: regionCitiesFor(regions, city.ibge),
+      state: city.state,
+      orderByGroup: searchCfg?.orderByGroup,
+    });
+  } catch {
+    return null;
+  }
 }
 
-/**
- * `/busca` sincroniza filtro <-> URL (`q`, `cityName`, `group`, `categoryId`, …) — aqui só usa o
- * que já vem legível na URL (`q`, `cityName`) pra dar title/description/canonical únicos por
- * combinação, sem SSR dos resultados (a página em si é client-side). O canonical inclui a
- * querystring quando ela muda o conteúdo, senão o Google ignoraria as variações com filtro.
- */
-export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  const params = await searchParams;
-  const query = firstValue(params.q);
-  const cityName = firstValue(params.cityName);
-
-  const subject = query || 'O que fazer';
-  const title = cityName ? `${subject} em ${cityName}` : query || 'Buscar eventos, lugares e lazer';
-  const description = query
-    ? `Resultados para “${query}”${cityName ? ` em ${cityName}` : ''}: eventos, lugares e dicas de lazer, com filtros por categoria e preço.`
-    : `Eventos, lugares e dicas de lazer${cityName ? ` em ${cityName}` : ' perto de você'}, com filtros por categoria e preço.`;
-
-  const qs = new URLSearchParams();
-  if (query) qs.set('q', query);
-  if (cityName) qs.set('cityName', cityName);
-  const path = qs.toString() ? `/busca?${qs.toString()}` : '/busca';
-
-  return {
-    title,
-    description,
-    alternates: { canonical: path },
-    // Next substitui (não mescla) o openGraph/twitter do layout: a imagem precisa vir junto.
-    openGraph: { title, description, url: path, images: ['/opengraph-image.png'] },
-    twitter: { card: 'summary_large_image', title, description, images: ['/opengraph-image.png'] },
-  };
-}
-
-export default function BuscaPage() {
+export default async function BuscaPage() {
+  const initialRails = await loadInitialRails();
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <p className="text-sm text-muted-foreground">Carregando...</p>
-        </div>
+        initialRails ? (
+          <SearchBrowseRailsStatic
+            data={initialRails}
+            detailConfig={serviceDetailConfig}
+            impressionRule={trackRule('service', 'impression')}
+          />
+        ) : (
+          <div className="flex min-h-screen items-center justify-center">
+            <p className="text-sm text-muted-foreground">Carregando...</p>
+          </div>
+        )
       }
     >
       {/* Para o modo "Pedir um serviço" (demandas), passe `requestMode` aqui — ver SearchPageProps. */}
@@ -104,6 +111,7 @@ export default function BuscaPage() {
         aiEnabled={aiEnabled}
         defaults={searchDefaults}
         browseGroups={browseGroups}
+        initialRails={initialRails ?? undefined}
         regions={regions}
         impressionRule={trackRule('service', 'impression')}
         sponsoredSlot={

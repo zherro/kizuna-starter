@@ -60,7 +60,8 @@
   "location": {
     "_comment": "Seletor de local do header (plugin location). Lista só as cidades com location_city.search_city = true (seed em db/extras/location_seed_bora_cuiaba.sql). \"outsideList\": cidade detectada por GPS/IP fora da lista → prompt (abre o seletor) | default (seleciona \"defaultCityIbge\", código IBGE de 7 dígitos, que precisa estar marcada). Ver kizuna-core/docs/plugins/location.md.",
     "outsideList": "default",
-    "defaultCityIbge": "5103403"
+    "defaultCityIbge": "5103403",
+    "defaultCitySlug": "cuiaba-mt"
   },
   "weather": {
     "_comment": "Plugin weather (widget de clima no header, depois da busca). Integração: Open-Meteo — grátis, sem chave de API. apiUrl = endpoint do provedor; timezone = fuso das datas (IANA); cacheSeconds = quanto tempo o servidor guarda a resposta; rotateSeconds = intervalo da troca de cidade no botão; pastDays/forecastDays = dias antes/depois de hoje no modal; forecastModal = false desativa o modal (a temperatura vira só informação, sem clique). cities = lista exibida (a 1ª aparece primeiro). Remova o bloco para esconder o widget.",

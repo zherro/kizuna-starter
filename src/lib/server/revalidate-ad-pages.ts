@@ -1,4 +1,5 @@
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { BROWSE_RAILS_TAG } from '@kizuna/core/server';
 
 /**
  * As páginas de anúncio são ISR (`revalidate = 300`): sem isto, salvar no painel só aparece no
@@ -16,6 +17,10 @@ function revalidateAdPages() {
   revalidateTag(AD_DETAIL_TAG, { expire: 0 });
   revalidatePath('/anuncios/[uid]', 'page');
   revalidatePath('/[cidade]/anuncio/[uid]', 'page');
+  // Vitrine da /busca (trilhas renderizadas no servidor): `loadBrowseRails` + a casca ISR.
+  revalidateTag('services', { expire: 0 });
+  revalidateTag(BROWSE_RAILS_TAG, { expire: 0 });
+  revalidatePath('/busca');
 }
 
 /** Depois de uma escrita em `/api/resources/<resource>`: invalida se deu certo e afeta anúncio. */
