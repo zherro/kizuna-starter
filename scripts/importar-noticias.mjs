@@ -26,7 +26,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { loadThumbPreset, makeThumb } from './lib/thumb-preset.mjs';
+import { loadThumbPreset, makeThumb, thumbSpec } from './lib/thumb-preset.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT_DIR = path.join(ROOT, 'content', 'noticias');
@@ -259,10 +259,10 @@ async function gravar(client, ctx, form, n, existing) {
       const now = new Date();
       const storagePath = `service_image/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${id}-${name}`;
       await client.query(`INSERT INTO public.files (id, uid, tenant_id, original_name, storage_path, mime_type, size_bytes, width, height,
-          purpose, content, thumb_content, thumb_size_bytes, thumb_width, thumb_height, optimized_at, active)
-        VALUES ($1,$2,$3,$4,$5,'image/jpeg',$6,$7,$8,'service_image',$9,$10,$11,$12,$13,now(),true)`,
+          purpose, content, thumb_content, thumb_size_bytes, thumb_width, thumb_height, thumb_spec, thumb_at, optimized_at, active)
+        VALUES ($1,$2,$3,$4,$5,'image/jpeg',$6,$7,$8,'service_image',$9,$10,$11,$12,$13,$14,${thumb ? 'now()' : 'NULL'},now(),true)`,
         [id, ctx.root_uid, ctx.tenant_uid, name, storagePath, full.data.length, full.info.width, full.info.height, full.data,
-         thumb.data, thumb.data.length, thumb.info.width, thumb.info.height]);
+         thumb.data, thumb.data.length, thumb.info.width, thumb.info.height, thumb ? thumbSpec(THUMB) : null]);
       fileRow = { id };
     }
 

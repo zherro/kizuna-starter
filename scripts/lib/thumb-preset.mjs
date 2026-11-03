@@ -27,6 +27,11 @@ export function loadThumbPreset(root, override = {}) {
   };
 }
 
+/** Marca da medida da miniatura (`files.thumb_spec`): lado em px + "q" + qualidade. Ex.: `360q60`. */
+export function thumbSpec(preset) {
+  return `${preset.side}q${preset.quality}`;
+}
+
 /** WebP do preset: maior lado = `side`, proporção mantida, sem ampliar. Devolve { data, info }. */
 export function makeThumb(sharp, buf, preset) {
   return sharp(buf)
