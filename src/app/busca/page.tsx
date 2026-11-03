@@ -85,44 +85,50 @@ async function loadInitialRails() {
 export default async function BuscaPage() {
   const initialRails = await loadInitialRails();
   return (
-    <Suspense
-      fallback={
-        initialRails ? (
-          <SearchBrowseRailsStatic
-            data={initialRails}
-            detailConfig={serviceDetailConfig}
-            impressionRule={trackRule('service', 'impression')}
-          />
-        ) : (
-          <div className="flex min-h-screen items-center justify-center">
-            <p className="text-sm text-muted-foreground">Carregando...</p>
-          </div>
-        )
-      }
-    >
-      {/* Para o modo "Pedir um serviço" (demandas), passe `requestMode` aqui — ver SearchPageProps. */}
-      <SearchPage
-        categoryCarousel={{
-          variant: home?.categoriesVariant === 'compact' ? 'compact' : 'classic',
-          onlyWithListings: home?.categoriesOnlyWithListings === true,
-        }}
-        excludeFromMixedCategorySlugs={excludeFromMixedCategorySlugs}
-        serviceDetailConfig={serviceDetailConfig}
-        aiEnabled={aiEnabled}
-        defaults={searchDefaults}
-        browseGroups={browseGroups}
-        initialRails={initialRails ?? undefined}
-        regions={regions}
-        impressionRule={trackRule('service', 'impression')}
-        sponsoredSlot={
-          <AdSlot
-            slot="busca-patrocinado"
-            inline
-            adsenseClient={adsConfig.adsenseClient}
-            maxPerPage={adsConfig.maxSlotsPerPage}
-          />
+    <>
+      {/* Vitrine renderizada FORA do Suspense: dentro dele o servidor adia o trecho e o HTML estático
+          sai só com "Carregando…". O SearchPage a esconde quando a localização fica pronta. */}
+      {initialRails ? (
+        <SearchBrowseRailsStatic
+          data={initialRails}
+          detailConfig={serviceDetailConfig}
+          impressionRule={trackRule('service', 'impression')}
+        />
+      ) : null}
+      <Suspense
+        fallback={
+          initialRails ? null : (
+            <div className="flex min-h-screen items-center justify-center">
+              <p className="text-sm text-muted-foreground">Carregando...</p>
+            </div>
+          )
         }
-      />
-    </Suspense>
+      >
+        {/* Para o modo "Pedir um serviço" (demandas), passe `requestMode` aqui — ver SearchPageProps. */}
+        <SearchPage
+          staticId={initialRails ? 'busca-ssr' : undefined}
+          categoryCarousel={{
+            variant: home?.categoriesVariant === 'compact' ? 'compact' : 'classic',
+            onlyWithListings: home?.categoriesOnlyWithListings === true,
+          }}
+          excludeFromMixedCategorySlugs={excludeFromMixedCategorySlugs}
+          serviceDetailConfig={serviceDetailConfig}
+          aiEnabled={aiEnabled}
+          defaults={searchDefaults}
+          browseGroups={browseGroups}
+          initialRails={initialRails ?? undefined}
+          regions={regions}
+          impressionRule={trackRule('service', 'impression')}
+          sponsoredSlot={
+            <AdSlot
+              slot="busca-patrocinado"
+              inline
+              adsenseClient={adsConfig.adsenseClient}
+              maxPerPage={adsConfig.maxSlotsPerPage}
+            />
+          }
+        />
+      </Suspense>
+    </>
   );
 }
