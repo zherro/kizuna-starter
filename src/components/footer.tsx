@@ -16,7 +16,7 @@ const appVersion = [
   .join(" · ");
 
 // Marca do site — bloco "site" do kizuna.config.json (mesma logo do header).
-const siteLogo = cfg.site?.logo ?? undefined;
+const siteLogo = cfg.site?.logoSmall ?? cfg.site?.logo ?? undefined;
 
 const AUTH_ROUTES = new Set(["/login", "/registre-se"]);
 
@@ -117,7 +117,7 @@ export function Footer() {
             <Link href="/" className="flex items-center gap-3">
               {siteLogo ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={siteLogo} alt={siteName} className="h-16 w-auto" />
+                <img src={siteLogo} alt={siteName} width={280} height={130} loading="lazy" decoding="async" className="h-16 w-auto" />
               ) : (
                 <>
                   <span

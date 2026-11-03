@@ -183,7 +183,7 @@ export default function RootLayout({
               showThemeToggle={false}
               authCta="single"
               brandLabel={siteName}
-              brandLogo={site?.logo ?? undefined}
+              brandLogo={site?.logoSmall ?? site?.logo ?? undefined}
               actions={
                 // Só no desktop: no mobile o header já tem cidade + menu e ficava apertado.
                 cfg.weather ? (
