@@ -41,6 +41,10 @@
       { "groups": ["bares-e-vida-noturna", "lugares"], "title": "Bares e lugares" }
     ]
   },
+  "images": {
+    "_comment": "Imagens. \"thumbPreset\": tamanho da MINIATURA usada nos cards (busca, home, carrosséis), gerada em TODO upload (painel, app e scripts de importação): xl = 480 px/q65 · lg = 400/q60 · md = 360/q60 (padrão) · sm = 320/q60 · xs = 280/q60. O número é o maior lado em px (a proporção é mantida, sem corte); q = qualidade do WebP. Menor = carrega mais rápido, mas fica mais macio em telas de alta densidade. Mudar vale para uploads NOVOS; para as capas já gravadas rode `node scripts/regerar-miniaturas.mjs --todas`. Os valores moram em kizuna-core/src/shared/image/thumb-presets.json. Ver kizuna-core/docs/servicos/storage.md.",
+    "thumbPreset": "md"
+  },
   "header": {
     "_comment": "\"variant\": classic (padrão) | compact — layout do cabeçalho do site.",
     "variant": "classic"

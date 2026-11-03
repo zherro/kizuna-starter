@@ -3,7 +3,7 @@
 //
 // Lê as notícias de content/noticias/<slug>/index.html (frontmatter + texto em HTML puro, foto na
 // mesma pasta) e as grava como anúncios do grupo `noticias` direto no banco (DATABASE_URL), no
-// padrão de docs/integracoes/eventos-depara.md: services + files (com miniatura) +
+// padrão de docs/integracoes/eventos-depara.md: services + files (com miniatura WebP pelo preset images.thumbPreset) +
 // service_addresses + form_results (form `noticias`) + service_categories_sub.
 //
 // Regras (docs/integracoes/noticias.md):
@@ -26,6 +26,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { loadThumbPreset, makeThumb } from './lib/thumb-preset.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT_DIR = path.join(ROOT, 'content', 'noticias');
@@ -38,6 +39,8 @@ const STATUS_ARTIGO = ['rascunho', 'revisao', 'aprovado'];
 
 const req = createRequire(path.join(ROOT, 'package.json'));
 const sharp = req('sharp');
+// Miniatura: WebP do preset de kizuna.config.json → images.thumbPreset (lado e qualidade vêm do core).
+const THUMB = loadThumbPreset(ROOT);
 // `pg` é dependência do CLI do core (kizuna-core/cli), não do app.
 const pg = createRequire(path.join(ROOT, 'kizuna-core', 'cli', 'package.json'))('pg');
 
@@ -192,7 +195,7 @@ async function optimize(buf, file) {
   const meta = await sharp(buf, { failOn: 'error' }).metadata().catch(() => null);
   if (!meta?.width) fail(`${file}: não é imagem`);
   const full = await sharp(buf).rotate().resize({ width: 1600, withoutEnlargement: true }).jpeg({ quality: 82, mozjpeg: true }).toBuffer({ resolveWithObject: true });
-  const thumb = await sharp(buf).rotate().resize({ width: 480, withoutEnlargement: true }).jpeg({ quality: 78, mozjpeg: true }).toBuffer({ resolveWithObject: true });
+  const thumb = await makeThumb(sharp, buf, THUMB);
   return { full, thumb };
 }
 

@@ -13,7 +13,8 @@
 //   DATABASE_URL=... node scripts/regerar-miniaturas.mjs                  # simulação
 //   DATABASE_URL=... node scripts/regerar-miniaturas.mjs --aplicar        # grava as miniaturas
 //   ... --limite 20                      # só as 20 maiores (teste)
-//   ... --lado 480 --qualidade 65        # padrões (mesmos do preset `thumb` do core)
+//   ... --preset xl|lg|md|sm|xs          # preset da miniatura (padrão: kizuna.config.json → images.thumbPreset)
+//   ... --lado 360 --qualidade 60        # (opcional) sobrepõem o lado e a qualidade do preset
 //   ... --todas                          # recria também as que já têm miniatura
 //   ... --minimo-kb 60                   # só imagens sem miniatura com mais que isto (padrão 60) ou não-WebP
 //   ... --otimizar-original              # (opcional) recomprime o original em WebP 1600 q80 (mexe no `content`)
@@ -21,6 +22,7 @@
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { loadThumbPreset, makeThumb } from './lib/thumb-preset.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const req = createRequire(path.join(ROOT, 'package.json'));
@@ -45,10 +47,20 @@ const opts = {
   todas: has('--todas'),
   otimizarOriginal: has('--otimizar-original'),
   limite: Number(val('--limite', 0)) || 0,
-  lado: Number(val('--lado', 480)),
-  qualidade: Number(val('--qualidade', 65)),
   minimoKb: Number(val('--minimo-kb', 60)),
 };
+// Preset (kizuna.config.json → images.thumbPreset); --preset/--lado/--qualidade sobrepõem.
+const presetFlag = val('--preset', undefined);
+if (presetFlag && !/^(xl|lg|md|sm|xs)$/.test(presetFlag)) fail('--preset deve ser xl, lg, md, sm ou xs');
+const ladoFlag = val('--lado', undefined);
+const qualFlag = val('--qualidade', undefined);
+const preset = loadThumbPreset(ROOT, {
+  name: presetFlag,
+  side: ladoFlag ? Number(ladoFlag) : undefined,
+  quality: qualFlag ? Number(qualFlag) : undefined,
+});
+opts.lado = preset.side;
+opts.qualidade = preset.quality;
 if (!process.env.DATABASE_URL) fail('defina DATABASE_URL');
 if (!(opts.lado >= 200 && opts.lado <= 1600)) fail('--lado fora de 200..1600');
 if (!(opts.qualidade >= 30 && opts.qualidade <= 95)) fail('--qualidade fora de 30..95');
@@ -64,14 +76,14 @@ const { rows } = await client.query(
      FROM public.files
     WHERE active AND mime_type LIKE 'image/%'
       AND ($1::boolean OR thumb_content IS NULL)
-      AND (mime_type <> 'image/webp' OR size_bytes > $2)
+      AND (mime_type <> 'image/webp' OR size_bytes > $2 OR width > $3 OR height > $3)
     ORDER BY size_bytes DESC
     ${opts.limite ? 'LIMIT ' + opts.limite : ''}`,
-  [opts.todas, opts.minimoKb * 1024]
+  [opts.todas, opts.minimoKb * 1024, opts.lado]
 );
 
 console.log(
-  `${opts.aplicar ? 'APLICANDO' : 'SIMULAÇÃO (nada será gravado)'} — ${rows.length} imagem(ns); miniatura ${opts.lado}px q${opts.qualidade}` +
+  `${opts.aplicar ? 'APLICANDO' : 'SIMULAÇÃO (nada será gravado)'} — ${rows.length} imagem(ns); preset ${preset.name}: miniatura ${opts.lado}px q${opts.qualidade}` +
     (opts.otimizarOriginal ? ' + otimizar original' : '')
 );
 
@@ -88,11 +100,7 @@ for (const r of rows) {
       console.log(`  pulada  ${r.id.slice(0, 8)} ${r.original_name}: sem conteúdo`);
       continue;
     }
-    const thumb = await sharp(buf, { animated: false })
-      .rotate()
-      .resize(opts.lado, opts.lado, { fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: opts.qualidade, effort: 4 })
-      .toBuffer({ resolveWithObject: true });
+    const thumb = await makeThumb(sharp, buf, preset);
 
     let full = null;
     if (opts.otimizarOriginal) {
