@@ -36,6 +36,7 @@ Arquivo `content/lugares/<slug>/index.md`: frontmatter YAML (subconjunto: `chave
 | `status` | text | sim | `rascunho`, `revisao` ou `aprovado` (status editorial do artigo) |
 | `atualizado_em` | `AAAA-MM-DD` | sim | |
 | `endereco` | text | não | `Rua, número, [complemento, …] bairro, Cidade - UF` |
+| `cep` | text | não | 8 dígitos, com ou sem hífen; exige `endereco`; vira `service_addresses.zip_code` (`00000-000`) |
 | `latitude`, `longitude` | number | não | vêm juntas |
 | `horario[]` | text | não | uma linha livre por item |
 | `telefone`, `whatsapp`, `instagram`, `site` | text | não | |
@@ -247,9 +248,9 @@ Em `%(extras)s` do UPDATE, `origem.titulo_md5`/`descricao_md5` continuam os anti
 DELETE FROM public.service_addresses WHERE service_id = %(service_id)s;
 
 INSERT INTO public.service_addresses
-  (service_id, label, street, number, complement, neighborhood, city, state, city_ibge,
+  (service_id, label, street, number, complement, neighborhood, zip_code, city, state, city_ibge,
    latitude, longitude, is_primary, tenant_id, created_by, active)
-VALUES (%(service_id)s, %(titulo)s, %(street)s, %(number)s, %(complement)s, %(neighborhood)s, %(city)s, %(state)s,
+VALUES (%(service_id)s, %(titulo)s, %(street)s, %(number)s, %(complement)s, %(neighborhood)s, %(zip_code)s, %(city)s, %(state)s,
         %(city_ibge)s, %(latitude)s, %(longitude)s, true, %(tenant_uid)s, %(root_uid)s, true);
 ```
 
@@ -283,8 +284,8 @@ ON CONFLICT (service_id, category_sub_id) DO NOTHING;
 - **Status editorial** (`rascunho`/`revisao`/`aprovado`) e **pendências do editor** (`redacao/artigos/_rascunhos/`) não viram status do anúncio; o anúncio nasce `pending` e o dono decide. O status do artigo fica em `extras.origem.status_artigo`.
 - **Rótulo `categoria` do artigo:** só rastreio; não existe coluna para rótulo editorial.
 - **Slug do anúncio:** não existe; o identificador público é `services.uid`.
-- **CEP:** o artigo não traz; `zip_code` fica `NULL`.
-- **Miniatura das fotos** (`files.thumb_content`): não é gerada no import direto; a rota de conteúdo devolve a foto grande até a imagem ser reotimizada.
+- **CEP:** opcional no artigo (`cep`); sem ele, `zip_code` fica `NULL`.
+- **Miniatura das fotos** (`files.thumb_content`): o importador (`scripts/lugares-para-servicos.mjs`) a gera em WebP pelo preset de `images.thumbPreset` (`kizuna.config.json`) e a grava junto da foto (`thumb_content`, `thumb_size_bytes`, `thumb_width`, `thumb_height`); foto pequena, já WebP e leve fica sem miniatura (`NULL`). Rodar o SQL de novo atualiza a miniatura.
 - **Créditos por foto:** `files` não tem coluna de crédito/licença; o crédito é um texto único por lugar (`extras.creditos` e fim da descrição).
 - **Lugares sem fotos** (`lua-morena`, `espaco-art-festas-e-eventos`, `buffet-infantil-mundo-magico`): anúncio sem `images`/`coverFileId`.
 - **Lugares sem coordenadas** (`espaco-art-festas-e-eventos`, `buffet-infantil-mundo-magico`): `latitude`/`longitude` `NULL`.

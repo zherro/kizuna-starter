@@ -27,6 +27,7 @@ export const LUGARES = defineCollection({
     status: { type: 'enum', values: ['rascunho', 'revisao', 'aprovado'], required: true },
     atualizado_em: { type: 'date', required: true },
     endereco: { type: 'string' },
+    cep: { type: 'string' },
     latitude: { type: 'number', min: -90, max: 90 },
     longitude: { type: 'number', min: -180, max: 180 },
     horario: { type: 'list' },
@@ -142,7 +143,8 @@ export function buildLugarView(entry: Entry, cityName: string): LugarView {
   const price = text(d, 'preco');
 
   const facts: LugarView['facts'] = [];
-  if (address) facts.push({ key: 'endereco', label: 'Endereço', value: address });
+  const cep = text(d, 'cep');
+  if (address) facts.push({ key: 'endereco', label: 'Endereço', value: cep ? `${address} · CEP ${cep}` : address });
   if (hours.length > 0) facts.push({ key: 'horario', label: 'Horário', value: hours });
   if (phone) facts.push({ key: 'telefone', label: 'Telefone', value: phone, href: phoneHref });
   if (site) facts.push({ key: 'site', label: 'Site', value: siteLabel(site), href: site });

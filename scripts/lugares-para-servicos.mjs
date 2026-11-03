@@ -21,7 +21,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { loadThumbPreset, makeThumb, needsThumb, thumbSpec } from './lib/thumb-preset.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT_DIR = path.join(ROOT, 'content', 'lugares');
@@ -30,6 +32,9 @@ const OUT_DIR = path.join(ROOT, 'db', 'extras', 'lugares_import');
 const FONTE = 'content/lugares';
 const STATUSES = ['pending', 'active', 'paused', 'archived'];
 const IMAGE_EXT = /\.(jpe?g|png|webp|gif|avif)$/i;
+// Miniatura (files.thumb_*): WebP pelo preset de kizuna.config.json → images.thumbPreset.
+const sharp = createRequire(path.join(ROOT, 'package.json'))('sharp');
+const THUMB = loadThumbPreset(ROOT);
 
 // Mapeamento lugar → taxonomia (grupo / categoria / subcategorias). Justificativas no de-para.
 // `tag` (opcional): tag de agrupamento gravada em extras.tags; sem ela vale o slug da 1ª subcategoria.
@@ -46,6 +51,11 @@ const TAXONOMIA = {
   'musiva-cuiaba': { grupo: 'lugares', categoria: 'vida-noturna', subs: ['casas-noturnas'] },
   'centro-de-eventos-pantanal': { grupo: 'lugares', categoria: 'festas-e-eventos', subs: ['espacos-de-eventos'] },
   'transas-bar': { grupo: 'lugares', categoria: 'vida-noturna', subs: ['bares'] },
+  'barones-rooftop': { grupo: 'lugares', categoria: 'vida-noturna', subs: ['bares'] },
+  'cervejaria-cuiavera': { grupo: 'lugares', categoria: 'vida-noturna', subs: ['bares'] },
+  'cine-teatro-cuiaba': { grupo: 'lugares', categoria: 'cultura', subs: ['teatros'] },
+  'luzzem': { grupo: 'lugares', categoria: 'vida-noturna', subs: ['casas-noturnas'] },
+  'vilaro-lounge-bar': { grupo: 'lugares', categoria: 'vida-noturna', subs: ['bares'] },
   // Nenhuma subcategoria de `esporte` serve a um haras (estádios/ginásios): fica só na categoria.
   'haras-twin-brothers': { grupo: 'lugares', categoria: 'esporte', subs: [], tag: 'hipismo' },
   // Bilheteria só online (vende ingressos dos eventos): nenhuma subcategoria de festas-e-eventos serve.
@@ -270,7 +280,7 @@ function clean(obj) {
 // ---------------------------------------------------------------------------------------------
 // Leitura de um lugar
 // ---------------------------------------------------------------------------------------------
-function readLugar(slug) {
+async function readLugar(slug) {
   const rel = `content/lugares/${slug}/index.md`;
   const file = path.join(CONTENT_DIR, slug, 'index.md');
   const { fm, body } = splitFrontmatter(fs.readFileSync(file, 'utf8'), rel);
@@ -292,9 +302,11 @@ function readLugar(slug) {
     console.warn(`aviso: public/lugares/${slug}: ${todasFotos.length} fotos, só as ${MAX_FOTOS} primeiras entram (${todasFotos.slice(MAX_FOTOS).join(', ')} ficam de fora)`);
   }
   const mesAno = String(d.atualizado_em).slice(0, 7).replace('-', '/');
-  const imagens = fotos.map((nome) => {
+  const imagens = await Promise.all(fotos.map(async (nome) => {
     const buf = fs.readFileSync(path.join(mediaDir, nome));
     const info = imageInfo(buf, `public/lugares/${slug}/${nome}`);
+    // Miniatura derivada do conteúdo (id é pelo sha256): regerar é idempotente.
+    const thumb = needsThumb({ ...info, size: buf.length }, THUMB) ? await makeThumb(sharp, buf, THUMB) : null;
     const hash = sha256(buf);
     const id = stableUuid(`${FONTE}|${slug}|${nome}|${hash}`);
     const originalName = `${slug}-${nome}`;
@@ -306,15 +318,26 @@ function readLugar(slug) {
       size: buf.length,
       sha256: hash,
       hex: buf.toString('hex'),
+      thumbHex: thumb ? thumb.data.toString('hex') : null,
+      thumbSize: thumb ? thumb.data.length : null,
+      thumbWidth: thumb ? thumb.info.width : null,
+      thumbHeight: thumb ? thumb.info.height : null,
+      thumbSpec: thumb ? thumbSpec(THUMB) : null,
       ...info,
     };
-  });
+  }));
 
   const creditos = typeof d.creditos === 'string' ? d.creditos.trim() : '';
   let descricao = body.trim();
   if (creditos) descricao += `\n\n${/^fotos\s*:/i.test(creditos) ? creditos : `Fotos: ${creditos}`}`;
   const titulo = String(d.titulo).trim();
   const endereco = parseEndereco(typeof d.endereco === 'string' ? d.endereco : null);
+  if (d.cep !== undefined) {
+    const digits = String(d.cep).replace(/\D/g, '');
+    if (digits.length !== 8) fail(`${rel}: cep inválido (8 dígitos): ${d.cep}`);
+    if (!endereco) fail(`${rel}: cep exige endereco`);
+    endereco.zip = `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  }
 
   // Respostas do formulário `lugares`: chaves planas; horário = lista de { texto }; gratuito só quando true.
   const answers = clean({
@@ -361,7 +384,7 @@ function readLugar(slug) {
     throw new Error(`${rel}: slug fora do padrão de codigo (^[a-z0-9][a-z0-9._-]{0,59}$): ${extras.codigo}`);
   }
 
-  const conhecidos = new Set(['titulo', 'categoria', 'cidade', 'resumo', 'status', 'atualizado_em', 'endereco', 'latitude', 'longitude', 'horario', 'telefone', 'instagram', 'site', 'preco', 'dicas_chegada', 'creditos', 'tags', 'vinculos_titulo', 'whatsapp', 'gratuito']);
+  const conhecidos = new Set(['titulo', 'categoria', 'cidade', 'resumo', 'status', 'atualizado_em', 'endereco', 'cep', 'latitude', 'longitude', 'horario', 'telefone', 'instagram', 'site', 'preco', 'dicas_chegada', 'creditos', 'tags', 'vinculos_titulo', 'whatsapp', 'gratuito']);
   const naoMapeados = Object.keys(d).filter((k) => !conhecidos.has(k));
   if (naoMapeados.length) console.warn(`aviso: ${rel}: campos não mapeados (não gravados): ${naoMapeados.join(', ')}`);
 
@@ -375,10 +398,11 @@ function sqlLugar(l, n, status) {
   const tag = `$lugar_${n}$`;
   const files = l.imagens
     .map(
-      (i) => `  INSERT INTO public.files (id, uid, tenant_id, original_name, storage_path, mime_type, size_bytes, width, height, purpose, content, active)
+      (i) => `  INSERT INTO public.files (id, uid, tenant_id, original_name, storage_path, mime_type, size_bytes, width, height, purpose, content, thumb_content, thumb_size_bytes, thumb_width, thumb_height, thumb_spec, thumb_at, active)
   VALUES (${q(i.id)}, v_root, v_tenant, ${q(i.originalName)}, ${q(i.storagePath)}, ${q(i.mime)}, ${i.size}, ${i.width}, ${i.height}, 'service_image',
-          decode('${i.hex}', 'hex'), true)
-  ON CONFLICT (id) DO UPDATE SET active = true, updated_at = now();`
+          decode('${i.hex}', 'hex'), ${i.thumbHex ? `decode('${i.thumbHex}', 'hex')` : 'NULL'}, ${i.thumbSize ?? 'NULL'}, ${i.thumbWidth ?? 'NULL'}, ${i.thumbHeight ?? 'NULL'}, ${i.thumbSpec ? q(i.thumbSpec) : 'NULL'}, ${i.thumbHex ? 'now()' : 'NULL'}, true)
+  ON CONFLICT (id) DO UPDATE SET active = true, thumb_content = EXCLUDED.thumb_content, thumb_size_bytes = EXCLUDED.thumb_size_bytes,
+    thumb_width = EXCLUDED.thumb_width, thumb_height = EXCLUDED.thumb_height, thumb_spec = EXCLUDED.thumb_spec, thumb_at = EXCLUDED.thumb_at, updated_at = now();`
     )
     .join('\n');
   const e = l.endereco;
@@ -488,9 +512,9 @@ ${
   END;
   IF v_ibge IS NULL THEN RAISE NOTICE 'lugares/%: cidade % / % sem código IBGE em location_city', c_slug, ${q(e.city)}, ${q(e.state)}; END IF;
   INSERT INTO public.service_addresses
-    (service_id, label, street, number, complement, neighborhood, city, state, city_ibge,
+    (service_id, label, street, number, complement, neighborhood, zip_code, city, state, city_ibge,
      latitude, longitude, is_primary, tenant_id, created_by, active)
-  VALUES (v_sid, c_titulo, ${q(e.street)}, ${q(e.number)}, ${q(e.complement)}, ${q(e.neighborhood)}, ${q(e.city)}, ${q(e.state)}, v_ibge,
+  VALUES (v_sid, c_titulo, ${q(e.street)}, ${q(e.number)}, ${q(e.complement)}, ${q(e.neighborhood)}, ${q(e.zip)}, ${q(e.city)}, ${q(e.state)}, v_ibge,
           ${hasCoords ? qnum(l.lat) : 'NULL'}, ${hasCoords ? qnum(l.lng) : 'NULL'}, true, v_tenant, v_root, true);`
     : `  -- (artigo sem endereço)`
 }
@@ -520,7 +544,7 @@ ${tag};
   return block;
 }
 
-function main() {
+async function main() {
   const opts = parseArgs(process.argv.slice(2));
   let slugs = fs
     .readdirSync(CONTENT_DIR, { withFileTypes: true })
@@ -531,7 +555,7 @@ function main() {
     if (!slugs.includes(opts.only)) fail(`--only: lugar não encontrado: ${opts.only}`);
     slugs = [opts.only];
   }
-  const lugares = slugs.map(readLugar);
+  const lugares = await Promise.all(slugs.map(readLugar));
 
   const chunks = [];
   if (opts.out) chunks.push({ file: opts.out, lugares });
@@ -562,6 +586,8 @@ function main() {
 -- atualiza, não duplica. Fotos têm id determinístico pelo conteúdo (sha256).
 -- Uma transação por arquivo: qualquer erro desfaz o arquivo inteiro. Os arquivos são independentes.
 --
+-- ATENÇÃO: requer migration storage/0007 (db/extras/atualizar-storage-0007.sql) aplicada antes
+-- (colunas files.thumb_spec e files.thumb_at usadas no INSERT).
 -- Pré-requisitos: core + plugins instalados, root cadastrado, grupo "lugares" na taxonomia
 -- (db/extras/taxonomy_seed_bora_cuiaba.sql ou, em banco com anúncios, db/extras/lugares_grupo_migracao.sql),
 -- formulário db/extras/forms_seed_lugares.sql e, para o código IBGE, db/extras/location_seed_bora_cuiaba.sql.
@@ -584,4 +610,4 @@ BEGIN;
   }
 }
 
-main();
+await main();
