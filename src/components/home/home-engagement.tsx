@@ -104,7 +104,10 @@ export async function HomeNews({
   narrow?: boolean;
 }) {
   // Falha de rede/RPC não pode derrubar a home inteira: o bloco apenas some.
-  const items = await loadHomeNews({ cityIbge: city?.ibge, limit: leads + listLimit }).catch(() => []);
+  const items = await loadHomeNews({
+    cityIbge: city?.ibge,
+    limit: leads + listLimit,
+  }).catch(() => []);
   return (
     <NewsHighlights items={items} moreHref={homeNewsMoreHref(city)} leadCount={leads} listLimit={listLimit} narrow={narrow} />
   );

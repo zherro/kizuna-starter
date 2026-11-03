@@ -40,6 +40,9 @@ export type HomeNewsOptions = {
   cityIbges?: string[];
   /** Total de notícias: manchete + lista. Default 6 (1 + 5). */
   limit?: number;
+  /** Quantas manchetes (a partir da 1ª) usam a imagem grande; as demais, a miniatura. Default 0: a home é leve,
+   * todas usam a miniatura. */
+  fullImages?: number;
   /** "Agora" para descartar notícia com publicação futura (testes). Default `Date.now()`. */
   now?: number;
 };
@@ -70,7 +73,7 @@ export function buildHomeNewsItems(
   results: ServiceResult[],
   details: Map<string, ServiceDetailRow>,
   publishedByUid: Map<string, string | null>,
-  options: { limit: number; now: number }
+  options: { limit: number; now: number; fullImages?: number }
 ): NewsHighlightItem[] {
   const seen = new Set<string>();
   const rows = results
@@ -99,7 +102,7 @@ export function buildHomeNewsItems(
     group: NEWS_GROUP_LABEL,
     category: r.category?.trim() || null,
     summary: newsSummary(detail?.description),
-    image: r.cover_file_id ? fileUrl(r.cover_file_id, index === 0 ? 'full' : 'thumb') : null,
+    image: r.cover_file_id ? fileUrl(r.cover_file_id, index < (options.fullImages ?? 0) ? 'full' : 'thumb') : null,
     publishedAt: date ? date.toISOString() : null,
   }));
 }
@@ -161,6 +164,6 @@ export async function loadHomeNews(options: HomeNewsOptions = {}): Promise<NewsH
     results,
     new Map(detailRows.map((row) => [row.uid, row])),
     new Map(published),
-    { limit, now: options.now ?? Date.now() }
+    { limit, now: options.now ?? Date.now(), fullImages: options.fullImages }
   );
 }

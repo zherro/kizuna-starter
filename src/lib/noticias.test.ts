@@ -94,8 +94,8 @@ describe('buildHomeNewsItems', () => {
     expect(items[0].publishedAt).toBe('2026-10-13T14:30:00.000Z');
     expect(items[0].kicker).toBe('Esportes');
     expect(items[0].href).toBe('/cuiaba-mt/anuncio/c');
-    // manchete com imagem grande, lista com miniatura
-    expect(items[0].image).toBe('/api/public/storage/files/fc/content');
+    // home leve: todas com miniatura
+    expect(items[0].image).toBe('/api/public/storage/files/fc/content?size=thumb');
     expect(items[1].image).toBe('/api/public/storage/files/fa/content?size=thumb');
     expect(items[1].summary).toBe('Resumo A');
     expect(items[2].image).toBeNull();
