@@ -4,6 +4,7 @@ import {
   loadServiceDetail,
   buildMetadata,
   serviceJsonLd,
+  absoluteUrl,
   breadcrumbJsonLd,
   jsonLdScript,
   stripHtml,
@@ -12,11 +13,13 @@ import {
 import {
   ServiceDetailPage,
   resolveServiceDetailVariant,
+  newsArticleMeta,
   type ServiceDetailConfig,
 } from '@kizuna/core/client/components/services/detail';
 import { photosFor } from '@kizuna/core/client/components/services/service-helpers';
 import { cityPath } from '@kizuna/core/shared/city-routing/city-slug';
 import { SEO_SITE } from '@/lib/seo';
+import { NEWS_TIME_ZONE } from '@/lib/noticias';
 import { trackRule } from '@/lib/analytics';
 import { linkEditorialPlaces } from '@/lib/lugar-links';
 import { findEditorialPlace } from '@/lib/lugares';
@@ -69,6 +72,32 @@ export function AnuncioDetail({ data: loaded, path }: { data: ServiceDetailData;
     category: data.service.category?.name ?? null,
     providerName: isPlace ? null : data.provider?.full_name || data.provider?.display_name || null,
   });
+  // Notícia: `NewsArticle` (Discover, Top Stories e IAs) em vez do `Service` genérico.
+  const articleLd =
+    variant === 'noticia'
+      ? (() => {
+          const meta = newsArticleMeta(data.service, data.extraFields, {
+            subcategoryNames: data.subcategoryNames,
+            timeZone: NEWS_TIME_ZONE,
+          });
+          const published = meta.publishedAt?.toISOString();
+          return {
+            '@context': 'https://schema.org',
+            '@type': 'NewsArticle',
+            headline: data.service.title.slice(0, 110),
+            description: stripHtml(data.service.description),
+            url: absoluteUrl(SEO_SITE, path),
+            mainEntityOfPage: absoluteUrl(SEO_SITE, path),
+            image: photos[0] ? [absoluteUrl(SEO_SITE, photos[0])] : undefined,
+            datePublished: published,
+            dateModified: published,
+            articleSection: meta.category,
+            inLanguage: 'pt-BR',
+            author: { '@type': meta.author ? 'Person' : 'Organization', name: meta.author ?? SEO_SITE.name },
+            publisher: { '@type': 'Organization', name: SEO_SITE.name, url: SEO_SITE.url },
+          };
+        })()
+      : null;
   const breadcrumbLd = breadcrumbJsonLd(SEO_SITE, [
     { name: 'Início', path: '/' },
     ...(data.city ? [{ name: data.city.name, path: cityPath(data.city) }] : []),
@@ -78,7 +107,7 @@ export function AnuncioDetail({ data: loaded, path }: { data: ServiceDetailData;
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(serviceLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(articleLd ?? serviceLd) }} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbLd) }}
