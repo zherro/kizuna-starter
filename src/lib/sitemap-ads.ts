@@ -48,10 +48,15 @@ async function loadDates(uids: string[]): Promise<Map<string, Date>> {
 }
 
 /** Busca uma página ordenada de forma estável (mais novos primeiro); se a RPC for antiga e recusar
- * `p_order`, cai na ordem padrão. Erro de rede/HTTP lança. */
+ * `p_order`/`p_expired_grace`, cai na ordem padrão e sem vencidos. Erro de rede/HTTP lança. */
 async function fetchPage(page: number, ordered: boolean): Promise<ServiceResult[]> {
   return runServiceSearchStrict(
-    { p_page: page, p_page_size: PAGE_SIZE, ...(ordered ? { p_order: 'created_at:desc' } : {}) },
+    {
+      p_page: page,
+      p_page_size: PAGE_SIZE,
+      // A página de notícia/evento vencido continua no ar: mantém no sitemap por até 1 ano (máximo da RPC).
+      ...(ordered ? { p_order: 'created_at:desc', p_expired_grace: { noticias: 365, eventos: 365 } } : {}),
+    },
     0
   );
 }
