@@ -282,6 +282,10 @@
                 { "value": "no_estabelecimento", "model": "addresses", "maxAddresses": 1, "requireZipCode": false, "addressFromRef": "local_ref", "icon": "MapPin" },
                 { "value": "remoto", "model": "identifier", "icon": "Globe" }
               ],
+              "labels": {
+                "addressesTitle": "Endereço do evento",
+                "addressesHint": "Escolheu o local acima? O endereço já vem dele. Se o lugar não estiver cadastrado, informe aqui."
+              },
               "_comment_refs": "Vínculos com outros anúncios abaixo do endereço, gravados em services.extras[key]. groups = slugs de grupo onde a busca procura. multiple = lista [{nome: uid, link?}]; sem multiple = um uid. withLink (só com multiple) pede um link por item.",
               "refs": [
                 {
