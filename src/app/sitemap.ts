@@ -6,6 +6,7 @@ import { loadEntries } from '@kizuna/core/server/content';
 import { LUGARES } from '@/lib/lugares';
 import { loadTurismo } from '@/lib/turismo';
 import { loadAdEntries } from '@/lib/sitemap-ads';
+import { ANUNCIE_PATHS } from '@/lib/anuncie';
 
 // Sitemap vivo: anúncios novos entram em até 1h (sem rebuild). Se a busca de anúncios falhar, a
 // geração lança e o Next segue servindo o último sitemap bom (ver `loadAdEntries`).
@@ -27,7 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const turismo = loadTurismo();
 
   return [
-    ...['/descobrir', '/sobre', '/contato', '/privacidade', '/termos', '/mapa', '/hoje'].map(at),
+    ...['/descobrir', '/sobre', '/contato', '/privacidade', '/termos', '/mapa', '/hoje', ...ANUNCIE_PATHS].map(at),
     ...cities.flatMap((city) => [cityPath(city), cityPath(city, '/hoje'), cityPath(city, '/turismo')].map(at)),
     ...lugares,
     ...['/turismo', '/turismo/rotas', '/turismo/dormir', '/turismo/comer', '/turismo/o-que-fazer', '/turismo/regioes'].map(at),

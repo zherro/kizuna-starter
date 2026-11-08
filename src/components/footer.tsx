@@ -79,6 +79,7 @@ export function Footer() {
     { href: "/hoje", label: "Hoje" },
     { href: "/mapa", label: "Mapa" },
     { href: "/turismo", label: "Turismo" },
+    { href: "/anuncie", label: "Anuncie" },
     { href: "/painel", label: messages.default.dashboard },
     { href: "/painel/taxonomia/categorias", label: messages.footer.categories },
     { href: "/sobre", label: messages.footer.about },
