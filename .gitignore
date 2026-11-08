@@ -9,7 +9,7 @@ next-env.d.ts
 .superpowers/
 
 # Marketing (skills, contexto e planos locais)
-marketing/
+/marketing/
 .agents/
 
 # Redação (skills, linha editorial e artigos em rascunho — local)

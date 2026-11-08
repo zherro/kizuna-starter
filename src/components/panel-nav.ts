@@ -18,6 +18,7 @@ import {
   LockKeyhole,
   Network,
   PlusCircle,
+  Rocket,
   NotebookPen,
   Settings,
   Heart,
@@ -55,6 +56,14 @@ export const navigationGroups: PanelNavGroup[] = [
         href: '/painel/metricas',
         icon: BarChart3,
         permResource: 'analytics',
+      },
+      {
+        // Painel do anunciante (plugin marketing): saldo, impulsionar, banners e métricas.
+        // Mesma permissão de "Meus anúncios": quem pode anunciar pode impulsionar.
+        title: 'Marketing',
+        href: '/painel/marketing',
+        icon: Rocket,
+        permResource: 'services',
       },
       {
         // reviews/view (plugins/reviews/0001): nenhum papel recebe por padrão — liberar em

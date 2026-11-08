@@ -1990,12 +1990,15 @@ COMMIT;
 -- db/extras/forms_seed_eventos.sql
 --
 -- Seed do formulario `eventos` (plugin forms). Um anuncio = um evento:
---   - Evento: data, realizador, link, classificacao, gratuito e artistas.
+--   - Evento: realizador, link, classificacao, gratuito e artistas. A DATA do evento nao e campo do formulario:
+--     e o "Acontece em" do anuncio (services.expires_at, passo do formulario no wizard, kizuna.config.json
+--     stepProfiles["dynamic-form"]). data_inicio/data_fim e a data de cada sessao saíram; respostas antigas
+--     (e o importador) continuam gravando e a pagina continua lendo como reserva.
 --     Endereco, local cadastrado (`local_ref`) e pontos de venda (`pontos_de_venda`) NAO ficam no formulario:
 --     o wizard os edita no passo de endereco (endereco em service_addresses; local e pontos de venda em
 --     services.extras, via kizuna.config.json stepProfiles.location.byGroup.eventos.refs).
 --     Respostas antigas com essas chaves continuam lidas pela pagina do evento.
---   - Sessoes (`list`): data e horarios de cada dia do evento.
+--   - Horarios (`list` `sessoes`): abertura dos portoes, inicio e termino (sem data).
 --   - Ingressos (`list`): titulo, setor, tipo, pessoas (= pulseiras), lote, valor (mascara R$) e comprar (texto livre).
 --   - O link geral de compra (`link_ingresso`) e a secao "Onde comprar" sairam: os pontos de venda (cada um
 --     com seu link) ficam no passo de endereco. Respostas antigas com `link_ingresso` continuam lidas pela
@@ -2049,24 +2052,14 @@ $clear$;
 -- 1) Formulario -------------------------------------------------------------------------------------
 INSERT INTO public.forms (tenant_id, form_key, title, description, schema, active, created_by)
 SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
-       'Data, sessões, ingressos, onde comprar e contato do evento.', $schema$
+       'Horários, ingressos, onde comprar e contato do evento.', $schema$
 {
   "title": "Eventos — detalhes e ingressos",
-  "description": "Data, sessões, ingressos, onde comprar e contato do evento.",
+  "description": "Horários, ingressos, onde comprar e contato do evento.",
   "fields": [
     {
       "id": "evt_01_secao_evento", "key": "secao_evento", "name": "secao_evento", "type": "heading", "label": "Evento",
       "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
-      "behavior": {}, "validation": {}, "appearance": {}
-    },
-    {
-      "id": "evt_02_data_inicio", "key": "data_inicio", "name": "data_inicio", "type": "datetime", "label": "Data e hora de início",
-      "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6, "2xl": 6 },
-      "behavior": { "required": true }, "validation": {}, "appearance": {}
-    },
-    {
-      "id": "evt_03_data_fim", "key": "data_fim", "name": "data_fim", "type": "datetime", "label": "Data e hora de término",
-      "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 6, "xl": 6, "2xl": 6 },
       "behavior": {}, "validation": {}, "appearance": {}
     },
     {
@@ -2111,34 +2104,29 @@ SELECT t.uid, 'eventos', 'Eventos — detalhes e ingressos',
       ]
     },
     {
-      "id": "evt_13_secao_sessoes", "key": "secao_sessoes", "name": "secao_sessoes", "type": "heading", "label": "Datas e horários",
+      "id": "evt_13_secao_sessoes", "key": "secao_sessoes", "name": "secao_sessoes", "type": "heading", "label": "Horários",
       "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
       "behavior": {}, "validation": {}, "appearance": {}
     },
     {
-      "id": "evt_14_sessoes", "key": "sessoes", "name": "sessoes", "type": "list", "label": "Sessões",
+      "id": "evt_14_sessoes", "key": "sessoes", "name": "sessoes", "type": "list", "label": "Horários",
       "grid": { "xs": 12, "sm": 12, "md": 12, "lg": 12, "xl": 12, "2xl": 12 },
       "behavior": {}, "validation": {}, "appearance": {},
-      "itemLabel": "Sessão",
+      "itemLabel": "Horário",
       "itemFields": [
         {
-          "id": "ses_data", "key": "data", "name": "data", "type": "date", "label": "Data",
-          "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 3, "xl": 3, "2xl": 3 },
-          "behavior": { "required": true }, "validation": {}, "appearance": {}
-        },
-        {
           "id": "ses_abertura_portoes", "key": "abertura_portoes", "name": "abertura_portoes", "type": "time", "label": "Abertura dos portões",
-          "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 3, "xl": 3, "2xl": 3 },
+          "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4, "2xl": 4 },
           "behavior": {}, "validation": {}, "appearance": {}
         },
         {
           "id": "ses_hora_inicio", "key": "hora_inicio", "name": "hora_inicio", "type": "time", "label": "Início",
-          "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 3, "xl": 3, "2xl": 3 },
+          "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4, "2xl": 4 },
           "behavior": {}, "validation": {}, "appearance": {}
         },
         {
           "id": "ses_hora_fim", "key": "hora_fim", "name": "hora_fim", "type": "time", "label": "Término",
-          "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 3, "xl": 3, "2xl": 3 },
+          "grid": { "xs": 12, "sm": 12, "md": 6, "lg": 4, "xl": 4, "2xl": 4 },
           "behavior": {}, "validation": {}, "appearance": {}
         }
       ]

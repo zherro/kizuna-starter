@@ -20,6 +20,8 @@ import { rpcSearch } from '@kizuna/core/client/components/screen-engine/resource
 import { resourceServiceReactions } from '@kizuna/core/client/components/screen-engine/resources/swipe';
 import { resourceAnalytics, rpcAnalytics } from '@kizuna/core/client/components/screen-engine/resources/analytics';
 import { resourceAds, rpcAds } from '@kizuna/core/client/components/screen-engine/resources/ads';
+import { resourceMarketing } from '@kizuna/core/client/components/screen-engine/resources/marketing';
+import { resourceMarketingAdmin } from '@kizuna/core/client/components/marketing/admin/admin-resources';
 import { resourceAiReview, rpcAiReview } from '@kizuna/core/client/components/screen-engine/resources/ai-review';
 import { resourceTickets } from '@kizuna/core/client/components/screen-engine/resources/tickets';
 import { resourceUserData } from '@kizuna/core/client/components/screen-engine/resources/user-data';
@@ -44,6 +46,10 @@ export const postgrestResources: Record<string, ResourceConfig> = {
   ...(resourceAnalytics as Record<string, ResourceConfig>),
   // ads plugin — slots, criativos e estatísticas diárias (leitura pública; escrita exige ads/manage).
   ...(resourceAds as Record<string, ResourceConfig>),
+  // marketing plugin — saldo, impulsionamentos, campanhas de banner, pagamentos e métricas (RLS por conta).
+  ...(resourceMarketing as Record<string, ResourceConfig>),
+  // marketing (painel admin) — leituras com embed e a visão do admin sobre criativos; escrita fica nos de cima.
+  ...(resourceMarketingAdmin as Record<string, ResourceConfig>),
   // tickets plugin — chamados e comentários (RLS decide o escopo: usuário x staff).
   ...(resourceTickets as Record<string, ResourceConfig>),
   // ai_review plugin — revisão de textos por IA (credenciais sem cifra, prompts, revisões, execuções).

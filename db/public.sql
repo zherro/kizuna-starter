@@ -3,7 +3,7 @@
 -- Aplicar DEPOIS do db/auth.sql, em base limpa:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/public.sql
 -- Ordem = kizuna.plugins.json (ordem de dependência).
--- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (3), onboarding (1), storage (6), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (5), services (14), reviews (1), analytics (3), ads (1), search (9), swipe (4), messaging (1), ai_assistant (1), ai_review (1), demandas (4), pedidos (4)
+-- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (3), onboarding (1), storage (7), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (5), services (18), reviews (1), analytics (3), ads (1), marketing (1), search (13), swipe (4), messaging (1), ai_assistant (1), ai_review (1), demandas (4), pedidos (4)
 
 
 -- ===============================================================================================
@@ -913,7 +913,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: storage  (6 arquivos)
+-- PLUGIN: storage  (7 arquivos)
 -- ===============================================================================================
 
 
@@ -1147,6 +1147,34 @@ END $$;
 
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('storage', '1.5.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/storage/0007_storage_thumb_spec.sql
+-- ===============================================================================================
+
+-- plugins/storage/0007_storage_thumb_spec.sql
+-- Marca de qual medida gerou cada miniatura (`files.thumb_content`, 0005):
+--   `thumb_spec` = `<lado>q<qualidade>` do preset usado (ex.: `360q60`; presets em
+--   `src/shared/image/thumb-presets.json`, escolhidos em kizuna.config.json → images.thumbPreset);
+--   `thumb_at`   = quando a miniatura foi gerada.
+-- Serve para NÃO reprocessar o que já está na medida configurada e para achar o que ficou
+-- desatualizado depois de trocar o preset (scripts/regerar-miniaturas.mjs --conferir).
+-- Miniaturas anteriores a esta migration ficam com `thumb_spec NULL` ("sem marca": a medida é
+-- desconhecida) e são refeitas uma vez pelo script.
+--
+-- Só colunas nulas, sem DEFAULT e sem reescrever a tabela: instantâneo, idempotente e reversível
+-- (ALTER TABLE public.files DROP COLUMN thumb_spec, DROP COLUMN thumb_at). Aplique ANTES de subir o
+-- código que grava as colunas (o upload tolera a ausência, mas o script e os importadores exigem).
+
+ALTER TABLE public.files ADD COLUMN IF NOT EXISTS thumb_spec text;
+ALTER TABLE public.files ADD COLUMN IF NOT EXISTS thumb_at timestamptz;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('storage', '1.6.0')
 ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
 
 NOTIFY pgrst, 'reload schema';
@@ -3051,7 +3079,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: services  (14 arquivos)
+-- PLUGIN: services  (18 arquivos)
 -- ===============================================================================================
 
 
@@ -3923,6 +3951,286 @@ VALUES ('services', '1.9.0')
 ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
 
 NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/services/0015_services_moderation_guard.sql
+-- ===============================================================================================
+
+-- plugins/services/0015_services_moderation_guard.sql
+-- Fecha a autopublicação: o GRANT de UPDATE em public.services é da tabela inteira e as policies só
+-- conferem `created_by`, então o dono podia gravar `status = 'active'` e `sponsored = true` direto
+-- (pela rota de recursos ou pelo PostgREST) e pular `fn_service_moderate`.
+--
+-- Trigger BEFORE INSERT OR UPDATE, para quem NÃO tem `services.moderate` e não é sessão de sistema:
+--   INSERT: status vira 'pending' e sponsored vira false;
+--   UPDATE: status só pode voltar para 'pending' (reenviar para moderação); qualquer outra troca
+--           mantém o valor antigo. sponsored e tenant_id mantêm o valor antigo.
+-- Silencioso (não dá erro) porque o wizard faz read-merge-write e reenvia esses campos.
+-- `fn_service_moderate` é SECURITY DEFINER, mas o JWT do moderador continua na requisição, então
+-- passa pela checagem de permissão. Sessão de sistema = mesma regra do 0012 (sem `user_id` no JWT e
+-- papel diferente de anon/auth_user: importador, jobs, service_role).
+-- Aditivo e idempotente.
+
+CREATE OR REPLACE FUNCTION public.fn_services_moderation_guard()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, auth
+AS $function$
+DECLARE
+  v_claims text := nullif(current_setting('request.jwt.claims', true), '');
+  v_uid    text;
+BEGIN
+  IF v_claims IS NOT NULL THEN
+    BEGIN
+      v_uid := v_claims::jsonb ->> 'user_id';
+    EXCEPTION WHEN others THEN
+      v_uid := NULL;
+    END;
+  END IF;
+  IF v_uid IS NULL AND current_user NOT IN ('anon', 'auth_user') THEN
+    RETURN NEW;
+  END IF;
+
+  IF auth.fun_auth_has_perm('services', 'moderate') THEN
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'INSERT' THEN
+    NEW.status := 'pending';
+    NEW.sponsored := false;
+  ELSE
+    IF NEW.status IS DISTINCT FROM OLD.status AND NEW.status <> 'pending' THEN
+      NEW.status := OLD.status;
+    END IF;
+    NEW.sponsored := OLD.sponsored;
+    NEW.tenant_id := OLD.tenant_id;
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+
+DROP TRIGGER IF EXISTS trg_services_moderation_guard ON public.services;
+CREATE TRIGGER trg_services_moderation_guard
+  BEFORE INSERT OR UPDATE ON public.services
+  FOR EACH ROW EXECUTE FUNCTION public.fn_services_moderation_guard();
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/services/0016_services_occurs_at.sql
+-- ===============================================================================================
+
+-- plugins/services/0016_services_occurs_at.sql
+-- `services.occurs_at`: QUANDO o anúncio acontece (evento: data/hora de início). Genérico — vale
+-- para qualquer categoria que tenha data (show, feira, curso…); NULL = sem data. Existe para
+-- ORDENAR e filtrar por data com índice, sem abrir o JSON do formulário a cada busca
+-- (`fn_search_services` `p_order => 'occurs_at'`, plugin search 0011).
+--
+-- Fonte: quem grava o anúncio pode preencher direto (importador/robô). Além disso, o trigger em
+-- `form_results` (plugin forms) copia a resposta de data do formulário do anúncio — a primeira
+-- chave preenchida de `answers` entre `data_inicio`, `data_evento`, `data` — para `occurs_at`.
+-- Data sem fuso (`2026-10-25T19:00`, campo datetime do form) é lida no horário de Brasília.
+-- Texto que não é data é ignorado (não derruba o save do formulário).
+-- Idempotente.
+
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS occurs_at timestamptz NULL;
+
+COMMENT ON COLUMN public.services.occurs_at IS
+  'Quando o anúncio acontece (evento: início). NULL = sem data. Ordenação/agenda; sincronizado de form_results.answers.data_inicio.';
+
+-- Só anúncios publicados com data: é o recorte que a busca ordena.
+CREATE INDEX IF NOT EXISTS services_occurs_at
+  ON public.services (occurs_at)
+  WHERE active AND status = 'active' AND occurs_at IS NOT NULL;
+
+-- Texto de data (ISO, com ou sem fuso) → timestamptz; inválido/vazio → NULL.
+CREATE OR REPLACE FUNCTION public.fn_parse_occurs_at(p_value text)
+RETURNS timestamptz
+LANGUAGE plpgsql
+STABLE
+SET search_path = public
+AS $function$
+DECLARE
+  v text := NULLIF(btrim(p_value), '');
+BEGIN
+  IF v IS NULL THEN
+    RETURN NULL;
+  END IF;
+  -- com fuso explícito (Z ou ±hh:mm) vale como veio; sem fuso = horário de Brasília
+  -- (o fuso só conta depois da hora: '2026-10-25' termina em '-25', que não é fuso)
+  IF v ~ '[T ]\d{1,2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}(:?\d{2})?)$' THEN
+    RETURN v::timestamptz;
+  END IF;
+  RETURN (v::timestamp) AT TIME ZONE 'America/Sao_Paulo';
+EXCEPTION WHEN others THEN
+  RETURN NULL;
+END;
+$function$;
+
+DO $do$
+BEGIN
+  -- O sincronismo depende do plugin forms (vem antes de services na lista); sem ele, só a coluna.
+  IF to_regclass('public.form_results') IS NULL THEN
+    RETURN;
+  END IF;
+
+  CREATE OR REPLACE FUNCTION public.fn_form_results_sync_occurs_at()
+  RETURNS trigger
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = public
+  AS $function$
+  DECLARE
+    v_at timestamptz;
+  BEGIN
+    IF NEW.domain <> 'service' OR NEW.reference_id IS NULL OR NEW.reference_id !~ '^\d+$' THEN
+      RETURN NEW;
+    END IF;
+    v_at := public.fn_parse_occurs_at(
+      COALESCE(
+        NULLIF(NEW.answers->>'data_inicio', ''),
+        NULLIF(NEW.answers->>'data_evento', ''),
+        NULLIF(NEW.answers->>'data', '')
+      )
+    );
+    UPDATE public.services s
+       SET occurs_at = v_at
+     WHERE s.id = NEW.reference_id::bigint
+       AND s.occurs_at IS DISTINCT FROM v_at;
+    RETURN NEW;
+  END;
+  $function$;
+
+  DROP TRIGGER IF EXISTS trg_form_results_sync_occurs_at ON public.form_results;
+  CREATE TRIGGER trg_form_results_sync_occurs_at
+    AFTER INSERT OR UPDATE OF answers, reference_id, domain ON public.form_results
+    FOR EACH ROW EXECUTE FUNCTION public.fn_form_results_sync_occurs_at();
+
+  -- Backfill dos anúncios que já têm formulário com data.
+  UPDATE public.services s
+     SET occurs_at = x.at
+    FROM (
+      SELECT DISTINCT ON (fr.reference_id)
+             fr.reference_id::bigint AS service_id,
+             public.fn_parse_occurs_at(
+               COALESCE(
+                 NULLIF(fr.answers->>'data_inicio', ''),
+                 NULLIF(fr.answers->>'data_evento', ''),
+                 NULLIF(fr.answers->>'data', '')
+               )
+             ) AS at
+        FROM public.form_results fr
+       WHERE fr.domain = 'service'
+         AND fr.reference_id ~ '^\d+$'
+       ORDER BY fr.reference_id, fr.id DESC
+    ) x
+   WHERE s.id = x.service_id
+     AND x.at IS NOT NULL
+     AND s.occurs_at IS DISTINCT FROM x.at;
+END;
+$do$;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('services', '1.10.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/services/0017_service_addresses_city_ibge.sql
+-- ===============================================================================================
+
+-- plugins/services/0017_service_addresses_city_ibge.sql
+-- `service_addresses.city_ibge` preenchido pelo banco quando chega vazio. A busca (search 0011) e o
+-- mapa filtram cidade SÓ por esse código: endereço salvo com cidade + UF e sem IBGE some da busca
+-- mesmo publicado. O formulário tenta descobrir o código no navegador (CEP ou nome da cidade), mas
+-- é best-effort e falha calada (ViaCEP fora, lista de cidades sem resposta); importador/robô também
+-- pode gravar sem ele. Este trigger fecha o buraco para qualquer caminho de gravação.
+--
+-- Regra: INSERT/UPDATE com `city_ibge` vazio e `city` + `state` preenchidos → procura em
+-- `location_city` (plugin location; o `id` é o código IBGE) pelo nome sem acento/caixa dentro da UF.
+-- Achou um só → grava. Não achou → deixa vazio (não derruba o save). `city_ibge` informado não é
+-- tocado. No fim, preenche os endereços que já estão gravados sem o código.
+-- Idempotente.
+
+DO $do$
+BEGIN
+  -- Depende do plugin location (vem antes de services na lista); sem ele, nada a fazer.
+  IF to_regclass('public.location_city') IS NULL OR to_regclass('public.location_state') IS NULL THEN
+    RETURN;
+  END IF;
+
+  CREATE OR REPLACE FUNCTION public.fn_city_ibge_by_name(p_city text, p_state text)
+  RETURNS text
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  SET search_path = public
+  AS $function$
+    SELECT CASE WHEN count(*) = 1 THEN min(lc.id)::text END
+    FROM public.location_city lc
+    JOIN public.location_state ls ON ls.id = lc.state_id
+    WHERE upper(ls.code) = upper(btrim(p_state))
+      AND lower(unaccent(btrim(lc.name))) = lower(unaccent(btrim(p_city)));
+  $function$;
+
+  CREATE OR REPLACE FUNCTION public.fn_service_addresses_fill_city_ibge()
+  RETURNS trigger
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = public
+  AS $function$
+  BEGIN
+    IF NULLIF(btrim(NEW.city_ibge), '') IS NULL
+       AND NULLIF(btrim(NEW.city), '') IS NOT NULL
+       AND NULLIF(btrim(NEW.state), '') IS NOT NULL THEN
+      NEW.city_ibge := public.fn_city_ibge_by_name(NEW.city, NEW.state);
+    END IF;
+    RETURN NEW;
+  END;
+  $function$;
+
+  DROP TRIGGER IF EXISTS service_addresses_fill_city_ibge ON public.service_addresses;
+  CREATE TRIGGER service_addresses_fill_city_ibge
+    BEFORE INSERT OR UPDATE OF city, state, city_ibge ON public.service_addresses
+    FOR EACH ROW EXECUTE FUNCTION public.fn_service_addresses_fill_city_ibge();
+
+  -- Endereços já gravados sem o código.
+  UPDATE public.service_addresses sa
+     SET city_ibge = public.fn_city_ibge_by_name(sa.city, sa.state),
+         updated_at = now()
+   WHERE NULLIF(btrim(sa.city_ibge), '') IS NULL
+     AND NULLIF(btrim(sa.city), '') IS NOT NULL
+     AND NULLIF(btrim(sa.state), '') IS NOT NULL
+     AND public.fn_city_ibge_by_name(sa.city, sa.state) IS NOT NULL;
+END
+$do$;
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/services/0018_services_owner_read_inactive.sql
+-- ===============================================================================================
+
+-- plugins/services/0018_services_owner_read_inactive.sql
+-- Exclusão lógica pelo próprio dono: o switch "Ativo" de /painel/meus-servicos grava
+-- `services.active = false`. A policy de leitura do 0001 exigia `active` até para o dono, então o
+-- anúncio inativado sumia da própria listagem (sem como religar) e o PATCH com
+-- `return=representation` falhava (a linha nova não passava no SELECT).
+--
+-- Nova regra de leitura para auth_user:
+--   dono ou moderador: lê o anúncio ativo OU inativo;
+--   os demais: só o ativo e aprovado (`active AND status = 'active'`), como o anon.
+-- O público (anon, busca, detalhe, sitemap) não muda: continua exigindo `active`.
+-- Aditivo e idempotente.
+
+DROP POLICY IF EXISTS services_owner_read ON public.services;
+CREATE POLICY services_owner_read ON public.services FOR SELECT TO auth_user
+  USING (
+    created_by = auth.fun_auth_user_id()
+    OR auth.fun_auth_has_perm('services', 'moderate')
+    OR (active AND status = 'active')
+  );
 
 
 -- ===============================================================================================
@@ -5089,7 +5397,418 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: search  (9 arquivos)
+-- PLUGIN: marketing  (1 arquivo)
+-- ===============================================================================================
+
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/marketing/0001_marketing.sql
+-- ===============================================================================================
+
+-- plugins/marketing/0001_marketing.sql
+-- Plugin: marketing — carteira de saldo, impulsionamento de anúncios (selo BORA INDICA) e campanhas
+-- de banner/GIF dos anunciantes. Depende de: services, analytics, ads.
+--
+-- Decisões (documento do plano):
+--   * SEM funções e SEM triggers: só tabelas, views, grants e RLS.
+--   * Cobrança DIÁRIA por período, reservada na criação: custo = diária × dias comprometidos.
+--     Dias comprometidos = dias do período, menos os que sobram depois de `stopped_on` (data do
+--     primeiro dia NÃO servido). Parar devolve ao saldo os dias não usados. Hoje já está pago.
+--   * Saldo = créditos − custo comprometido (view). Não há escrita de visitante no saldo, então
+--     métrica inflada não vira cobrança.
+--   * Quem consome (boost / campanha) só INSERE e só PARA (UPDATE de `stopped_on` de NULL para
+--     data); não existe "retomar", senão o dia devolvido poderia ser gasto de novo sem checar saldo.
+--   * Aprovação de banner mora em tabela separada (`ad_creative_reviews`), só escrita por quem
+--     tem `ads.manage`/`marketing.manage`: o dono não consegue se auto-aprovar.
+--   * Valores (centavos, bigint) nunca são públicos: o público lê só as views `vw_*_live`.
+-- Idempotente.
+
+-- =========================================================================
+-- 1) Permissão
+-- =========================================================================
+INSERT INTO auth.permissions (resource, action, name)
+VALUES ('marketing', 'manage', 'Gerir marketing (saldo, impulsionamentos e banners de todos os anunciantes)')
+ON CONFLICT (resource, action) DO NOTHING;
+
+-- =========================================================================
+-- 2) Carteira (livro-razão só de inserção)
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS public.wallet_ledger (
+  id           bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  tenant_id    uuid NOT NULL REFERENCES auth.tenants(uid) ON DELETE RESTRICT,
+  kind         text NOT NULL,
+  amount_cents bigint NOT NULL,
+  note         text NOT NULL DEFAULT '',
+  ref_id       text,
+  created_by   uuid REFERENCES auth.users(uid) ON DELETE SET NULL DEFAULT auth.fun_auth_user_id(),
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT wallet_ledger_kind_chk   CHECK (kind IN ('credit_admin', 'credit_payment', 'adjust')),
+  CONSTRAINT wallet_ledger_amount_chk CHECK (amount_cents <> 0 AND abs(amount_cents) <= 100000000),
+  CONSTRAINT wallet_ledger_sign_chk   CHECK (kind = 'adjust' OR amount_cents > 0),
+  CONSTRAINT wallet_ledger_note_chk   CHECK (char_length(note) <= 300)
+);
+CREATE INDEX IF NOT EXISTS wallet_ledger_tenant ON public.wallet_ledger (tenant_id, created_at DESC);
+-- Um pagamento confirmado credita uma única vez (webhook reentregue não duplica).
+CREATE UNIQUE INDEX IF NOT EXISTS wallet_ledger_payment_once
+  ON public.wallet_ledger (ref_id) WHERE kind = 'credit_payment';
+
+-- =========================================================================
+-- 3) Impulsionamentos
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS public.boosts (
+  id          bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  service_uid uuid NOT NULL REFERENCES public.services(uid) ON DELETE CASCADE,
+  tenant_id   uuid NOT NULL DEFAULT auth.fun_auth_current_tenant_id() REFERENCES auth.tenants(uid) ON DELETE RESTRICT,
+  created_by  uuid NOT NULL DEFAULT auth.fun_auth_user_id() REFERENCES auth.users(uid) ON DELETE RESTRICT,
+  daily_cents integer NOT NULL,
+  starts_on   date NOT NULL,
+  ends_on     date NOT NULL,
+  stopped_on  date,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT boosts_daily_chk  CHECK (daily_cents BETWEEN 500 AND 1000000),
+  CONSTRAINT boosts_period_chk CHECK (ends_on >= starts_on AND ends_on <= starts_on + 89),
+  CONSTRAINT boosts_stop_chk   CHECK (stopped_on IS NULL OR (stopped_on >= starts_on AND stopped_on <= ends_on + 1))
+);
+CREATE INDEX IF NOT EXISTS boosts_tenant  ON public.boosts (tenant_id, starts_on DESC);
+CREATE INDEX IF NOT EXISTS boosts_service ON public.boosts (service_uid);
+CREATE INDEX IF NOT EXISTS boosts_live    ON public.boosts (starts_on, ends_on) WHERE stopped_on IS NULL;
+
+-- =========================================================================
+-- 4) Banners: criativo (ad_creatives) + revisão + campanha
+-- =========================================================================
+ALTER TABLE public.ad_creatives ADD COLUMN IF NOT EXISTS tenant_id  uuid REFERENCES auth.tenants(uid) ON DELETE RESTRICT;
+ALTER TABLE public.ad_creatives ADD COLUMN IF NOT EXISTS created_by uuid REFERENCES auth.users(uid) ON DELETE SET NULL;
+ALTER TABLE public.ad_creatives ALTER COLUMN created_by SET DEFAULT auth.fun_auth_user_id();
+CREATE INDEX IF NOT EXISTS ad_creatives_tenant ON public.ad_creatives (tenant_id) WHERE tenant_id IS NOT NULL;
+
+-- Revisão do criativo de anunciante. Sem linha = na fila. `approved` + `active` (ligado pelo admin)
+-- é o que publica. Criativos do próprio site (tenant_id NULL) não passam por aqui.
+CREATE TABLE IF NOT EXISTS public.ad_creative_reviews (
+  creative_id uuid PRIMARY KEY REFERENCES public.ad_creatives(id) ON DELETE CASCADE,
+  status      text NOT NULL,
+  reason      text NOT NULL DEFAULT '',
+  reviewed_by uuid REFERENCES auth.users(uid) ON DELETE SET NULL DEFAULT auth.fun_auth_user_id(),
+  reviewed_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT ad_creative_reviews_status_chk CHECK (status IN ('approved', 'rejected')),
+  CONSTRAINT ad_creative_reviews_reason_chk CHECK (char_length(reason) <= 300)
+);
+
+CREATE TABLE IF NOT EXISTS public.ad_campaigns (
+  id          bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  creative_id uuid NOT NULL REFERENCES public.ad_creatives(id) ON DELETE CASCADE,
+  slot_slug   text NOT NULL REFERENCES public.ad_slots(slug) ON DELETE RESTRICT,
+  tenant_id   uuid NOT NULL DEFAULT auth.fun_auth_current_tenant_id() REFERENCES auth.tenants(uid) ON DELETE RESTRICT,
+  created_by  uuid NOT NULL DEFAULT auth.fun_auth_user_id() REFERENCES auth.users(uid) ON DELETE RESTRICT,
+  daily_cents integer NOT NULL,
+  starts_on   date NOT NULL,
+  ends_on     date NOT NULL,
+  stopped_on  date,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT ad_campaigns_daily_chk  CHECK (daily_cents BETWEEN 500 AND 1000000),
+  CONSTRAINT ad_campaigns_period_chk CHECK (ends_on >= starts_on AND ends_on <= starts_on + 89),
+  CONSTRAINT ad_campaigns_stop_chk   CHECK (stopped_on IS NULL OR (stopped_on >= starts_on AND stopped_on <= ends_on + 1))
+);
+CREATE INDEX IF NOT EXISTS ad_campaigns_tenant   ON public.ad_campaigns (tenant_id, starts_on DESC);
+CREATE INDEX IF NOT EXISTS ad_campaigns_creative ON public.ad_campaigns (creative_id);
+CREATE INDEX IF NOT EXISTS ad_campaigns_live     ON public.ad_campaigns (starts_on, ends_on) WHERE stopped_on IS NULL;
+
+-- =========================================================================
+-- 5) Pagamentos (provedor ainda não escolhido: a tabela é agnóstica)
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS public.payment_intents (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id    uuid NOT NULL DEFAULT auth.fun_auth_current_tenant_id() REFERENCES auth.tenants(uid) ON DELETE RESTRICT,
+  created_by   uuid NOT NULL DEFAULT auth.fun_auth_user_id() REFERENCES auth.users(uid) ON DELETE RESTRICT,
+  amount_cents bigint NOT NULL,
+  provider     text NOT NULL DEFAULT 'manual',
+  external_id  text,
+  status       text NOT NULL DEFAULT 'pending',
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  updated_at   timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT payment_intents_amount_chk   CHECK (amount_cents BETWEEN 1000 AND 100000000),
+  CONSTRAINT payment_intents_status_chk   CHECK (status IN ('pending', 'paid', 'failed', 'expired')),
+  CONSTRAINT payment_intents_provider_chk CHECK (provider ~ '^[a-z0-9_-]{1,30}$')
+);
+CREATE INDEX IF NOT EXISTS payment_intents_tenant ON public.payment_intents (tenant_id, created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS payment_intents_external ON public.payment_intents (provider, external_id) WHERE external_id IS NOT NULL;
+
+-- =========================================================================
+-- 6) Views
+-- =========================================================================
+-- Saldo por conta = créditos − custo comprometido. `security_invoker`: cada um vê o seu (RLS das
+-- tabelas base); quem tem marketing.manage vê todos.
+CREATE OR REPLACE VIEW public.vw_wallet_balance WITH (security_invoker = true) AS
+SELECT tenant_id,
+       SUM(amount_cents)::bigint AS balance_cents,
+       SUM(amount_cents) FILTER (WHERE amount_cents > 0)::bigint AS credited_cents,
+       -SUM(amount_cents) FILTER (WHERE amount_cents < 0)::bigint AS committed_cents
+FROM (
+  SELECT tenant_id, amount_cents FROM public.wallet_ledger
+  UNION ALL
+  SELECT tenant_id,
+         -(daily_cents::bigint
+           * GREATEST(0, LEAST(ends_on + 1, COALESCE(stopped_on, ends_on + 1)) - starts_on))
+    FROM public.boosts
+  UNION ALL
+  SELECT tenant_id,
+         -(daily_cents::bigint
+           * GREATEST(0, LEAST(ends_on + 1, COALESCE(stopped_on, ends_on + 1)) - starts_on))
+    FROM public.ad_campaigns
+) t
+GROUP BY tenant_id;
+
+-- Projeções PÚBLICAS (sem valores). Sem `security_invoker` de propósito: rodam como dono, e o
+-- filtro da própria view é a regra. Sem a view, o anônimo teria de ler as tabelas com a diária.
+-- Impulsionamento no ar: período corrente, não parado, anúncio publicado.
+CREATE OR REPLACE VIEW public.vw_boosts_live AS
+SELECT b.service_uid
+FROM public.boosts b
+JOIN public.services s ON s.uid = b.service_uid AND s.active AND s.status = 'active'
+WHERE b.stopped_on IS NULL
+  AND CURRENT_DATE BETWEEN b.starts_on AND b.ends_on
+GROUP BY b.service_uid;
+
+-- Campanha de banner no ar: criativo APROVADO + período corrente + não parada. A aprovação entra
+-- aqui (e não na policy de ad_creatives) porque o anônimo não tem acesso a ad_creative_reviews.
+CREATE OR REPLACE VIEW public.vw_ad_campaigns_live AS
+SELECT DISTINCT c.creative_id, c.slot_slug
+FROM public.ad_campaigns c
+JOIN public.ad_creative_reviews r ON r.creative_id = c.creative_id AND r.status = 'approved'
+WHERE c.stopped_on IS NULL
+  AND CURRENT_DATE BETWEEN c.starts_on AND c.ends_on;
+
+-- Criativos do anunciante logado + situação (na fila / aprovado / reprovado, motivo). Roda como
+-- dono; o filtro por conta é a própria view. Os claims do JWT vêm do contexto da requisição.
+CREATE OR REPLACE VIEW public.vw_my_ad_creatives AS
+SELECT c.id, c.tenant_id, c.format, c.kind, c.image_url, c.alt, c.link_url, c.label, c.slots,
+       c.active, c.created_at,
+       COALESCE(r.status, 'pending') AS review_status,
+       COALESCE(r.reason, '') AS review_reason
+FROM public.ad_creatives c
+LEFT JOIN public.ad_creative_reviews r ON r.creative_id = c.id
+WHERE c.tenant_id IS NOT NULL
+  AND c.tenant_id = auth.fun_auth_current_tenant_id();
+
+-- Métricas por dia dos impulsionamentos (do dono: a RLS de analytics_events já restringe).
+-- `impressions` = anúncio apareceu na tela; `views` = abriu o detalhe; mais interações.
+CREATE OR REPLACE VIEW public.vw_boost_metrics_daily WITH (security_invoker = true) AS
+SELECT b.id AS boost_id, b.tenant_id, b.service_uid, e.day,
+       COUNT(*) FILTER (WHERE e.event_type = 'impression') AS impressions,
+       COUNT(*) FILTER (WHERE e.event_type = 'view') AS views,
+       COUNT(*) FILTER (WHERE e.event_type = 'contact_click') AS contact_clicks,
+       COUNT(*) FILTER (WHERE e.event_type IN ('favorite', 'share')) AS interactions
+FROM public.boosts b
+JOIN public.analytics_events e
+  ON e.entity_id = b.service_uid
+ AND e.day >= b.starts_on
+ AND e.day <= LEAST(b.ends_on, COALESCE(b.stopped_on - 1, b.ends_on))
+GROUP BY b.id, b.tenant_id, b.service_uid, e.day;
+
+-- Entrega por dia dos banners (impressões e cliques de ad_stats_daily).
+CREATE OR REPLACE VIEW public.vw_ad_delivery_daily WITH (security_invoker = true) AS
+SELECT c.id AS campaign_id, c.tenant_id, c.creative_id, c.slot_slug, s.day,
+       SUM(s.impressions)::bigint AS impressions, SUM(s.clicks)::bigint AS clicks
+FROM public.ad_campaigns c
+JOIN public.ad_stats_daily s
+  ON s.creative_id = c.creative_id
+ AND s.slot_slug = c.slot_slug
+ AND s.day >= c.starts_on
+ AND s.day <= LEAST(c.ends_on, COALESCE(c.stopped_on - 1, c.ends_on))
+GROUP BY c.id, c.tenant_id, c.creative_id, c.slot_slug, s.day;
+
+-- =========================================================================
+-- 7) Grants
+-- =========================================================================
+ALTER TABLE public.wallet_ledger        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.boosts               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ad_campaigns         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ad_creative_reviews  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payment_intents      ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON public.wallet_ledger, public.boosts, public.ad_campaigns,
+              public.ad_creative_reviews, public.payment_intents FROM anon, auth_user;
+
+GRANT SELECT, INSERT ON public.wallet_ledger TO auth_user;                 -- livro-razão: sem UPDATE/DELETE
+GRANT SELECT, INSERT ON public.boosts, public.ad_campaigns TO auth_user;
+GRANT UPDATE (stopped_on) ON public.boosts, public.ad_campaigns TO auth_user;  -- só parar
+GRANT SELECT, INSERT, UPDATE ON public.ad_creative_reviews TO auth_user;
+GRANT SELECT, INSERT ON public.payment_intents TO auth_user;               -- criar pendente; "pago" só o servidor
+GRANT SELECT ON public.vw_wallet_balance, public.vw_boost_metrics_daily, public.vw_ad_delivery_daily TO auth_user;
+GRANT SELECT ON public.vw_boosts_live, public.vw_ad_campaigns_live TO anon, auth_user;
+GRANT SELECT ON public.vw_my_ad_creatives TO auth_user;
+
+-- =========================================================================
+-- 8) Políticas
+-- =========================================================================
+-- wallet_ledger: dono lê o próprio extrato; só marketing.manage lança crédito/ajuste.
+DROP POLICY IF EXISTS wallet_ledger_select ON public.wallet_ledger;
+CREATE POLICY wallet_ledger_select ON public.wallet_ledger FOR SELECT TO auth_user
+USING (tenant_id = auth.fun_auth_current_tenant_id() OR auth.fun_auth_has_perm('marketing', 'manage'));
+DROP POLICY IF EXISTS wallet_ledger_insert ON public.wallet_ledger;
+CREATE POLICY wallet_ledger_insert ON public.wallet_ledger FOR INSERT TO auth_user
+WITH CHECK (kind IN ('credit_admin', 'adjust') AND auth.fun_auth_has_perm('marketing', 'manage'));
+
+-- boosts
+DROP POLICY IF EXISTS boosts_select ON public.boosts;
+CREATE POLICY boosts_select ON public.boosts FOR SELECT TO auth_user
+USING (tenant_id = auth.fun_auth_current_tenant_id() OR auth.fun_auth_has_perm('marketing', 'manage'));
+
+DROP POLICY IF EXISTS boosts_insert ON public.boosts;
+CREATE POLICY boosts_insert ON public.boosts FOR INSERT TO auth_user
+WITH CHECK (
+  tenant_id = auth.fun_auth_current_tenant_id()
+  AND created_by = auth.fun_auth_user_id()
+  AND stopped_on IS NULL
+  AND starts_on >= CURRENT_DATE
+  -- o anúncio é do próprio dono e está publicado
+  AND EXISTS (
+    SELECT 1 FROM public.services s
+     WHERE s.uid = boosts.service_uid
+       AND s.created_by = auth.fun_auth_user_id()
+       AND s.active AND s.status = 'active'
+  )
+  -- sem sobrepor outro impulsionamento ainda valendo do mesmo anúncio
+  AND NOT EXISTS (
+    SELECT 1 FROM public.boosts o
+     WHERE o.service_uid = boosts.service_uid
+       AND o.stopped_on IS NULL
+       AND o.ends_on >= boosts.starts_on
+       AND o.starts_on <= boosts.ends_on
+  )
+  -- saldo cobre o período inteiro (reserva)
+  AND COALESCE((SELECT w.balance_cents FROM public.vw_wallet_balance w
+                 WHERE w.tenant_id = boosts.tenant_id), 0)
+      >= boosts.daily_cents::bigint * (boosts.ends_on - boosts.starts_on + 1)
+);
+
+-- parar: só linha ainda não parada, e só para uma data de parada válida (hoje já está pago).
+DROP POLICY IF EXISTS boosts_stop ON public.boosts;
+CREATE POLICY boosts_stop ON public.boosts FOR UPDATE TO auth_user
+USING (stopped_on IS NULL AND (tenant_id = auth.fun_auth_current_tenant_id() OR auth.fun_auth_has_perm('marketing', 'manage')))
+WITH CHECK (stopped_on IS NOT NULL AND stopped_on >= GREATEST(starts_on, CURRENT_DATE + 1) AND stopped_on <= ends_on + 1);
+
+-- ad_creatives: o dono do banner insere (nunca ativo) e vê os seus; ninguém além do admin edita.
+DROP POLICY IF EXISTS ad_creatives_select ON public.ad_creatives;
+CREATE POLICY ad_creatives_select ON public.ad_creatives FOR SELECT TO anon, auth_user
+USING (
+  (
+    active
+    AND (starts_at IS NULL OR starts_at <= now())
+    AND (ends_at IS NULL OR ends_at >= now())
+    AND (tenant_id IS NULL OR id IN (SELECT creative_id FROM public.vw_ad_campaigns_live))
+  )
+  OR auth.fun_auth_has_perm('ads', 'manage')
+  OR auth.fun_auth_has_perm('marketing', 'manage')
+  -- O dono vê o criativo só enquanto inativo (aguardando revisão): é o que deixa o INSERT devolver a
+  -- linha. Depois de aprovado e fora do ar ele NÃO aparece aqui — senão o pool de anúncios do próprio
+  -- anunciante exibiria (e contaria) banner parado. O painel lê pela view `vw_my_ad_creatives`.
+  OR (tenant_id IS NOT NULL AND NOT active AND tenant_id = auth.fun_auth_current_tenant_id())
+);
+DROP POLICY IF EXISTS ad_creatives_owner_insert ON public.ad_creatives;
+CREATE POLICY ad_creatives_owner_insert ON public.ad_creatives FOR INSERT TO auth_user
+WITH CHECK (
+  tenant_id = auth.fun_auth_current_tenant_id()
+  AND created_by = auth.fun_auth_user_id()
+  AND active = false
+  AND weight = 1
+  AND starts_at IS NULL AND ends_at IS NULL
+  AND cardinality(cities) = 0
+);
+DROP POLICY IF EXISTS ad_creatives_insert ON public.ad_creatives;
+CREATE POLICY ad_creatives_insert ON public.ad_creatives FOR INSERT TO auth_user
+WITH CHECK (auth.fun_auth_has_perm('ads', 'manage') OR auth.fun_auth_has_perm('marketing', 'manage'));
+DROP POLICY IF EXISTS ad_creatives_update ON public.ad_creatives;
+CREATE POLICY ad_creatives_update ON public.ad_creatives FOR UPDATE TO auth_user
+USING (auth.fun_auth_has_perm('ads', 'manage') OR auth.fun_auth_has_perm('marketing', 'manage'))
+WITH CHECK (auth.fun_auth_has_perm('ads', 'manage') OR auth.fun_auth_has_perm('marketing', 'manage'));
+
+-- ad_creative_reviews: dono lê a revisão do seu criativo (motivo de reprovação); admin escreve.
+DROP POLICY IF EXISTS ad_creative_reviews_select ON public.ad_creative_reviews;
+CREATE POLICY ad_creative_reviews_select ON public.ad_creative_reviews FOR SELECT TO auth_user
+USING (
+  auth.fun_auth_has_perm('marketing', 'manage') OR auth.fun_auth_has_perm('ads', 'manage')
+  OR EXISTS (SELECT 1 FROM public.ad_creatives c
+              WHERE c.id = ad_creative_reviews.creative_id AND c.tenant_id = auth.fun_auth_current_tenant_id())
+);
+DROP POLICY IF EXISTS ad_creative_reviews_insert ON public.ad_creative_reviews;
+CREATE POLICY ad_creative_reviews_insert ON public.ad_creative_reviews FOR INSERT TO auth_user
+WITH CHECK (auth.fun_auth_has_perm('marketing', 'manage') OR auth.fun_auth_has_perm('ads', 'manage'));
+DROP POLICY IF EXISTS ad_creative_reviews_update ON public.ad_creative_reviews;
+CREATE POLICY ad_creative_reviews_update ON public.ad_creative_reviews FOR UPDATE TO auth_user
+USING (auth.fun_auth_has_perm('marketing', 'manage') OR auth.fun_auth_has_perm('ads', 'manage'))
+WITH CHECK (auth.fun_auth_has_perm('marketing', 'manage') OR auth.fun_auth_has_perm('ads', 'manage'));
+
+-- ad_campaigns (mesma lógica dos boosts)
+DROP POLICY IF EXISTS ad_campaigns_select ON public.ad_campaigns;
+CREATE POLICY ad_campaigns_select ON public.ad_campaigns FOR SELECT TO auth_user
+USING (tenant_id = auth.fun_auth_current_tenant_id() OR auth.fun_auth_has_perm('marketing', 'manage'));
+
+DROP POLICY IF EXISTS ad_campaigns_insert ON public.ad_campaigns;
+CREATE POLICY ad_campaigns_insert ON public.ad_campaigns FOR INSERT TO auth_user
+WITH CHECK (
+  tenant_id = auth.fun_auth_current_tenant_id()
+  AND created_by = auth.fun_auth_user_id()
+  AND stopped_on IS NULL
+  AND starts_on >= CURRENT_DATE
+  AND EXISTS (SELECT 1 FROM public.ad_creatives c
+               WHERE c.id = ad_campaigns.creative_id AND c.tenant_id = ad_campaigns.tenant_id
+                 AND ad_campaigns.slot_slug = ANY (c.slots))
+  AND EXISTS (SELECT 1 FROM public.ad_slots sl WHERE sl.slug = ad_campaigns.slot_slug AND sl.enabled)
+  AND COALESCE((SELECT w.balance_cents FROM public.vw_wallet_balance w
+                 WHERE w.tenant_id = ad_campaigns.tenant_id), 0)
+      >= ad_campaigns.daily_cents::bigint * (ad_campaigns.ends_on - ad_campaigns.starts_on + 1)
+);
+DROP POLICY IF EXISTS ad_campaigns_stop ON public.ad_campaigns;
+CREATE POLICY ad_campaigns_stop ON public.ad_campaigns FOR UPDATE TO auth_user
+USING (stopped_on IS NULL AND (tenant_id = auth.fun_auth_current_tenant_id() OR auth.fun_auth_has_perm('marketing', 'manage')))
+WITH CHECK (stopped_on IS NOT NULL AND stopped_on >= GREATEST(starts_on, CURRENT_DATE + 1) AND stopped_on <= ends_on + 1);
+
+-- ad_stats_daily: o anunciante lê a entrega dos próprios banners (a policy do plugin ads só abre
+-- para `ads.manage`, e vw_ad_delivery_daily respeita a RLS de quem consulta). Passa pela view do
+-- dono porque o criativo ativo e fora do ar não aparece mais em ad_creatives para ele.
+DROP POLICY IF EXISTS ad_stats_owner ON public.ad_stats_daily;
+CREATE POLICY ad_stats_owner ON public.ad_stats_daily FOR SELECT TO auth_user
+USING (creative_id IN (SELECT id FROM public.vw_my_ad_creatives));
+
+-- payment_intents: dono cria pendente e acompanha; "pago" só o servidor (service_role, abaixo).
+DROP POLICY IF EXISTS payment_intents_select ON public.payment_intents;
+CREATE POLICY payment_intents_select ON public.payment_intents FOR SELECT TO auth_user
+USING (tenant_id = auth.fun_auth_current_tenant_id() OR auth.fun_auth_has_perm('marketing', 'manage'));
+DROP POLICY IF EXISTS payment_intents_insert ON public.payment_intents;
+CREATE POLICY payment_intents_insert ON public.payment_intents FOR INSERT TO auth_user
+WITH CHECK (
+  tenant_id = auth.fun_auth_current_tenant_id()
+  AND created_by = auth.fun_auth_user_id()
+  AND status = 'pending'
+  AND external_id IS NULL
+);
+
+-- Servidor (webhook do provedor): confirma pagamento e lança o crédito. Sem o papel, só avisa.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    GRANT SELECT, UPDATE ON public.payment_intents TO service_role;
+    GRANT SELECT, INSERT ON public.wallet_ledger TO service_role;
+    DROP POLICY IF EXISTS payment_intents_server ON public.payment_intents;
+    CREATE POLICY payment_intents_server ON public.payment_intents FOR ALL TO service_role USING (true) WITH CHECK (true);
+    DROP POLICY IF EXISTS wallet_ledger_server ON public.wallet_ledger;
+    CREATE POLICY wallet_ledger_server ON public.wallet_ledger FOR ALL TO service_role
+      USING (true) WITH CHECK (kind = 'credit_payment');
+  ELSE
+    RAISE NOTICE 'papel service_role ausente (sql/0117) — o webhook de pagamento não poderá creditar';
+  END IF;
+END $$;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('marketing', '1.0.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- PLUGIN: search  (13 arquivos)
 -- ===============================================================================================
 
 
@@ -7663,6 +8382,1410 @@ GRANT EXECUTE ON FUNCTION public.fn_search_services(character varying, integer, 
 
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('search', '1.8.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/search/0010_search_order.sql
+-- ===============================================================================================
+
+-- plugins/search/0010_search_order.sql
+-- `fn_search_services` ganha `p_order text` (último parâmetro): ordenação dos resultados.
+--   NULL / 'relevance' / desconhecido = ordem de sempre (texto, cidade, avaliação, aleatório)
+--   'event_start' = próximos eventos primeiro (`form_results.answers.data_inicio`, ISO), depois os
+--                   já passados e por fim os sem data
+--   'recent'      = publicados mais recentemente primeiro (`services.created_at`)
+--   'title'       = alfabética
+-- A busca de texto continua mandando primeiro (`text_rank`); o critério pedido vem logo depois.
+-- `event_start` passa a ser calculado no CTE filtrado (antes da página) para poder ordenar.
+-- Usado pela /busca via `search.orderByGroup` do kizuna.config.json.
+-- A assinatura muda (16 parâmetros): `DROP FUNCTION` da anterior (15), `CREATE` da nova e o mesmo
+-- `GRANT`. Chamadas antigas (por nome, sem `p_order`) continuam valendo pelo DEFAULT.
+-- Idempotente: o DROP é IF EXISTS e o CREATE é OR REPLACE.
+
+DROP FUNCTION IF EXISTS public.fn_search_services(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, integer, text, text[], text[], bigint[], jsonb, jsonb);
+
+CREATE OR REPLACE FUNCTION public.fn_search_services(
+  p_state character varying,
+  p_city_id integer,
+  p_group_category_slug character varying,
+  p_category_id bigint DEFAULT NULL::bigint,
+  p_subcategories jsonb DEFAULT NULL::jsonb,
+  p_query text DEFAULT NULL::text,
+  p_seed double precision DEFAULT NULL::double precision,
+  p_page integer DEFAULT 0,
+  p_page_size integer DEFAULT 20,
+  p_city_ibge text DEFAULT NULL::text,
+  p_exclude_category_slugs text[] DEFAULT NULL::text[],
+  p_city_ibges text[] DEFAULT NULL::text[],
+  p_category_ids bigint[] DEFAULT NULL::bigint[],
+  p_tags jsonb DEFAULT NULL::jsonb,
+  p_local_refs jsonb DEFAULT NULL::jsonb,
+  p_order text DEFAULT NULL::text
+)
+RETURNS TABLE(
+  uid uuid,
+  title character varying,
+  price numeric,
+  price_type character varying,
+  category character varying,
+  category_slug character varying,
+  category_group_slug character varying,
+  subcategory character varying,
+  sponsored boolean,
+  cover_file_id character varying,
+  provider_name character varying,
+  provider_avatar character varying,
+  rating numeric,
+  reviews integer,
+  city text,
+  state text,
+  address_count integer,
+  event_start character varying,
+  venue character varying
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $function$
+DECLARE
+  v_query tsquery;
+  v_group_id bigint;
+  v_state text := NULLIF(btrim(p_state), '');
+  v_city  text := NULLIF(btrim(p_city_ibge), '');
+  -- cidades aceitas: a lista de irmãs (sem vazios) ou só a selecionada; NULL = sem filtro de cidade
+  v_cities text[];
+  v_has_loc boolean;
+  -- tags pedidas (normalizadas, sem vazias); NULL = sem filtro de tag
+  v_tags text[];
+  -- valores de `extras.local_ref` pedidos (aparados, sem vazios); NULL = sem esse filtro
+  v_refs text[];
+  -- anúncios publicados com alguma das tags OU com local_ref pedido; NULL = sem filtro
+  v_tag_ids bigint[];
+  -- ordenação pedida; desconhecida/NULL = relevância (a ordem de sempre)
+  v_order text := CASE WHEN p_order IN ('event_start', 'recent', 'title') THEN p_order END;
+BEGIN
+  PERFORM setseed(COALESCE(p_seed, random()));
+  SELECT array_agg(DISTINCT btrim(c)) INTO v_cities
+    FROM unnest(p_city_ibges) c
+   WHERE btrim(c) <> '';
+  IF v_cities IS NULL AND v_city IS NOT NULL THEN
+    v_cities := ARRAY[v_city];
+  END IF;
+  -- o IBGE já identifica a UF: com cidade(s) definida(s) o filtro de estado sairia redundante — e
+  -- barraria irmãs de estados diferentes.
+  IF v_cities IS NOT NULL THEN
+    v_state := NULL;
+  END IF;
+  v_has_loc := (v_state IS NOT NULL OR v_cities IS NOT NULL);
+
+  IF p_tags IS NOT NULL AND jsonb_typeof(p_tags) = 'array' THEN
+    SELECT array_agg(DISTINCT lower(btrim(t))) INTO v_tags
+      FROM jsonb_array_elements_text(p_tags) t
+     WHERE btrim(t) <> '';
+  END IF;
+  IF p_local_refs IS NOT NULL AND jsonb_typeof(p_local_refs) = 'array' THEN
+    SELECT array_agg(DISTINCT btrim(r)) INTO v_refs
+      FROM jsonb_array_elements_text(p_local_refs) r
+     WHERE btrim(r) <> '';
+  END IF;
+  IF v_tags IS NOT NULL OR v_refs IS NOT NULL THEN
+    -- mesmos predicados dos índices parciais `services_extras_tags` (services 0011) e
+    -- `services_extras_local_ref` (services 0014); UNION para cada ramo usar o seu índice
+    v_tag_ids := ARRAY(
+      SELECT st.id
+        FROM public.services st
+       WHERE v_tags IS NOT NULL
+         AND st.active
+         AND st.status = 'active'
+         AND (st.extras -> 'tags') ?| v_tags
+      UNION
+      SELECT sr.id
+        FROM public.services sr
+       WHERE v_refs IS NOT NULL
+         AND sr.active
+         AND sr.status = 'active'
+         AND (sr.extras ->> 'local_ref') = ANY(v_refs)
+      UNION
+      -- o formulário do evento (plugin forms) grava o campo em `form_results.answers.local_ref`;
+      -- `@>` por valor usa o GIN `form_results_answers_gin` (jsonb_path_ops)
+      SELECT sf.id
+        FROM unnest(v_refs) ref
+        JOIN public.form_results fr
+          ON fr.domain = 'service'
+         AND fr.answers @> jsonb_build_object('local_ref', ref)
+        JOIN public.services sf
+          ON sf.id::text = fr.reference_id
+       WHERE sf.active
+         AND sf.status = 'active'
+    );
+  END IF;
+
+  IF p_query IS NOT NULL AND btrim(p_query) <> '' THEN
+    v_query := plainto_tsquery('portuguese', unaccent(p_query));
+  END IF;
+
+  IF p_group_category_slug IS NOT NULL AND btrim(p_group_category_slug) <> '' THEN
+    SELECT cg.id INTO v_group_id
+      FROM public.categories_group cg
+     WHERE cg.slug = p_group_category_slug
+       AND cg.active = true;
+
+    IF v_group_id IS NULL THEN
+      RETURN;
+    END IF;
+  END IF;
+
+  RETURN QUERY
+  WITH services_filtered AS MATERIALIZED (
+    SELECT
+      s.id                                 AS service_id,
+      s.uid,
+      s.title::character varying           AS title,
+      s.starting_price::numeric            AS price,
+      s.price_unit::character varying      AS price_type,
+      c.name::character varying            AS category,
+      c.slug::character varying            AS category_slug,
+      COALESCE(cgs.slug, cgc.slug)::character varying AS category_group_slug,
+      sub.name::character varying          AS subcategory,
+      COALESCE(s.sponsored, false)         AS sponsored,
+      COALESCE(
+        NULLIF(s.extras->>'coverFileId', ''),
+        s.extras->'images'->>0
+      )::character varying                 AS cover_file_id,
+      COALESCE(prov.display_name, prov.full_name)::character varying AS provider_name,
+      prov.avatar_url::character varying   AS provider_avatar,
+      prov.prov_city                       AS provider_city,
+      prov.prov_state                      AS provider_state,
+      -- só com irmãs: o anúncio é da cidade selecionada? (mesma regra do filtro de local abaixo)
+      (
+        cardinality(v_cities) > 1
+        AND v_city IS NOT NULL
+        AND (
+          EXISTS (
+            SELECT 1 FROM public.service_addresses ah
+            WHERE ah.service_id = s.id AND ah.active AND ah.city_ibge = v_city
+          )
+          OR (
+            NOT EXISTS (
+              SELECT 1 FROM public.service_addresses ah0
+              WHERE ah0.service_id = s.id AND ah0.active
+            )
+            AND prov.prov_city_ibge = v_city
+          )
+        )
+      ) IS TRUE                            AS in_home_city,
+      rs.average_rating::numeric           AS rating,
+      COALESCE(rs.total_reviews, 0)::integer AS reviews,
+      CASE
+        WHEN v_query IS NOT NULL
+        THEN ts_rank(
+          to_tsvector('portuguese', unaccent(s.title || ' ' || COALESCE(s.description, ''))),
+          v_query
+        )
+        ELSE 0::real
+      END AS text_rank,
+      s.created_at                         AS created_at,
+      ev.event_start                       AS event_start
+    FROM public.services s
+    LEFT JOIN public.categories c ON c.id = s.category_id
+    LEFT JOIN public.categories_group cgs ON cgs.id = s.category_group_id
+    LEFT JOIN public.categories_group cgc ON cgc.id = c.category_group_id
+    LEFT JOIN LATERAL (
+      SELECT cs.name
+      FROM public.service_categories_sub scs
+      JOIN public.categories_sub cs ON cs.id = scs.category_sub_id
+      WHERE scs.service_id = s.id
+        AND scs.active = true
+        AND cs.active = true
+      ORDER BY scs.id
+      LIMIT 1
+    ) sub ON true
+    LEFT JOIN LATERAL (
+      SELECT ud.full_name, ud.display_name, ud.avatar_url,
+             ud.state AS prov_state, ud.city AS prov_city, ud.city_ibge AS prov_city_ibge
+      FROM public.user_data ud
+      WHERE ud.tenant_id = s.tenant_id
+        AND ud.active = true
+      ORDER BY ud.created_at
+      LIMIT 1
+    ) prov ON true
+    LEFT JOIN LATERAL (
+      SELECT NULLIF(fr.answers->>'data_inicio', '')::character varying AS event_start
+      FROM public.form_results fr
+      WHERE fr.domain = 'service'
+        AND fr.reference_id = s.id::text
+      LIMIT 1
+    ) ev ON true
+    LEFT JOIN public.review_stats rs
+      ON rs.domain = 'service' AND rs.reference_id = s.id::text
+    WHERE s.active = true
+      AND s.status = 'active'
+      AND (s.expires_at IS NULL OR s.expires_at > now())
+      AND (p_category_id IS NULL OR s.category_id = p_category_id)
+      AND (v_tag_ids IS NULL OR s.id = ANY(v_tag_ids))
+      AND (
+        p_category_ids IS NULL
+        OR cardinality(p_category_ids) = 0
+        OR s.category_id = ANY(p_category_ids)
+      )
+      AND (
+        p_category_id IS NOT NULL
+        OR (p_category_ids IS NOT NULL AND cardinality(p_category_ids) > 0)
+        OR p_exclude_category_slugs IS NULL
+        OR c.slug IS NULL
+        OR c.slug <> ALL(p_exclude_category_slugs)
+      )
+      AND (
+        v_group_id IS NULL
+        OR s.category_group_id = v_group_id
+        -- grupo principal da categoria: anúncio sem grupo gravado (ou com um grupo antigo, de
+        -- antes de a categoria mudar de grupo) continua aparecendo no grupo da categoria dele
+        OR c.category_group_id = v_group_id
+        OR EXISTS (
+          SELECT 1
+          FROM public.categories_group_link cgl
+          WHERE cgl.category_id = s.category_id
+            AND cgl.category_group_id = v_group_id
+        )
+      )
+      AND (
+        NOT v_has_loc
+        OR s.service_location = 'remoto'
+        OR EXISTS (
+          SELECT 1
+          FROM public.service_addresses a
+          WHERE a.service_id = s.id
+            AND a.active
+            AND (v_state IS NULL OR a.state = v_state)
+            AND (v_cities IS NULL OR a.city_ibge = ANY(v_cities))
+        )
+        OR (
+          NOT EXISTS (
+            SELECT 1 FROM public.service_addresses a0
+            WHERE a0.service_id = s.id AND a0.active
+          )
+          AND (v_state IS NULL OR prov.prov_state = v_state)
+          AND (v_cities IS NULL OR prov.prov_city_ibge = ANY(v_cities))
+        )
+      )
+      AND (
+        p_subcategories IS NULL
+        OR jsonb_array_length(p_subcategories) = 0
+        OR EXISTS (
+          SELECT 1
+          FROM public.service_categories_sub scs
+          WHERE scs.service_id = s.id
+            AND scs.active = true
+            AND scs.category_sub_id IN (
+              SELECT (value)::bigint FROM jsonb_array_elements_text(p_subcategories)
+            )
+        )
+      )
+      AND (
+        v_query IS NULL
+        OR to_tsvector('portuguese', unaccent(s.title || ' ' || COALESCE(s.description, ''))) @@ v_query
+        OR unaccent(s.title) ILIKE '%' || unaccent(p_query) || '%'
+      )
+  ),
+  page AS (
+    SELECT sf.*, row_number() OVER () AS rn
+    FROM (
+      SELECT f.*
+      FROM services_filtered f
+      ORDER BY
+        CASE WHEN v_query IS NOT NULL THEN f.text_rank END DESC NULLS LAST,
+        -- p_order='event_start': próximos eventos primeiro (data ISO; hoje em diante, do mais
+        -- próximo ao mais distante), depois os já passados e por fim os sem data
+        CASE WHEN v_order = 'event_start' THEN (f.event_start >= to_char(current_date, 'YYYY-MM-DD')) END DESC NULLS LAST,
+        CASE WHEN v_order = 'event_start' THEN f.event_start END ASC NULLS LAST,
+        CASE WHEN v_order = 'recent' THEN f.created_at END DESC NULLS LAST,
+        CASE WHEN v_order = 'title' THEN f.title END ASC,
+        f.in_home_city DESC,
+        f.rating DESC NULLS LAST,
+        (f.provider_city IS NOT NULL) DESC,
+        random()
+      LIMIT p_page_size
+      OFFSET (p_page * p_page_size)
+    ) sf
+  )
+  SELECT
+    pg.uid,
+    pg.title::character varying,
+    pg.price::numeric,
+    pg.price_type::character varying,
+    pg.category::character varying,
+    pg.category_slug::character varying,
+    pg.category_group_slug::character varying,
+    pg.subcategory::character varying,
+    pg.sponsored,
+    pg.cover_file_id::character varying,
+    pg.provider_name::character varying,
+    pg.provider_avatar::character varying,
+    pg.rating::numeric,
+    pg.reviews::integer,
+    COALESCE(ad.a_city, pg.provider_city)::text,
+    COALESCE(ad.a_state, pg.provider_state)::text,
+    COALESCE(ad.cnt, 0)::integer,
+    pg.event_start,
+    ad.a_label::character varying
+  FROM page pg
+  LEFT JOIN LATERAL (
+    SELECT a.city AS a_city, a.state AS a_state, a.label AS a_label, count(*) OVER () AS cnt
+    FROM public.service_addresses a
+    WHERE a.service_id = pg.service_id
+      AND a.active
+    ORDER BY
+      (v_has_loc
+       AND (v_state IS NULL OR a.state = v_state)
+       AND (v_cities IS NULL OR a.city_ibge = ANY(v_cities))) DESC,
+      (a.city_ibge IS NOT DISTINCT FROM v_city) DESC,
+      a.is_primary DESC,
+      a.id
+    LIMIT 1
+  ) ad ON true
+  ORDER BY pg.rn;
+END;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_search_services(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, integer, text, text[], text[], bigint[], jsonb, jsonb, text)
+  TO anon, auth_user;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('search', '1.9.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/search/0011_search_order_fields.sql
+-- ===============================================================================================
+
+-- plugins/search/0011_search_order_fields.sql
+-- `p_order` passa a ser '<campo>[:asc|desc]' (padrão asc) sobre colunas de `services`, de uma lista
+-- fechada — indexáveis, sem abrir o JSON do formulário para ordenar:
+--   occurs_at  (services 0016: quando acontece; asc = o que vem primeiro, passados depois)
+--   created_at | expires_at | price (starting_price) | title
+-- Apelidos da 0010 continuam: event_start = occurs_at:asc, recent = created_at:desc.
+-- NULL / vazio / desconhecido = relevância (ordem de sempre). Com texto, `text_rank` vem antes.
+-- Performance: a 0010 lia `form_results` (JSON) para CADA linha filtrada só para ordenar; aqui o
+-- `event_start` exibido volta a ser lido só para as linhas da página.
+-- Assinatura igual à 0010 (16 parâmetros): só `CREATE OR REPLACE`. Requer services 0016.
+-- Idempotente.
+
+CREATE OR REPLACE FUNCTION public.fn_search_services(
+  p_state character varying,
+  p_city_id integer,
+  p_group_category_slug character varying,
+  p_category_id bigint DEFAULT NULL::bigint,
+  p_subcategories jsonb DEFAULT NULL::jsonb,
+  p_query text DEFAULT NULL::text,
+  p_seed double precision DEFAULT NULL::double precision,
+  p_page integer DEFAULT 0,
+  p_page_size integer DEFAULT 20,
+  p_city_ibge text DEFAULT NULL::text,
+  p_exclude_category_slugs text[] DEFAULT NULL::text[],
+  p_city_ibges text[] DEFAULT NULL::text[],
+  p_category_ids bigint[] DEFAULT NULL::bigint[],
+  p_tags jsonb DEFAULT NULL::jsonb,
+  p_local_refs jsonb DEFAULT NULL::jsonb,
+  p_order text DEFAULT NULL::text
+)
+RETURNS TABLE(
+  uid uuid,
+  title character varying,
+  price numeric,
+  price_type character varying,
+  category character varying,
+  category_slug character varying,
+  category_group_slug character varying,
+  subcategory character varying,
+  sponsored boolean,
+  cover_file_id character varying,
+  provider_name character varying,
+  provider_avatar character varying,
+  rating numeric,
+  reviews integer,
+  city text,
+  state text,
+  address_count integer,
+  event_start character varying,
+  venue character varying
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $function$
+DECLARE
+  v_query tsquery;
+  v_group_id bigint;
+  v_state text := NULLIF(btrim(p_state), '');
+  v_city  text := NULLIF(btrim(p_city_ibge), '');
+  -- cidades aceitas: a lista de irmãs (sem vazios) ou só a selecionada; NULL = sem filtro de cidade
+  v_cities text[];
+  v_has_loc boolean;
+  -- tags pedidas (normalizadas, sem vazias); NULL = sem filtro de tag
+  v_tags text[];
+  -- valores de `extras.local_ref` pedidos (aparados, sem vazios); NULL = sem esse filtro
+  v_refs text[];
+  -- anúncios publicados com alguma das tags OU com local_ref pedido; NULL = sem filtro
+  v_tag_ids bigint[];
+  -- `p_order` = '<campo>[:asc|desc]' de uma lista fechada (colunas de services, nada de JSON);
+  -- apelidos da 0010: event_start = occurs_at:asc, recent = created_at:desc
+  v_order text := lower(btrim(COALESCE(p_order, '')));
+  v_field text;
+  v_desc  boolean;
+BEGIN
+  v_order := CASE v_order
+    WHEN 'event_start' THEN 'occurs_at:asc'
+    WHEN 'recent' THEN 'created_at:desc'
+    ELSE v_order
+  END;
+  v_field := split_part(v_order, ':', 1);
+  v_desc := split_part(v_order, ':', 2) = 'desc';
+  IF v_field NOT IN ('occurs_at', 'created_at', 'expires_at', 'price', 'title') THEN
+    v_field := NULL; -- relevância (a ordem de sempre)
+  END IF;
+  PERFORM setseed(COALESCE(p_seed, random()));
+  SELECT array_agg(DISTINCT btrim(c)) INTO v_cities
+    FROM unnest(p_city_ibges) c
+   WHERE btrim(c) <> '';
+  IF v_cities IS NULL AND v_city IS NOT NULL THEN
+    v_cities := ARRAY[v_city];
+  END IF;
+  -- o IBGE já identifica a UF: com cidade(s) definida(s) o filtro de estado sairia redundante — e
+  -- barraria irmãs de estados diferentes.
+  IF v_cities IS NOT NULL THEN
+    v_state := NULL;
+  END IF;
+  v_has_loc := (v_state IS NOT NULL OR v_cities IS NOT NULL);
+
+  IF p_tags IS NOT NULL AND jsonb_typeof(p_tags) = 'array' THEN
+    SELECT array_agg(DISTINCT lower(btrim(t))) INTO v_tags
+      FROM jsonb_array_elements_text(p_tags) t
+     WHERE btrim(t) <> '';
+  END IF;
+  IF p_local_refs IS NOT NULL AND jsonb_typeof(p_local_refs) = 'array' THEN
+    SELECT array_agg(DISTINCT btrim(r)) INTO v_refs
+      FROM jsonb_array_elements_text(p_local_refs) r
+     WHERE btrim(r) <> '';
+  END IF;
+  IF v_tags IS NOT NULL OR v_refs IS NOT NULL THEN
+    -- mesmos predicados dos índices parciais `services_extras_tags` (services 0011) e
+    -- `services_extras_local_ref` (services 0014); UNION para cada ramo usar o seu índice
+    v_tag_ids := ARRAY(
+      SELECT st.id
+        FROM public.services st
+       WHERE v_tags IS NOT NULL
+         AND st.active
+         AND st.status = 'active'
+         AND (st.extras -> 'tags') ?| v_tags
+      UNION
+      SELECT sr.id
+        FROM public.services sr
+       WHERE v_refs IS NOT NULL
+         AND sr.active
+         AND sr.status = 'active'
+         AND (sr.extras ->> 'local_ref') = ANY(v_refs)
+      UNION
+      -- o formulário do evento (plugin forms) grava o campo em `form_results.answers.local_ref`;
+      -- `@>` por valor usa o GIN `form_results_answers_gin` (jsonb_path_ops)
+      SELECT sf.id
+        FROM unnest(v_refs) ref
+        JOIN public.form_results fr
+          ON fr.domain = 'service'
+         AND fr.answers @> jsonb_build_object('local_ref', ref)
+        JOIN public.services sf
+          ON sf.id::text = fr.reference_id
+       WHERE sf.active
+         AND sf.status = 'active'
+    );
+  END IF;
+
+  IF p_query IS NOT NULL AND btrim(p_query) <> '' THEN
+    v_query := plainto_tsquery('portuguese', unaccent(p_query));
+  END IF;
+
+  IF p_group_category_slug IS NOT NULL AND btrim(p_group_category_slug) <> '' THEN
+    SELECT cg.id INTO v_group_id
+      FROM public.categories_group cg
+     WHERE cg.slug = p_group_category_slug
+       AND cg.active = true;
+
+    IF v_group_id IS NULL THEN
+      RETURN;
+    END IF;
+  END IF;
+
+  RETURN QUERY
+  WITH services_filtered AS MATERIALIZED (
+    SELECT
+      s.id                                 AS service_id,
+      s.uid,
+      s.title::character varying           AS title,
+      s.starting_price::numeric            AS price,
+      s.price_unit::character varying      AS price_type,
+      c.name::character varying            AS category,
+      c.slug::character varying            AS category_slug,
+      COALESCE(cgs.slug, cgc.slug)::character varying AS category_group_slug,
+      sub.name::character varying          AS subcategory,
+      COALESCE(s.sponsored, false)         AS sponsored,
+      COALESCE(
+        NULLIF(s.extras->>'coverFileId', ''),
+        s.extras->'images'->>0
+      )::character varying                 AS cover_file_id,
+      COALESCE(prov.display_name, prov.full_name)::character varying AS provider_name,
+      prov.avatar_url::character varying   AS provider_avatar,
+      prov.prov_city                       AS provider_city,
+      prov.prov_state                      AS provider_state,
+      -- só com irmãs: o anúncio é da cidade selecionada? (mesma regra do filtro de local abaixo)
+      (
+        cardinality(v_cities) > 1
+        AND v_city IS NOT NULL
+        AND (
+          EXISTS (
+            SELECT 1 FROM public.service_addresses ah
+            WHERE ah.service_id = s.id AND ah.active AND ah.city_ibge = v_city
+          )
+          OR (
+            NOT EXISTS (
+              SELECT 1 FROM public.service_addresses ah0
+              WHERE ah0.service_id = s.id AND ah0.active
+            )
+            AND prov.prov_city_ibge = v_city
+          )
+        )
+      ) IS TRUE                            AS in_home_city,
+      rs.average_rating::numeric           AS rating,
+      COALESCE(rs.total_reviews, 0)::integer AS reviews,
+      CASE
+        WHEN v_query IS NOT NULL
+        THEN ts_rank(
+          to_tsvector('portuguese', unaccent(s.title || ' ' || COALESCE(s.description, ''))),
+          v_query
+        )
+        ELSE 0::real
+      END AS text_rank,
+      s.created_at                         AS created_at,
+      s.occurs_at                          AS occurs_at,
+      s.expires_at                         AS expires_at,
+      s.starting_price::numeric            AS sort_price
+    FROM public.services s
+    LEFT JOIN public.categories c ON c.id = s.category_id
+    LEFT JOIN public.categories_group cgs ON cgs.id = s.category_group_id
+    LEFT JOIN public.categories_group cgc ON cgc.id = c.category_group_id
+    LEFT JOIN LATERAL (
+      SELECT cs.name
+      FROM public.service_categories_sub scs
+      JOIN public.categories_sub cs ON cs.id = scs.category_sub_id
+      WHERE scs.service_id = s.id
+        AND scs.active = true
+        AND cs.active = true
+      ORDER BY scs.id
+      LIMIT 1
+    ) sub ON true
+    LEFT JOIN LATERAL (
+      SELECT ud.full_name, ud.display_name, ud.avatar_url,
+             ud.state AS prov_state, ud.city AS prov_city, ud.city_ibge AS prov_city_ibge
+      FROM public.user_data ud
+      WHERE ud.tenant_id = s.tenant_id
+        AND ud.active = true
+      ORDER BY ud.created_at
+      LIMIT 1
+    ) prov ON true
+    LEFT JOIN public.review_stats rs
+      ON rs.domain = 'service' AND rs.reference_id = s.id::text
+    WHERE s.active = true
+      AND s.status = 'active'
+      AND (s.expires_at IS NULL OR s.expires_at > now())
+      AND (p_category_id IS NULL OR s.category_id = p_category_id)
+      AND (v_tag_ids IS NULL OR s.id = ANY(v_tag_ids))
+      AND (
+        p_category_ids IS NULL
+        OR cardinality(p_category_ids) = 0
+        OR s.category_id = ANY(p_category_ids)
+      )
+      AND (
+        p_category_id IS NOT NULL
+        OR (p_category_ids IS NOT NULL AND cardinality(p_category_ids) > 0)
+        OR p_exclude_category_slugs IS NULL
+        OR c.slug IS NULL
+        OR c.slug <> ALL(p_exclude_category_slugs)
+      )
+      AND (
+        v_group_id IS NULL
+        OR s.category_group_id = v_group_id
+        -- grupo principal da categoria: anúncio sem grupo gravado (ou com um grupo antigo, de
+        -- antes de a categoria mudar de grupo) continua aparecendo no grupo da categoria dele
+        OR c.category_group_id = v_group_id
+        OR EXISTS (
+          SELECT 1
+          FROM public.categories_group_link cgl
+          WHERE cgl.category_id = s.category_id
+            AND cgl.category_group_id = v_group_id
+        )
+      )
+      AND (
+        NOT v_has_loc
+        OR s.service_location = 'remoto'
+        OR EXISTS (
+          SELECT 1
+          FROM public.service_addresses a
+          WHERE a.service_id = s.id
+            AND a.active
+            AND (v_state IS NULL OR a.state = v_state)
+            AND (v_cities IS NULL OR a.city_ibge = ANY(v_cities))
+        )
+        OR (
+          NOT EXISTS (
+            SELECT 1 FROM public.service_addresses a0
+            WHERE a0.service_id = s.id AND a0.active
+          )
+          AND (v_state IS NULL OR prov.prov_state = v_state)
+          AND (v_cities IS NULL OR prov.prov_city_ibge = ANY(v_cities))
+        )
+      )
+      AND (
+        p_subcategories IS NULL
+        OR jsonb_array_length(p_subcategories) = 0
+        OR EXISTS (
+          SELECT 1
+          FROM public.service_categories_sub scs
+          WHERE scs.service_id = s.id
+            AND scs.active = true
+            AND scs.category_sub_id IN (
+              SELECT (value)::bigint FROM jsonb_array_elements_text(p_subcategories)
+            )
+        )
+      )
+      AND (
+        v_query IS NULL
+        OR to_tsvector('portuguese', unaccent(s.title || ' ' || COALESCE(s.description, ''))) @@ v_query
+        OR unaccent(s.title) ILIKE '%' || unaccent(p_query) || '%'
+      )
+  ),
+  page AS (
+    SELECT sf.*, row_number() OVER () AS rn
+    FROM (
+      SELECT f.*
+      FROM services_filtered f
+      ORDER BY
+        CASE WHEN v_query IS NOT NULL THEN f.text_rank END DESC NULLS LAST,
+        -- occurs_at crescente: o que ainda vai acontecer primeiro (do mais próximo ao mais
+        -- distante), depois o que já passou; sem data por último
+        CASE WHEN v_field = 'occurs_at' AND NOT v_desc THEN (f.occurs_at >= now()) END DESC NULLS LAST,
+        CASE WHEN v_field = 'occurs_at' AND NOT v_desc THEN f.occurs_at END ASC NULLS LAST,
+        CASE WHEN v_field = 'occurs_at' AND v_desc THEN f.occurs_at END DESC NULLS LAST,
+        CASE WHEN v_field = 'created_at' AND NOT v_desc THEN f.created_at END ASC NULLS LAST,
+        CASE WHEN v_field = 'created_at' AND v_desc THEN f.created_at END DESC NULLS LAST,
+        CASE WHEN v_field = 'expires_at' AND NOT v_desc THEN f.expires_at END ASC NULLS LAST,
+        CASE WHEN v_field = 'expires_at' AND v_desc THEN f.expires_at END DESC NULLS LAST,
+        CASE WHEN v_field = 'price' AND NOT v_desc THEN f.sort_price END ASC NULLS LAST,
+        CASE WHEN v_field = 'price' AND v_desc THEN f.sort_price END DESC NULLS LAST,
+        CASE WHEN v_field = 'title' AND NOT v_desc THEN f.title END ASC,
+        CASE WHEN v_field = 'title' AND v_desc THEN f.title END DESC,
+        f.in_home_city DESC,
+        f.rating DESC NULLS LAST,
+        (f.provider_city IS NOT NULL) DESC,
+        random()
+      LIMIT p_page_size
+      OFFSET (p_page * p_page_size)
+    ) sf
+  )
+  SELECT
+    pg.uid,
+    pg.title::character varying,
+    pg.price::numeric,
+    pg.price_type::character varying,
+    pg.category::character varying,
+    pg.category_slug::character varying,
+    pg.category_group_slug::character varying,
+    pg.subcategory::character varying,
+    pg.sponsored,
+    pg.cover_file_id::character varying,
+    pg.provider_name::character varying,
+    pg.provider_avatar::character varying,
+    pg.rating::numeric,
+    pg.reviews::integer,
+    COALESCE(ad.a_city, pg.provider_city)::text,
+    COALESCE(ad.a_state, pg.provider_state)::text,
+    COALESCE(ad.cnt, 0)::integer,
+    ev.event_start,
+    ad.a_label::character varying
+  FROM page pg
+  LEFT JOIN LATERAL (
+    SELECT NULLIF(fr.answers->>'data_inicio', '')::character varying AS event_start
+    FROM public.form_results fr
+    WHERE fr.domain = 'service'
+      AND fr.reference_id = pg.service_id::text
+    LIMIT 1
+  ) ev ON true
+  LEFT JOIN LATERAL (
+    SELECT a.city AS a_city, a.state AS a_state, a.label AS a_label, count(*) OVER () AS cnt
+    FROM public.service_addresses a
+    WHERE a.service_id = pg.service_id
+      AND a.active
+    ORDER BY
+      (v_has_loc
+       AND (v_state IS NULL OR a.state = v_state)
+       AND (v_cities IS NULL OR a.city_ibge = ANY(v_cities))) DESC,
+      (a.city_ibge IS NOT DISTINCT FROM v_city) DESC,
+      a.is_primary DESC,
+      a.id
+    LIMIT 1
+  ) ad ON true
+  ORDER BY pg.rn;
+END;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_search_services(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, integer, text, text[], text[], bigint[], jsonb, jsonb, text)
+  TO anon, auth_user;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('search', '1.10.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/search/0012_map_pins.sql
+-- ===============================================================================================
+
+-- plugins/search/0012_map_pins.sql
+-- Mapa: duas RPCs públicas e leves, no mesmo critério de "publicado" da busca (ativo, status
+-- 'active', não expirado), expostas pela rota genérica /api/resources/<rpc> (ver `rpcSearch`).
+--
+--   fn_map_pins(p_lat, p_lng, p_radius_km, p_limit, p_group_slugs, p_category_slugs)
+--     Os pontos de um raio, do mais perto ao mais longe: só o essencial para desenhar um pino
+--     (nome, capa, local e distância) — nunca a descrição nem o formulário. Um pino por endereço
+--     ativo com coordenada (um cinema com vários endereços vira vários pinos). Raio de 0,1 a
+--     100 km (padrão 5) e no máximo 300 pontos (padrão 150).
+--   fn_map_place(p_uid)
+--     O detalhe de UM anúncio, só quando a pessoa pede "Ver mais": descrição (até 1200
+--     caracteres), fotos, endereço principal e os fatos de contato/horário/preço do formulário.
+--
+-- Idempotente. Requer services 0003 (service_addresses) e 0016 (occurs_at).
+
+CREATE INDEX IF NOT EXISTS service_addresses_geo
+  ON public.service_addresses (latitude, longitude)
+  WHERE active AND latitude IS NOT NULL AND longitude IS NOT NULL;
+
+CREATE OR REPLACE FUNCTION public.fn_map_pins(
+  p_lat double precision,
+  p_lng double precision,
+  p_radius_km double precision DEFAULT 5,
+  p_limit integer DEFAULT 150,
+  p_group_slugs text[] DEFAULT NULL::text[],
+  p_category_slugs text[] DEFAULT NULL::text[]
+)
+RETURNS TABLE(
+  uid uuid,
+  address_id bigint,
+  title character varying,
+  category_slug character varying,
+  category_group_slug character varying,
+  cover_file_id character varying,
+  latitude double precision,
+  longitude double precision,
+  venue character varying,
+  city text,
+  state text,
+  distance_km double precision,
+  event_start character varying
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $function$
+  SELECT
+    s.uid,
+    a.id,
+    s.title::character varying,
+    c.slug::character varying,
+    COALESCE(cgs.slug, cgc.slug)::character varying,
+    COALESCE(NULLIF(s.extras->>'coverFileId', ''), s.extras->'images'->>0)::character varying,
+    a.latitude::double precision,
+    a.longitude::double precision,
+    a.label::character varying,
+    a.city::text,
+    a.state::text,
+    d.km,
+    ev.event_start
+  FROM (
+    SELECT LEAST(GREATEST(COALESCE(p_radius_km, 5), 0.1), 100)::double precision AS r
+  ) q
+  CROSS JOIN public.service_addresses a
+  JOIN public.services s ON s.id = a.service_id
+  LEFT JOIN public.categories c ON c.id = s.category_id
+  LEFT JOIN public.categories_group cgs ON cgs.id = s.category_group_id
+  LEFT JOIN public.categories_group cgc ON cgc.id = c.category_group_id
+  CROSS JOIN LATERAL (
+    -- haversine, em km
+    SELECT 6371 * 2 * asin(sqrt(
+      power(sin(radians(a.latitude::double precision - p_lat) / 2), 2)
+      + cos(radians(p_lat)) * cos(radians(a.latitude::double precision))
+        * power(sin(radians(a.longitude::double precision - p_lng) / 2), 2)
+    )) AS km
+  ) d
+  LEFT JOIN LATERAL (
+    SELECT NULLIF(fr.answers->>'data_inicio', '')::character varying AS event_start
+    FROM public.form_results fr
+    WHERE fr.domain = 'service'
+      AND fr.reference_id = s.id::text
+    LIMIT 1
+  ) ev ON true
+  WHERE p_lat BETWEEN -90 AND 90
+    AND p_lng BETWEEN -180 AND 180
+    AND a.active
+    AND a.latitude IS NOT NULL
+    AND a.longitude IS NOT NULL
+    -- caixa antes da distância: usa o índice e poupa a conta
+    AND a.latitude BETWEEN p_lat - q.r / 111.3 AND p_lat + q.r / 111.3
+    AND a.longitude BETWEEN p_lng - q.r / (111.3 * GREATEST(cos(radians(p_lat)), 0.01))
+                        AND p_lng + q.r / (111.3 * GREATEST(cos(radians(p_lat)), 0.01))
+    AND d.km <= q.r
+    AND s.active = true
+    AND s.status = 'active'
+    AND (s.expires_at IS NULL OR s.expires_at > now())
+    AND (p_group_slugs IS NULL OR COALESCE(cgs.slug, cgc.slug) = ANY(p_group_slugs))
+    AND (p_category_slugs IS NULL OR c.slug = ANY(p_category_slugs))
+  ORDER BY d.km, s.id, a.id
+  LIMIT LEAST(GREATEST(COALESCE(p_limit, 150), 1), 300)
+$function$;
+
+CREATE OR REPLACE FUNCTION public.fn_map_place(p_uid uuid)
+RETURNS TABLE(
+  uid uuid,
+  title character varying,
+  description text,
+  category character varying,
+  category_slug character varying,
+  category_group_slug character varying,
+  cover_file_id character varying,
+  image_file_ids text[],
+  price numeric,
+  price_type character varying,
+  address text,
+  latitude double precision,
+  longitude double precision,
+  venue character varying,
+  city text,
+  state text,
+  event_start character varying,
+  facts jsonb
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $function$
+  SELECT
+    s.uid,
+    s.title::character varying,
+    left(COALESCE(s.description, ''), 1200),
+    c.name::character varying,
+    c.slug::character varying,
+    COALESCE(cgs.slug, cgc.slug)::character varying,
+    COALESCE(NULLIF(s.extras->>'coverFileId', ''), s.extras->'images'->>0)::character varying,
+    CASE
+      WHEN jsonb_typeof(s.extras->'images') = 'array'
+      THEN ARRAY(SELECT jsonb_array_elements_text(s.extras->'images') LIMIT 6)
+      ELSE ARRAY[]::text[]
+    END,
+    s.starting_price::numeric,
+    s.price_unit::character varying,
+    NULLIF(btrim(concat_ws(', ',
+      NULLIF(concat_ws(' ', NULLIF(btrim(a.street), ''), NULLIF(btrim(a.number), '')), ''),
+      NULLIF(btrim(a.neighborhood), ''),
+      NULLIF(concat_ws(' - ', NULLIF(btrim(a.city), ''), NULLIF(btrim(a.state), '')), '')
+    )), ''),
+    a.latitude::double precision,
+    a.longitude::double precision,
+    a.label::character varying,
+    a.city::text,
+    a.state::text,
+    NULLIF(fr.answers->>'data_inicio', '')::character varying,
+    jsonb_strip_nulls(jsonb_build_object(
+      'telefone', NULLIF(fr.answers->>'contato_telefone', ''),
+      'whatsapp', NULLIF(fr.answers->>'contato_whatsapp', ''),
+      'instagram', NULLIF(fr.answers->>'contato_instagram', ''),
+      'site', NULLIF(fr.answers->>'site', ''),
+      'horario', fr.answers->'horario',
+      'preco', NULLIF(fr.answers->>'preco', ''),
+      'gratuito', fr.answers->'gratuito',
+      'dicas', NULLIF(fr.answers->>'dicas_chegada', '')
+    ))
+  FROM public.services s
+  LEFT JOIN public.categories c ON c.id = s.category_id
+  LEFT JOIN public.categories_group cgs ON cgs.id = s.category_group_id
+  LEFT JOIN public.categories_group cgc ON cgc.id = c.category_group_id
+  LEFT JOIN LATERAL (
+    SELECT sa.street, sa.number, sa.neighborhood, sa.city, sa.state, sa.label, sa.latitude, sa.longitude
+    FROM public.service_addresses sa
+    WHERE sa.service_id = s.id AND sa.active
+    ORDER BY sa.is_primary DESC, sa.id
+    LIMIT 1
+  ) a ON true
+  LEFT JOIN LATERAL (
+    SELECT f.answers
+    FROM public.form_results f
+    WHERE f.domain = 'service' AND f.reference_id = s.id::text
+    LIMIT 1
+  ) fr ON true
+  WHERE s.uid = p_uid
+    AND s.active = true
+    AND s.status = 'active'
+    AND (s.expires_at IS NULL OR s.expires_at > now())
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_map_pins(double precision, double precision, double precision, integer, text[], text[])
+  TO anon, auth_user;
+GRANT EXECUTE ON FUNCTION public.fn_map_place(uuid)
+  TO anon, auth_user;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('search', '1.11.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/search/0013_search_expires_at.sql
+-- ===============================================================================================
+
+-- plugins/search/0013_search_expires_at.sql
+-- `fn_search_services` passa a devolver `expires_at` (validade do anúncio, `services.expires_at`).
+-- Nos eventos essa coluna é o "Acontece em" (data do evento, fim do dia no horário local do evento, Cuiabá em MT): o
+-- card mostra a data a partir dela, em vez de abrir `form_results.answers.data_inicio`.
+-- `event_start` continua sendo devolvido (RPCs/consumidores antigos), mas o card não depende mais dele.
+--
+-- O tipo de retorno muda (uma coluna a mais) e a assinatura ganha um 17º parâmetro, então não dá para
+-- `CREATE OR REPLACE`: a função é recriada (DROP + CREATE) com os mesmos GRANTs. O DROP remove as DUAS
+-- assinaturas (a de 16 parâmetros da 0011 e a de 17 desta migração, se já aplicada) para não sobrar
+-- overload ambíguo no PostgREST. O resto do corpo é igual ao da 0011, com estas diferenças:
+--   (1) devolve `expires_at`;
+--   (2) `event_start` cai no dia do `expires_at` quando o formulário não tem `data_inicio`, e o apelido
+--       `p_order => 'event_start'` ordena por `expires_at:asc` (a data do evento passou a ser o
+--       "Acontece em");
+--   (3) novo `p_expired_grace jsonb` (padrão NULL): mapa `{ "<slug do grupo>": dias }`, ex. `{"eventos": 2}`.
+--       Anúncio daquele grupo com `expires_at` vencido há no máximo N dias continua na busca (o
+--       cliente o marca como "já aconteceu" pelo `expires_at` devolvido). Só valem dias inteiros de 1 a
+--       365; qualquer outro valor (texto, negativo, decimal, objeto que não seja um mapa) conta 0 = o
+--       comportamento de sempre (vencido some), sem erro. Sem a chave, nada muda.
+--   (4) vencido vem SEMPRE depois do não vencido, em qualquer ordenação (inclusive relevância e busca
+--       por texto); entre os vencidos, o que venceu há menos tempo primeiro.
+-- Idempotente (DROP IF EXISTS).
+
+DROP FUNCTION IF EXISTS public.fn_search_services(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, integer, text, text[], text[], bigint[], jsonb, jsonb, text);
+DROP FUNCTION IF EXISTS public.fn_search_services(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, integer, text, text[], text[], bigint[], jsonb, jsonb, text, jsonb);
+
+CREATE FUNCTION public.fn_search_services(
+  p_state character varying,
+  p_city_id integer,
+  p_group_category_slug character varying,
+  p_category_id bigint DEFAULT NULL::bigint,
+  p_subcategories jsonb DEFAULT NULL::jsonb,
+  p_query text DEFAULT NULL::text,
+  p_seed double precision DEFAULT NULL::double precision,
+  p_page integer DEFAULT 0,
+  p_page_size integer DEFAULT 20,
+  p_city_ibge text DEFAULT NULL::text,
+  p_exclude_category_slugs text[] DEFAULT NULL::text[],
+  p_city_ibges text[] DEFAULT NULL::text[],
+  p_category_ids bigint[] DEFAULT NULL::bigint[],
+  p_tags jsonb DEFAULT NULL::jsonb,
+  p_local_refs jsonb DEFAULT NULL::jsonb,
+  p_order text DEFAULT NULL::text,
+  p_expired_grace jsonb DEFAULT NULL::jsonb
+)
+RETURNS TABLE(
+  uid uuid,
+  title character varying,
+  price numeric,
+  price_type character varying,
+  category character varying,
+  category_slug character varying,
+  category_group_slug character varying,
+  subcategory character varying,
+  sponsored boolean,
+  cover_file_id character varying,
+  provider_name character varying,
+  provider_avatar character varying,
+  rating numeric,
+  reviews integer,
+  city text,
+  state text,
+  address_count integer,
+  event_start character varying,
+  venue character varying,
+  expires_at timestamptz
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $function$
+DECLARE
+  v_query tsquery;
+  v_group_id bigint;
+  v_state text := NULLIF(btrim(p_state), '');
+  v_city  text := NULLIF(btrim(p_city_ibge), '');
+  -- cidades aceitas: a lista de irmãs (sem vazios) ou só a selecionada; NULL = sem filtro de cidade
+  v_cities text[];
+  v_has_loc boolean;
+  -- tags pedidas (normalizadas, sem vazias); NULL = sem filtro de tag
+  v_tags text[];
+  -- valores de `extras.local_ref` pedidos (aparados, sem vazios); NULL = sem esse filtro
+  v_refs text[];
+  -- anúncios publicados com alguma das tags OU com local_ref pedido; NULL = sem filtro
+  v_tag_ids bigint[];
+  -- `p_order` = '<campo>[:asc|desc]' de uma lista fechada (colunas de services, nada de JSON);
+  -- apelidos: event_start = expires_at:asc (0013: o "Acontece em" do evento), recent = created_at:desc
+  v_order text := lower(btrim(COALESCE(p_order, '')));
+  v_field text;
+  v_desc  boolean;
+BEGIN
+  v_order := CASE v_order
+    WHEN 'event_start' THEN 'expires_at:asc'
+    WHEN 'recent' THEN 'created_at:desc'
+    ELSE v_order
+  END;
+  v_field := split_part(v_order, ':', 1);
+  v_desc := split_part(v_order, ':', 2) = 'desc';
+  IF v_field NOT IN ('occurs_at', 'created_at', 'expires_at', 'price', 'title') THEN
+    v_field := NULL; -- relevância (a ordem de sempre)
+  END IF;
+  PERFORM setseed(COALESCE(p_seed, random()));
+  SELECT array_agg(DISTINCT btrim(c)) INTO v_cities
+    FROM unnest(p_city_ibges) c
+   WHERE btrim(c) <> '';
+  IF v_cities IS NULL AND v_city IS NOT NULL THEN
+    v_cities := ARRAY[v_city];
+  END IF;
+  -- o IBGE já identifica a UF: com cidade(s) definida(s) o filtro de estado sairia redundante — e
+  -- barraria irmãs de estados diferentes.
+  IF v_cities IS NOT NULL THEN
+    v_state := NULL;
+  END IF;
+  v_has_loc := (v_state IS NOT NULL OR v_cities IS NOT NULL);
+
+  IF p_tags IS NOT NULL AND jsonb_typeof(p_tags) = 'array' THEN
+    SELECT array_agg(DISTINCT lower(btrim(t))) INTO v_tags
+      FROM jsonb_array_elements_text(p_tags) t
+     WHERE btrim(t) <> '';
+  END IF;
+  IF p_local_refs IS NOT NULL AND jsonb_typeof(p_local_refs) = 'array' THEN
+    SELECT array_agg(DISTINCT btrim(r)) INTO v_refs
+      FROM jsonb_array_elements_text(p_local_refs) r
+     WHERE btrim(r) <> '';
+  END IF;
+  IF v_tags IS NOT NULL OR v_refs IS NOT NULL THEN
+    -- mesmos predicados dos índices parciais `services_extras_tags` (services 0011) e
+    -- `services_extras_local_ref` (services 0014); UNION para cada ramo usar o seu índice
+    v_tag_ids := ARRAY(
+      SELECT st.id
+        FROM public.services st
+       WHERE v_tags IS NOT NULL
+         AND st.active
+         AND st.status = 'active'
+         AND (st.extras -> 'tags') ?| v_tags
+      UNION
+      SELECT sr.id
+        FROM public.services sr
+       WHERE v_refs IS NOT NULL
+         AND sr.active
+         AND sr.status = 'active'
+         AND (sr.extras ->> 'local_ref') = ANY(v_refs)
+      UNION
+      -- o formulário do evento (plugin forms) grava o campo em `form_results.answers.local_ref`;
+      -- `@>` por valor usa o GIN `form_results_answers_gin` (jsonb_path_ops)
+      SELECT sf.id
+        FROM unnest(v_refs) ref
+        JOIN public.form_results fr
+          ON fr.domain = 'service'
+         AND fr.answers @> jsonb_build_object('local_ref', ref)
+        JOIN public.services sf
+          ON sf.id::text = fr.reference_id
+       WHERE sf.active
+         AND sf.status = 'active'
+    );
+  END IF;
+
+  IF p_query IS NOT NULL AND btrim(p_query) <> '' THEN
+    v_query := plainto_tsquery('portuguese', unaccent(p_query));
+  END IF;
+
+  IF p_group_category_slug IS NOT NULL AND btrim(p_group_category_slug) <> '' THEN
+    SELECT cg.id INTO v_group_id
+      FROM public.categories_group cg
+     WHERE cg.slug = p_group_category_slug
+       AND cg.active = true;
+
+    IF v_group_id IS NULL THEN
+      RETURN;
+    END IF;
+  END IF;
+
+  RETURN QUERY
+  WITH services_filtered AS MATERIALIZED (
+    SELECT
+      s.id                                 AS service_id,
+      s.uid,
+      s.title::character varying           AS title,
+      s.starting_price::numeric            AS price,
+      s.price_unit::character varying      AS price_type,
+      c.name::character varying            AS category,
+      c.slug::character varying            AS category_slug,
+      COALESCE(cgs.slug, cgc.slug)::character varying AS category_group_slug,
+      sub.name::character varying          AS subcategory,
+      COALESCE(s.sponsored, false)         AS sponsored,
+      COALESCE(
+        NULLIF(s.extras->>'coverFileId', ''),
+        s.extras->'images'->>0
+      )::character varying                 AS cover_file_id,
+      COALESCE(prov.display_name, prov.full_name)::character varying AS provider_name,
+      prov.avatar_url::character varying   AS provider_avatar,
+      prov.prov_city                       AS provider_city,
+      prov.prov_state                      AS provider_state,
+      -- só com irmãs: o anúncio é da cidade selecionada? (mesma regra do filtro de local abaixo)
+      (
+        cardinality(v_cities) > 1
+        AND v_city IS NOT NULL
+        AND (
+          EXISTS (
+            SELECT 1 FROM public.service_addresses ah
+            WHERE ah.service_id = s.id AND ah.active AND ah.city_ibge = v_city
+          )
+          OR (
+            NOT EXISTS (
+              SELECT 1 FROM public.service_addresses ah0
+              WHERE ah0.service_id = s.id AND ah0.active
+            )
+            AND prov.prov_city_ibge = v_city
+          )
+        )
+      ) IS TRUE                            AS in_home_city,
+      rs.average_rating::numeric           AS rating,
+      COALESCE(rs.total_reviews, 0)::integer AS reviews,
+      CASE
+        WHEN v_query IS NOT NULL
+        THEN ts_rank(
+          to_tsvector('portuguese', unaccent(s.title || ' ' || COALESCE(s.description, ''))),
+          v_query
+        )
+        ELSE 0::real
+      END AS text_rank,
+      s.created_at                         AS created_at,
+      s.occurs_at                          AS occurs_at,
+      s.expires_at                         AS expires_at,
+      -- vencido (ainda aparece só se o grupo tem tolerância em `p_expired_grace`): vai ao fim da lista
+      (s.expires_at IS NOT NULL AND s.expires_at <= now()) AS is_expired,
+      s.starting_price::numeric            AS sort_price
+    FROM public.services s
+    LEFT JOIN public.categories c ON c.id = s.category_id
+    LEFT JOIN public.categories_group cgs ON cgs.id = s.category_group_id
+    LEFT JOIN public.categories_group cgc ON cgc.id = c.category_group_id
+    -- dias de tolerância do grupo do anúncio (mesmo slug devolvido em `category_group_slug`):
+    -- só inteiro de 1 a 365; o resto (ou sem mapa/sem o grupo) = 0. CASEs aninhados: o cast só roda
+    -- depois de o regex passar, e nunca estoura.
+    LEFT JOIN LATERAL (
+      SELECT COALESCE(
+        CASE WHEN jsonb_typeof(p_expired_grace) = 'object' THEN
+          CASE WHEN (p_expired_grace ->> COALESCE(cgs.slug, cgc.slug)) ~ '^\d{1,3}$' THEN
+            CASE WHEN (p_expired_grace ->> COALESCE(cgs.slug, cgc.slug))::integer BETWEEN 1 AND 365
+                 THEN (p_expired_grace ->> COALESCE(cgs.slug, cgc.slug))::integer
+            END
+          END
+        END,
+        0
+      ) AS days
+    ) gr ON true
+    LEFT JOIN LATERAL (
+      SELECT cs.name
+      FROM public.service_categories_sub scs
+      JOIN public.categories_sub cs ON cs.id = scs.category_sub_id
+      WHERE scs.service_id = s.id
+        AND scs.active = true
+        AND cs.active = true
+      ORDER BY scs.id
+      LIMIT 1
+    ) sub ON true
+    LEFT JOIN LATERAL (
+      SELECT ud.full_name, ud.display_name, ud.avatar_url,
+             ud.state AS prov_state, ud.city AS prov_city, ud.city_ibge AS prov_city_ibge
+      FROM public.user_data ud
+      WHERE ud.tenant_id = s.tenant_id
+        AND ud.active = true
+      ORDER BY ud.created_at
+      LIMIT 1
+    ) prov ON true
+    LEFT JOIN public.review_stats rs
+      ON rs.domain = 'service' AND rs.reference_id = s.id::text
+    WHERE s.active = true
+      AND s.status = 'active'
+      AND (s.expires_at IS NULL OR s.expires_at > now() - make_interval(days => gr.days))
+      AND (p_category_id IS NULL OR s.category_id = p_category_id)
+      AND (v_tag_ids IS NULL OR s.id = ANY(v_tag_ids))
+      AND (
+        p_category_ids IS NULL
+        OR cardinality(p_category_ids) = 0
+        OR s.category_id = ANY(p_category_ids)
+      )
+      AND (
+        p_category_id IS NOT NULL
+        OR (p_category_ids IS NOT NULL AND cardinality(p_category_ids) > 0)
+        OR p_exclude_category_slugs IS NULL
+        OR c.slug IS NULL
+        OR c.slug <> ALL(p_exclude_category_slugs)
+      )
+      AND (
+        v_group_id IS NULL
+        OR s.category_group_id = v_group_id
+        -- grupo principal da categoria: anúncio sem grupo gravado (ou com um grupo antigo, de
+        -- antes de a categoria mudar de grupo) continua aparecendo no grupo da categoria dele
+        OR c.category_group_id = v_group_id
+        OR EXISTS (
+          SELECT 1
+          FROM public.categories_group_link cgl
+          WHERE cgl.category_id = s.category_id
+            AND cgl.category_group_id = v_group_id
+        )
+      )
+      AND (
+        NOT v_has_loc
+        OR s.service_location = 'remoto'
+        OR EXISTS (
+          SELECT 1
+          FROM public.service_addresses a
+          WHERE a.service_id = s.id
+            AND a.active
+            AND (v_state IS NULL OR a.state = v_state)
+            AND (v_cities IS NULL OR a.city_ibge = ANY(v_cities))
+        )
+        OR (
+          NOT EXISTS (
+            SELECT 1 FROM public.service_addresses a0
+            WHERE a0.service_id = s.id AND a0.active
+          )
+          AND (v_state IS NULL OR prov.prov_state = v_state)
+          AND (v_cities IS NULL OR prov.prov_city_ibge = ANY(v_cities))
+        )
+      )
+      AND (
+        p_subcategories IS NULL
+        OR jsonb_array_length(p_subcategories) = 0
+        OR EXISTS (
+          SELECT 1
+          FROM public.service_categories_sub scs
+          WHERE scs.service_id = s.id
+            AND scs.active = true
+            AND scs.category_sub_id IN (
+              SELECT (value)::bigint FROM jsonb_array_elements_text(p_subcategories)
+            )
+        )
+      )
+      AND (
+        v_query IS NULL
+        OR to_tsvector('portuguese', unaccent(s.title || ' ' || COALESCE(s.description, ''))) @@ v_query
+        OR unaccent(s.title) ILIKE '%' || unaccent(p_query) || '%'
+      )
+  ),
+  page AS (
+    SELECT sf.*, row_number() OVER () AS rn
+    FROM (
+      SELECT f.*
+      FROM services_filtered f
+      ORDER BY
+        -- vencidos (tolerância de `p_expired_grace`) sempre depois dos não vencidos; entre eles, o que
+        -- venceu há menos tempo primeiro
+        f.is_expired ASC,
+        CASE WHEN f.is_expired THEN f.expires_at END DESC NULLS LAST,
+        CASE WHEN v_query IS NOT NULL THEN f.text_rank END DESC NULLS LAST,
+        -- occurs_at crescente: o que ainda vai acontecer primeiro (do mais próximo ao mais
+        -- distante), depois o que já passou; sem data por último
+        CASE WHEN v_field = 'occurs_at' AND NOT v_desc THEN (f.occurs_at >= now()) END DESC NULLS LAST,
+        CASE WHEN v_field = 'occurs_at' AND NOT v_desc THEN f.occurs_at END ASC NULLS LAST,
+        CASE WHEN v_field = 'occurs_at' AND v_desc THEN f.occurs_at END DESC NULLS LAST,
+        CASE WHEN v_field = 'created_at' AND NOT v_desc THEN f.created_at END ASC NULLS LAST,
+        CASE WHEN v_field = 'created_at' AND v_desc THEN f.created_at END DESC NULLS LAST,
+        CASE WHEN v_field = 'expires_at' AND NOT v_desc THEN f.expires_at END ASC NULLS LAST,
+        CASE WHEN v_field = 'expires_at' AND v_desc THEN f.expires_at END DESC NULLS LAST,
+        CASE WHEN v_field = 'price' AND NOT v_desc THEN f.sort_price END ASC NULLS LAST,
+        CASE WHEN v_field = 'price' AND v_desc THEN f.sort_price END DESC NULLS LAST,
+        CASE WHEN v_field = 'title' AND NOT v_desc THEN f.title END ASC,
+        CASE WHEN v_field = 'title' AND v_desc THEN f.title END DESC,
+        f.in_home_city DESC,
+        f.rating DESC NULLS LAST,
+        (f.provider_city IS NOT NULL) DESC,
+        random()
+      LIMIT p_page_size
+      OFFSET (p_page * p_page_size)
+    ) sf
+  )
+  SELECT
+    pg.uid,
+    pg.title::character varying,
+    pg.price::numeric,
+    pg.price_type::character varying,
+    pg.category::character varying,
+    pg.category_slug::character varying,
+    pg.category_group_slug::character varying,
+    pg.subcategory::character varying,
+    pg.sponsored,
+    pg.cover_file_id::character varying,
+    pg.provider_name::character varying,
+    pg.provider_avatar::character varying,
+    pg.rating::numeric,
+    pg.reviews::integer,
+    COALESCE(ad.a_city, pg.provider_city)::text,
+    COALESCE(ad.a_state, pg.provider_state)::text,
+    COALESCE(ad.cnt, 0)::integer,
+    -- data de início do formulário (importador/legado); sem ela, o dia do "Acontece em" (expires_at,
+    -- fuso de Cuiabá) quando o anúncio tem formulário — o formulário novo não pede mais data de início
+    COALESCE(
+      ev.event_start,
+      CASE WHEN ev.has_form
+           THEN to_char(pg.expires_at AT TIME ZONE 'America/Cuiaba', 'YYYY-MM-DD')
+      END
+    )::character varying,
+    ad.a_label::character varying,
+    pg.expires_at
+  FROM page pg
+  LEFT JOIN LATERAL (
+    SELECT NULLIF(fr.answers->>'data_inicio', '')::character varying AS event_start, true AS has_form
+    FROM public.form_results fr
+    WHERE fr.domain = 'service'
+      AND fr.reference_id = pg.service_id::text
+    LIMIT 1
+  ) ev ON true
+  LEFT JOIN LATERAL (
+    SELECT a.city AS a_city, a.state AS a_state, a.label AS a_label, count(*) OVER () AS cnt
+    FROM public.service_addresses a
+    WHERE a.service_id = pg.service_id
+      AND a.active
+    ORDER BY
+      (v_has_loc
+       AND (v_state IS NULL OR a.state = v_state)
+       AND (v_cities IS NULL OR a.city_ibge = ANY(v_cities))) DESC,
+      (a.city_ibge IS NOT DISTINCT FROM v_city) DESC,
+      a.is_primary DESC,
+      a.id
+    LIMIT 1
+  ) ad ON true
+  ORDER BY pg.rn;
+END;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_search_services(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, integer, text, text[], text[], bigint[], jsonb, jsonb, text, jsonb)
+  TO anon, auth_user;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('search', '1.12.0')
 ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
 
 NOTIFY pgrst, 'reload schema';

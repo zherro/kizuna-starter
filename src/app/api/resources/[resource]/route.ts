@@ -7,7 +7,7 @@ import {
   listResource,
 } from '@kizuna/core/server';
 import { accountLevelsSetup } from '@/lib/server/account-levels';
-import { revalidateAfterResourceWrite } from '@/lib/server/revalidate-ad-pages';
+import { revalidateAfterResourceWrite, revalidateAfterRpc } from '@/lib/server/revalidate-ad-pages';
 
 export const runtime = 'nodejs';
 
@@ -24,7 +24,11 @@ export async function GET(request: Request, { params }: Params) {
 
 export async function POST(request: Request, { params }: Params) {
   const { resource } = await params;
-  if (isRpcResource(resource)) return executeRpcResource(resource, request);
+  if (isRpcResource(resource)) {
+    const res = await executeRpcResource(resource, request);
+    if (res.ok) revalidateAfterRpc(resource);
+    return res;
+  }
   if (resource === 'services') {
     const can = await canDoServer(accountLevelsSetup, 'service.create');
     if (!can.allowed) {

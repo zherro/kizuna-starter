@@ -2,7 +2,7 @@
 -- GERADO por db/build.mjs — NÃO edite à mão. Regenere: node db/build.mjs
 -- Aplicar PRIMEIRO, em base limpa:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/auth.sql
--- Arquivos: 32 (kizuna-core/sql)
+-- Arquivos: 34 (kizuna-core/sql)
 
 
 -- ===============================================================================================
@@ -3211,5 +3211,145 @@ $$;
 
 REVOKE ALL ON FUNCTION auth.fn_rbac__role_overview() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION auth.fn_rbac__role_overview() TO auth_user;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/sql/0119_password_reset_revokes_sessions.sql
+-- ===============================================================================================
+
+-- sql/0119_password_reset_revokes_sessions.sql
+-- Redefinir a senha agora revoga as sessões abertas (`auth.users.sessions_revoked_at`, criada no
+-- 0113 e checada pelo proxy em account/session-revocation.ts). Antes, quem tinha invadido a conta
+-- continuava logado até o JWT expirar (7 dias). Só redefine a função; GRANTs do 0112 continuam.
+
+CREATE OR REPLACE FUNCTION auth.fun_auth__password_reset_confirm(
+  p_token_hash text,
+  p_password text
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = auth, public
+AS $$
+DECLARE
+  v_token_id bigint;
+  v_uid uuid;
+BEGIN
+  PERFORM auth.fun_auth__password_reset_assert_purpose();
+
+  IF p_password IS NULL OR length(p_password) < 6 THEN
+    RAISE EXCEPTION 'password_too_short' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT t.id, t.user_uid
+    INTO v_token_id, v_uid
+  FROM auth.password_reset_tokens t
+  JOIN auth.users u ON u.uid = t.user_uid
+  WHERE t.token_hash = p_token_hash
+    AND t.used_at IS NULL
+    AND t.expires_at > now()
+    AND COALESCE(u.is_active, false)
+    AND u.deleted_at IS NULL
+  FOR UPDATE OF t;
+
+  IF v_token_id IS NULL THEN
+    RETURN false;
+  END IF;
+
+  UPDATE auth.users
+     SET password = auth.crypt(p_password, auth.gen_salt('bf', 10)),
+         -- Derruba as sessões já emitidas (JWT de 7 dias): quem invadiu a conta sai junto.
+         -- Truncado ao segundo porque o `iat` do JWT é em segundos — um login logo depois
+         -- do reset, no mesmo segundo, não pode cair na revogação.
+         sessions_revoked_at = date_trunc('second', now())
+   WHERE uid = v_uid;
+
+  -- Queima este token e qualquer outro pendente do mesmo usuário.
+  UPDATE auth.password_reset_tokens
+     SET used_at = now()
+   WHERE user_uid = v_uid
+     AND used_at IS NULL;
+
+  RETURN true;
+END;
+$$;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/sql/0120_login_requires_purpose.sql
+-- ===============================================================================================
+
+-- sql/0120_login_requires_purpose.sql
+-- `fun_auth__login_with_perms` tinha EXECUTE para anon: com o PostgREST alcançável, qualquer um
+-- testava senhas direto nele, sem o captcha, o rate-limit e o lockout das rotas /api/auth/*.
+-- Agora exige o claim `purpose = 'login'` (mesmo padrão de external_login, OTP e reset de senha);
+-- auth-handlers.ts assina esse JWT com `purposeAuthHeader('login')`. Corpo igual ao do 0106.
+
+CREATE OR REPLACE FUNCTION auth.fun_auth__login_with_perms(
+  p_login text,
+  p_password text
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = auth, public
+AS $$
+DECLARE
+  v_user uuid;
+  v_tenant uuid;
+  v_tenant_type text;
+  v_is_root boolean;
+  v_perms jsonb;
+  v_claims text;
+BEGIN
+  -- Só o servidor Next chama (JWT com `purpose: login`, assinado com o segredo do app). Direto no
+  -- PostgREST, sem esse claim, é recusado: senão dava para testar senhas pulando captcha e lockout.
+  IF COALESCE(
+       NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'purpose',
+       ''
+     ) <> 'login' THEN
+    RAISE EXCEPTION 'login_forbidden' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT user_uid, tenant_uid, tenant_type
+    INTO v_user, v_tenant, v_tenant_type
+  FROM auth.fun_auth__login_verify(p_login, p_password)
+  LIMIT 1;
+
+  IF v_user IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT is_root INTO v_is_root FROM auth.users WHERE uid = v_user;
+
+  v_claims :=
+    jsonb_build_object(
+      'user_id', v_user::text,
+      'tenant_id', v_tenant::text,
+      'tenant_type', v_tenant_type,
+      'is_root', COALESCE(v_is_root, false)
+    )::text;
+
+  PERFORM set_config('request.jwt.claims', v_claims, true);
+
+  SELECT auth.get_auth__effective_permissions()
+    INTO v_perms;
+
+  RETURN jsonb_build_object(
+    'user_uid', v_user::text,
+    'tenant_uid', v_tenant::text,
+    'tenant_type', v_tenant_type,
+    'is_root', COALESCE(v_is_root, false),
+    'perms', COALESCE(v_perms, '{}'::jsonb)
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION auth.fun_auth__login_with_perms(text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION auth.fun_auth__login_with_perms(text, text) TO anon, auth_user;
 
 NOTIFY pgrst, 'reload schema';

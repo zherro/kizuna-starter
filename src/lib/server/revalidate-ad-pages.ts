@@ -8,7 +8,7 @@ import { BROWSE_RAILS_TAG, PUBLIC_LISTS_TAG } from '@kizuna/core/server';
  * aparece também na página de outros (lugar ↔ evento, carrosséis); a próxima visita regenera.
  */
 const AD_RESOURCES = new Set(['services', 'service_addresses', 'service_categories_sub']);
-const AD_RPCS = new Set(['fn_form_result_upsert']);
+const AD_RPCS = new Set(['fn_form_result_upsert', 'fn_service_moderate']);
 
 /** Tag do `unstable_cache` dos dados do detalhe (`loadAd`) — a página e os dados têm caches separados. */
 export const AD_DETAIL_TAG = 'anuncio-detalhe';
