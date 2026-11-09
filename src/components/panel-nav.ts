@@ -28,6 +28,7 @@ import {
   HardDrive,
   Sparkles,
   Megaphone,
+  Wallet,
 } from 'lucide-react';
 import { vocabulary } from '@/lib/vocabulary';
 import type { PanelNavGroup } from '@kizuna/core/client/components/panel-shell';
@@ -193,6 +194,8 @@ export const navigationGroups: PanelNavGroup[] = [
       { title: 'Inteligência artificial', href: '/painel/root/ia', icon: Sparkles, rootOnly: true },
       { title: 'Storage e imagens', href: '/painel/root/storage', icon: HardDrive, rootOnly: true },
       { title: 'Publicidade', href: '/painel/root/ads', icon: Megaphone, rootOnly: true },
+      // Marketing (admin): aprovar banners, ver impulsionamentos, saldo e métricas de todas as contas.
+      { title: 'Marketing e banners', href: '/painel/root/marketing', icon: Wallet, rootOnly: true },
       {
         title: 'Log de acesso root',
         href: '/painel/security/root-access-log',
