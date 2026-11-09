@@ -358,6 +358,11 @@
       }
     }
   },
+  "anuncie": {
+    "_comment": "Páginas de captação de parceiros (/anuncie) — opcional. whatsapp = número só com dígitos e DDI (exemplo: \"5565999990000\"); email = e-mail de contato (exemplo: \"contato@seusite.com.br\"). Com whatsapp, o botão abre o WhatsApp com mensagem pronta; sem ele, usa o e-mail; sem nenhum dos dois, as páginas não mostram contato.",
+    "whatsapp": "",
+    "email": ""
+  },
   "ads": {
     "_comment": "Publicidade (slots). adsenseClient = ID do editor Google (ca-pub-...); vazio = só criativos próprios. maxSlotsPerPage = teto de slots por página (1..10).",
     "adsenseClient": "",

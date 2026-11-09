@@ -2,12 +2,15 @@
 // visuais vêm de `@kizuna/core/client/components/landing`. Regras: nada de número, prazo, preço
 // ou promessa de resultado; o Bora divulga e leva ao link de quem vende.
 import { whatsappLink } from '@kizuna/core/client/components/landing';
+import cfg from '@/../kizuna.config.json';
 
-/** WhatsApp do Bora (só dígitos, com DDI: 5565…). [PREENCHER] — vazio abre o WhatsApp sem contato. */
-export const WHATSAPP_NUMBER = '';
+const anuncieCfg = (cfg as { anuncie?: { whatsapp?: string; email?: string } }).anuncie;
 
-/** E-mail de contato, mostrado no fim das páginas. [PREENCHER] — vazio não mostra nada. */
-export const CONTACT_EMAIL = '';
+/** WhatsApp do Bora — `anuncie.whatsapp` no kizuna.config.json (só dígitos, com DDI). Vazio abre o WhatsApp sem contato. */
+export const WHATSAPP_NUMBER = anuncieCfg?.whatsapp?.trim() ?? '';
+
+/** E-mail de contato — `anuncie.email` no kizuna.config.json. Vazio não mostra nada. */
+export const CONTACT_EMAIL = anuncieCfg?.email?.trim() ?? '';
 
 export const REGION_TEXT = 'Cuiabá, Várzea Grande e Chapada dos Guimarães';
 
@@ -41,7 +44,17 @@ export type Audience = {
   poster?: { title: string; quote: string; text: string };
 };
 
-const STEP_1 = { title: 'Fale com a gente', text: 'Toque no botão e mande um oi no WhatsApp.' };
+export const HAS_CONTACT = WHATSAPP_NUMBER !== '' || CONTACT_EMAIL !== '';
+
+const STEP_1 = {
+  title: 'Fale com a gente',
+  text:
+    WHATSAPP_NUMBER !== ''
+      ? 'Toque no botão e mande um oi no WhatsApp.'
+      : CONTACT_EMAIL !== ''
+        ? 'Toque no botão e mande um e-mail.'
+        : undefined,
+};
 
 export const AUDIENCES: Audience[] = [
   {
@@ -155,7 +168,22 @@ export const GENERIC_WHATSAPP_MESSAGE = 'Oi! Vi o Bora Cuiabá e quero anunciar.
 
 export const audienceHref = (slug: string) => `/anuncie/${slug}`;
 export const findAudience = (slug: string) => AUDIENCES.find((a) => a.slug === slug);
-export const whatsappFor = (message: string) => whatsappLink(WHATSAPP_NUMBER, message);
+export type Contact = { href: string; kind: 'whatsapp' | 'email'; label: string };
+
+/**
+ * Canal de contato configurado em `anuncie` no kizuna.config.json: WhatsApp se houver número, senão
+ * e-mail, senão `null` — e a página não mostra botão de contato.
+ */
+export function contactFor(message: string): Contact | null {
+  if (WHATSAPP_NUMBER) {
+    return { kind: 'whatsapp', label: 'Falar no WhatsApp', href: whatsappLink(WHATSAPP_NUMBER, message) };
+  }
+  if (CONTACT_EMAIL) {
+    const q = `subject=${encodeURIComponent('Anunciar no Bora Cuiabá')}&body=${encodeURIComponent(message)}`;
+    return { kind: 'email', label: 'Enviar e-mail', href: `mailto:${CONTACT_EMAIL}?${q}` };
+  }
+  return null;
+}
 
 /** Caminhos de todas as páginas de captação (sitemap). */
 export const ANUNCIE_PATHS = ['/anuncie', ...AUDIENCES.map((a) => audienceHref(a.slug))];

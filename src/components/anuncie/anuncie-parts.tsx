@@ -1,6 +1,6 @@
 // Montagem das páginas /anuncie: só liga os blocos do core ao conteúdo de `@/lib/anuncie`.
 import Link from 'next/link';
-import { Building2, CalendarDays, Clapperboard, Compass, MapPin, Martini } from 'lucide-react';
+import { Building2, CalendarDays, Clapperboard, Compass, Mail, MapPin, Martini } from 'lucide-react';
 import { breadcrumbJsonLd, buildMetadata, jsonLdScript } from '@kizuna/core/server';
 import {
   LandingCta,
@@ -22,8 +22,9 @@ import {
   PILLARS,
   PILLARS_INTRO,
   audienceHref,
-  whatsappFor,
+  contactFor,
   type Audience,
+  type Contact,
 } from '@/lib/anuncie';
 
 const HERO_ID = 'anuncie-hero';
@@ -65,15 +66,26 @@ function WebPageJsonLd({ name, description, path, crumbs }: { name: string; desc
   );
 }
 
-function FinalCta({ message }: { message: string }) {
-  const href = whatsappFor(message);
+/** Botão do canal configurado (WhatsApp ou e-mail). Sem canal, nada aparece. */
+function ContactButton({ contact }: { contact: Contact | null }) {
+  if (!contact) return null;
+  return <WhatsAppButton href={contact.href} label={contact.label} icon={contact.kind === 'email' ? Mail : undefined} />;
+}
+
+function FinalCta({ contact }: { contact: Contact | null }) {
+  // E-mail como linha extra só quando o botão principal é o WhatsApp (senão o botão já é o e-mail).
+  const extraEmail = contact?.kind === 'whatsapp' && CONTACT_EMAIL;
   return (
     <LandingCta
       id={END_ID}
-      title="Vamos conversar?"
-      text="Chame a gente no WhatsApp. Anunciar é gratuito."
+      title={contact ? 'Vamos conversar?' : 'Veja o Bora funcionando'}
+      text={
+        contact
+          ? `Chame a gente ${contact.kind === 'whatsapp' ? 'no WhatsApp' : 'por e-mail'}. Anunciar é gratuito.`
+          : 'Anunciar é gratuito.'
+      }
       footnote={
-        CONTACT_EMAIL ? (
+        extraEmail ? (
           <>
             Ou escreva para{' '}
             <a className="font-semibold underline underline-offset-4" href={`mailto:${CONTACT_EMAIL}`}>
@@ -83,17 +95,21 @@ function FinalCta({ message }: { message: string }) {
         ) : undefined
       }
     >
-      <WhatsAppButton href={href} />
-      <WhatsAppLinkToHoje />
+      <ContactButton contact={contact} />
+      {contact ? <HojeLink /> : <HojeLink primary />}
     </LandingCta>
   );
 }
 
-function WhatsAppLinkToHoje() {
+function HojeLink({ primary = false }: { primary?: boolean }) {
   return (
     <Link
       href="/hoje"
-      className="inline-flex min-h-12 items-center justify-center rounded-full bg-background px-6 text-base font-bold text-foreground ring-1 ring-border hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className={`inline-flex min-h-12 items-center justify-center rounded-full px-6 text-base font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+        primary
+          ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25 hover:brightness-95'
+          : 'bg-background text-foreground ring-1 ring-border hover:bg-muted'
+      }`}
     >
       Veja o Bora funcionando
     </Link>
@@ -106,7 +122,7 @@ function StickySpacer() {
 }
 
 export function AudiencePage({ a }: { a: Audience }) {
-  const href = whatsappFor(a.whatsappMessage);
+  const contact = contactFor(a.whatsappMessage);
   const path = audienceHref(a.slug);
   return (
     <>
@@ -122,7 +138,7 @@ export function AudiencePage({ a }: { a: Audience }) {
       />
       <div id={HERO_ID}>
         <LandingHero eyebrow={a.eyebrow} title={a.hook} summary={COMMON_SUMMARY} badges={BADGES}>
-          <WhatsAppButton href={href} />
+          {contact ? <ContactButton contact={contact} /> : null}
         </LandingHero>
       </div>
       <LandingPoints id="problema" title="O problema" items={a.problems} highlightLast />
@@ -139,15 +155,19 @@ export function AudiencePage({ a }: { a: Audience }) {
         </LandingPoster>
       ) : null}
       <LandingSteps id="como-entrar" title="Como entrar" steps={a.steps} />
-      <FinalCta message={a.whatsappMessage} />
-      <StickySpacer />
-      <LandingStickyCta href={href} heroId={HERO_ID} endId={END_ID} />
+      <FinalCta contact={contact} />
+      {contact ? (
+        <>
+          <StickySpacer />
+          <LandingStickyCta href={contact.href} label={contact.label} heroId={HERO_ID} endId={END_ID} />
+        </>
+      ) : null}
     </>
   );
 }
 
 export function AnuncieIndex() {
-  const href = whatsappFor(GENERIC_WHATSAPP_MESSAGE);
+  const contact = contactFor(GENERIC_WHATSAPP_MESSAGE);
   return (
     <>
       <WebPageJsonLd
@@ -161,7 +181,7 @@ export function AnuncieIndex() {
       />
       <div id={HERO_ID}>
         <LandingHero eyebrow="Anuncie" title="Seu negócio na lista de quem quer saber o que fazer hoje" summary={COMMON_SUMMARY} badges={BADGES}>
-          <WhatsAppButton href={href} />
+          {contact ? <ContactButton contact={contact} /> : null}
         </LandingHero>
       </div>
       <LandingLinkCards
@@ -181,9 +201,13 @@ export function AnuncieIndex() {
         intro={PILLARS_INTRO}
         items={PILLARS.map((p, i) => ({ ...p, icon: PILLAR_ICONS[i] }))}
       />
-      <FinalCta message={GENERIC_WHATSAPP_MESSAGE} />
-      <StickySpacer />
-      <LandingStickyCta href={href} heroId={HERO_ID} endId={END_ID} />
+      <FinalCta contact={contact} />
+      {contact ? (
+        <>
+          <StickySpacer />
+          <LandingStickyCta href={contact.href} label={contact.label} heroId={HERO_ID} endId={END_ID} />
+        </>
+      ) : null}
     </>
   );
 }

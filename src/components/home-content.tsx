@@ -7,6 +7,7 @@ import { HomeHero } from './home/home-hero';
 import { CategoryRail } from './home/category-rail';
 import { NearbyGrid } from './home/nearby-grid';
 import { HowItWorks } from './home/how-it-works';
+import { AnuncieLinks } from './home/anuncie-links';
 import { SocialInstallCards } from './home/social-install-cards';
 import {
   getHomeInkStyle,
@@ -136,6 +137,7 @@ export function HomeContent({
       {placeHighlights}
       {showNearby ? <NearbyGrid t={t} /> : null}
       <HowItWorks t={t} />
+      <AnuncieLinks />
       <SocialInstallCards t={t} instagramUrl={instagramUrl} />
       {inkPicker ? (
         <HomeInkTonePicker level={inkLevel} onChange={handleInkLevelChange} />
