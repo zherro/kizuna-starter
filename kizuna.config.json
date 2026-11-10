@@ -365,7 +365,7 @@
   },
   "ads": {
     "_comment": "Publicidade (slots). adsenseClient = ID do editor Google (ca-pub-...); vazio = só criativos próprios. maxSlotsPerPage = teto de slots por página (1..10).",
-    "adsenseClient": "",
+    "adsenseClient": "ca-pub-3568624269155711",
     "maxSlotsPerPage": 3
   },
   "analytics": {
