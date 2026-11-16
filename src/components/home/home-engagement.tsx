@@ -13,6 +13,7 @@ import { parseRegions, regionCitiesFor } from '@kizuna/core/shared/regions';
 import cfg from '@/../kizuna.config.json';
 import { loadHomePlaces } from '@/lib/lugares';
 import { homeNewsMoreHref, loadHomeNews } from '@/lib/noticias';
+import { focusOnCity, seededShuffle } from '@/lib/city-focus';
 
 const regions = parseRegions((cfg as { regions?: unknown }).regions);
 
@@ -34,7 +35,21 @@ export type PlacesMosaicConfig = {
   narrow?: boolean;
 };
 
-// Com `random`, busca mais lugares que o exibido: o navegador sorteia `limit` entre eles.
+/** Nome da região da cidade (ex. "Grande Cuiabá"), a partir do título "Também na Grande Cuiabá". */
+function regionName(city: RoutableCity): string | null {
+  const r = regions.find((reg) => reg.cities.includes(String(city.ibge)));
+  return r ? r.title.replace(/^também\s+(na|no|em)\s+/i, '').trim() || null : null;
+}
+
+/** Título honesto: só da cidade, cidade + região, ou só da região (cidade ainda sem lugares). */
+function placesTitle(city: RoutableCity | null, own: number, sisters: number): string | undefined {
+  if (!city || sisters === 0) return undefined; // padrão do core: "Lugares da cidade"
+  if (own > 0) return `Lugares em ${city.name} e região`;
+  const name = regionName(city);
+  return name ? `Lugares na ${name}` : 'Lugares da região';
+}
+
+// Com `random`, busca mais lugares que o exibido e sorteia `limit` entre eles.
 const placesPool = (limit: number, random: boolean) => (random ? Math.max(limit * 3, 12) : limit);
 
 export async function HomePlaces({
@@ -66,24 +81,32 @@ export async function HomePlaces({
     );
   }
 
-  // Mesmo loader dos carrosséis: pool maior que `limit` (o navegador sorteia e corta).
+  // Mesmo loader dos carrosséis: pool maior que `limit`.
+  const region = city && scope === 'region';
   const data = await loadCategoryRail(target, {
     limit: placesPool(limit, random),
     cityIbge: city?.ibge,
-    cityIbges: city && scope === 'region' ? regionCitiesFor(regions, city.ibge) : undefined,
+    cityIbges: region ? regionCitiesFor(regions, city.ibge) : undefined,
   }).catch(() => null);
   if (!data) return null;
   const filter = data.kind === 'group' ? `group=${data.category.slug}` : `categoryId=${data.category.id}`;
   const cityQuery = city
     ? `&state=${city.state}&cityId=${city.ibge}&cityName=${encodeURIComponent(city.name)}`
     : '';
+
+  // Cidades irmãs: a cidade da página tem preferência (1º lugar, o destaque, é dela) e as irmãs têm
+  // ~30% garantidos (city-focus). Com `random`, o sorteio é do dia (o mesmo para todos no dia) e
+  // feito aqui — no navegador ele desfaria o foco.
+  const day = mosaicDaySeed();
+  const pool = random ? seededShuffle(data.items, `${day}:${city?.ibge ?? ''}`) : data.items;
+  const focused = focusOnCity(pool, { cityName: region ? city.name : null, limit, arrange: 'city' });
   return (
     <PlaceMosaic
-      items={placeItemsFromServices(data.items)}
+      items={placeItemsFromServices(focused.items)}
+      title={placesTitle(region ? city : null, focused.ownCount, focused.sisterCount)}
       variant={variant}
-      seed={mosaicDaySeed()}
+      seed={day}
       limit={limit}
-      shuffle={random}
       narrow={narrow}
       moreHref={`/busca?${filter}${cityQuery}`}
     />
@@ -106,6 +129,7 @@ export async function HomeNews({
   // Falha de rede/RPC não pode derrubar a home inteira: o bloco apenas some.
   const items = await loadHomeNews({
     cityIbge: city?.ibge,
+    cityName: city?.name,
     limit: leads + listLimit,
   }).catch(() => []);
   return (

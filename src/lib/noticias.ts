@@ -5,6 +5,7 @@ import { stripHtml } from '@kizuna/core/lib/helper/text.helper';
 import { fileUrl } from '@kizuna/core/client/components/services/service-helpers';
 import { serviceHref } from '@kizuna/core/shared/city-routing/city-slug';
 import type { ServiceResult } from '@kizuna/core/client/components/search/search-types';
+import { focusOnCity } from '@/lib/city-focus';
 import {
   parseNewsDate,
   type NewsHighlightItem,
@@ -38,6 +39,8 @@ export type HomeNewsOptions = {
   cityIbge?: string;
   /** Cidades irmãs (`regions`): a 1ª é a selecionada; o filtro vale para qualquer uma delas. */
   cityIbges?: string[];
+  /** Nome da cidade da página (como em `ServiceResult.city`): as notícias dela vêm primeiro. */
+  cityName?: string;
   /** Total de notícias: manchete + lista. Default 6 (1 + 5). */
   limit?: number;
   /** Quantas manchetes (a partir da 1ª) usam a imagem grande; as demais, a miniatura. Default 0: a home é leve,
@@ -66,17 +69,26 @@ export function newsKicker(result: Pick<ServiceResult, 'subcategory' | 'category
 
 /**
  * Junta o resultado da busca com os detalhes (`services`) e as datas do formulário, ordena do mais
- * recente para o mais antigo (sem data vai pro fim, na ordem da busca) e corta em `limit`. A 1ª
+ * recente para o mais antigo (sem data vai pro fim, na ordem da busca), prioriza a cidade da página
+ * (`cityName`/`fillUids`) e corta em `limit`. A 1ª
  * notícia (manchete) leva a imagem grande; as outras, a miniatura.
  */
 export function buildHomeNewsItems(
   results: ServiceResult[],
   details: Map<string, ServiceDetailRow>,
   publishedByUid: Map<string, string | null>,
-  options: { limit: number; now: number; fullImages?: number }
+  options: {
+    limit: number;
+    now: number;
+    fullImages?: number;
+    /** Cidade da página: as notícias dela vêm primeiro (as irmãs da região, intercaladas). */
+    cityName?: string | null;
+    /** Notícias de fora da região: só completam o quadro, depois de todas as da região. */
+    fillUids?: Set<string>;
+  }
 ): NewsHighlightItem[] {
   const seen = new Set<string>();
-  const rows = results
+  const sorted = results
     .filter((r) => r.uid && r.title?.trim() && !seen.has(r.uid) && seen.add(r.uid))
     .map((r, order) => {
       const detail = details.get(r.uid);
@@ -92,8 +104,18 @@ export function buildHomeNewsItems(
       if (a.date) return -1;
       if (b.date) return 1;
       return a.order - b.order;
-    })
-    .slice(0, options.limit);
+    });
+
+  // Prioridade (home de cidade): 1) a cidade da página, 2) as irmãs da região (cota de ~30%,
+  // intercaladas — city-focus), 3) de fora da região só completam o quadro. Cada nível em ordem de data.
+  const fill = options.fillUids;
+  const inside = fill ? sorted.filter((x) => !fill.has(x.r.uid)) : sorted;
+  const outside = fill ? sorted.filter((x) => fill.has(x.r.uid)) : [];
+  const focused = focusOnCity(
+    inside.map((x) => ({ city: x.r.city, title: x.r.title, x })),
+    { cityName: options.cityName, limit: options.limit, arrange: 'city' }
+  ).items.map((f) => f.x);
+  const rows = [...focused, ...outside].slice(0, options.limit);
 
   return rows.map(({ r, detail, date }, index) => ({
     href: serviceHref(r),
@@ -148,6 +170,21 @@ export async function loadHomeNews(options: HomeNewsOptions = {}): Promise<NewsH
     },
     seedFromKey(`home-news:${cities?.join(',') ?? options.cityIbge ?? ''}`)
   ).catch(() => [] as ServiceResult[]);
+
+  // Região sem notícia suficiente para o quadro: completa com as mais recentes de fora (prioridade
+  // mais baixa). Só nesse caso há a 2ª consulta — no caso comum o custo é o de sempre.
+  const hasCity = Boolean(cities?.[0] ?? options.cityIbge);
+  let fillUids: Set<string> | undefined;
+  if (hasCity && results.length < limit) {
+    const inRegion = new Set(results.map((r) => r.uid));
+    const extra = await runServiceSearch(
+      { p_group_category_slug: NEWS_GROUP_SLUG, p_page_size: limit * 2, p_city_ibge: null },
+      seedFromKey('home-news:fill')
+    ).catch(() => [] as ServiceResult[]);
+    const fresh = extra.filter((r) => r.uid && !inRegion.has(r.uid));
+    fillUids = new Set(fresh.map((r) => r.uid));
+    results.push(...fresh);
+  }
   if (results.length === 0) return [];
 
   const uids = [...new Set(results.map((r) => r.uid).filter(Boolean))];
@@ -164,6 +201,6 @@ export async function loadHomeNews(options: HomeNewsOptions = {}): Promise<NewsH
     results,
     new Map(detailRows.map((row) => [row.uid, row])),
     new Map(published),
-    { limit, now: options.now ?? Date.now(), fullImages: options.fullImages }
+    { limit, now: options.now ?? Date.now(), fullImages: options.fullImages, cityName: options.cityName, fillUids }
   );
 }

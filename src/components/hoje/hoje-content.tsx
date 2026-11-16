@@ -11,9 +11,15 @@ import type { ServiceDetailConfig } from '@kizuna/core/client/components/service
 import { trackRule } from '@/lib/analytics';
 import { adsConfig } from '@/lib/ads';
 import cfg from '@/../kizuna.config.json';
+import { focusOnCity } from '@/lib/city-focus';
 
 const regions = parseRegions((cfg as { regions?: unknown }).regions);
 const sections = parseTodaySections((cfg as { today?: unknown }).today);
+const dedupeSlugs = new Set(
+  ((cfg.home as { categoryRails?: { slug?: string; group?: string; dedupeTitle?: boolean }[] }).categoryRails ?? [])
+    .filter((r) => r.dedupeTitle === true)
+    .map((r) => r.slug ?? r.group ?? '')
+);
 const serviceDetailConfig = (cfg as { serviceDetail?: ServiceDetailConfig }).serviceDetail ?? null;
 
 export async function HojeContent({ city }: { city: RoutableCity | null }) {
@@ -22,6 +28,24 @@ export async function HojeContent({ city }: { city: RoutableCity | null }) {
   const feed = city
     ? await loadTodayFeed(sections, { now, cityIbge: city.ibge, cityIbges: regionCitiesFor(regions, city.ibge) })
     : await loadTodayFeed(sections, { now });
+
+  // Seções "region": cidade da página com preferência, irmãs com cota (mesma regra da home); um card
+  // por título onde a home pede (`home.categoryRails[].dedupeTitle`, ex. cinema).
+  const feedFocused = city
+    ? feed.map((section) =>
+        section.id.endsWith(':region')
+          ? {
+              ...section,
+              items: focusOnCity(section.items, {
+                cityName: city.name,
+                limit: section.items.length,
+                dedupeTitle: dedupeSlugs.has(section.category.slug),
+                arrange: 'city',
+              }).items,
+            }
+          : section
+      )
+    : feed;
 
   const todayCity = city ? { name: city.name, state: city.state, ibge: city.ibge } : null;
   return (
@@ -32,11 +56,11 @@ export async function HojeContent({ city }: { city: RoutableCity | null }) {
         summary="O que acontece hoje na cidade, perto de você e nos próximos dias, além do cinema em cartaz."
         weather={cfg.weather ? <WeatherWidget forecastModal={false} /> : undefined}
       />
-      {feed.every((section) => section.items.length === 0) ? (
+      {feedFocused.every((section) => section.items.length === 0) ? (
         <TodayEmpty href="/busca" />
       ) : (
         <div className="pb-14 sm:pb-16">
-          {feed.map((section, index) => (
+          {feedFocused.map((section, index) => (
             <TodaySectionBlock
               key={section.id}
               section={section}

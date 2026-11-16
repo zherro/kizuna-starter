@@ -70,6 +70,31 @@ describe('newsKicker / newsSummary / homeNewsMoreHref', () => {
   });
 });
 
+describe('buildHomeNewsItems — prioridade por cidade', () => {
+  const at = (d: number) => `2026-10-0${d}T10:00`; // antes de NOW (13/10)
+  it('cidade da página primeiro, irmãs intercaladas, de fora só completam', () => {
+    const results = [
+      result({ uid: 'vg1', title: 'VG nova', city: 'Várzea Grande' }),
+      result({ uid: 'cba1', title: 'CBA 1', city: 'Cuiabá' }),
+      result({ uid: 'cba2', title: 'CBA 2', city: 'Cuiabá' }),
+      result({ uid: 'cba3', title: 'CBA 3', city: 'Cuiabá' }),
+      result({ uid: 'rs1', title: 'RS mais nova de todas', city: 'Porto Alegre' }),
+    ];
+    const published = new Map<string, string | null>([
+      ['rs1', at(9)], ['vg1', at(8)], ['cba1', at(7)], ['cba2', at(6)], ['cba3', at(5)],
+    ]);
+    const vg = buildHomeNewsItems(results, new Map(), published, {
+      limit: 5, now: NOW, cityName: 'Várzea Grande', fillUids: new Set(['rs1']),
+    });
+    // VG lidera (manchete), Cuiabá (irmã) vem depois, RS só completa no fim mesmo sendo a mais nova
+    expect(vg.map((i) => i.title)).toEqual(['VG nova', 'CBA 1', 'CBA 2', 'CBA 3', 'RS mais nova de todas']);
+    const cba = buildHomeNewsItems(results, new Map(), published, {
+      limit: 4, now: NOW, cityName: 'Cuiabá', fillUids: new Set(['rs1']),
+    });
+    expect(cba.map((i) => i.title)).toEqual(['CBA 1', 'CBA 2', 'VG nova', 'CBA 3']);
+  });
+});
+
 describe('buildHomeNewsItems', () => {
   it('ordena por publicação (mais recente primeiro), sem data vai pro fim e futura some', () => {
     const results = [

@@ -171,10 +171,10 @@
     "_comment": "\"inkPicker\": mostra o seletor de intensidade do fundo escuro dos cards (false esconde). \"inkLevel\": intensidade padrão (1-7); com o seletor ativo, a escolha salva do usuário prevalece.",
     "inkPicker": false,
     "inkLevel": 6,
-    "_comment_categoryRails": "Carrosséis por categoria ou grupo na home (um por item, na ordem). slug = categories.slug OU group = categories_group.slug; mesma base da busca (só ativos e não expirados), ordem embaralhada a cada visita; title opcional (default = nome da categoria); limit opcional (default 10) — se houver mais que isso, a trilha termina com o card \"Ver mais\" (leva à busca da categoria). scope: \"city\" (padrão, só a cidade da página) | \"region\" (a cidade + as vizinhas da mesma região em `regions`, com a cidade no card). O estilo dos cards vem de serviceDetail. Categoria sem anúncios não aparece.",
+    "_comment_categoryRails": "Carrosséis por categoria ou grupo na home (um por item, na ordem). slug = categories.slug OU group = categories_group.slug; mesma base da busca (só ativos e não expirados), ordem embaralhada a cada visita; title opcional (default = nome da categoria); limit opcional (default 10) — se houver mais que isso, a trilha termina com o card \"Ver mais\" (leva à busca da categoria). scope: \"city\" (padrão, só a cidade da página) | \"region\" (a cidade + as vizinhas da mesma região em `regions`, com a cidade no card). O estilo dos cards vem de serviceDetail. Categoria sem anúncios não aparece. order opcional (ex.: \"event_start\" = próximos eventos primeiro; mesmo formato de search.orderByGroup): a trilha vem em ordem fixa, sem embaralhar. dedupeTitle opcional (true): um card por título, o da cidade da página (cinema: o mesmo filme é um anúncio por cidade). Com scope region, a cidade da página tem preferência e as irmãs têm ~30% dos cards garantidos quando têm conteúdo (src/lib/city-focus.ts).",
     "categoryRails": [
-      { "group": "eventos", "title": "Eventos que vêm aí", "limit": 10, "scope": "region" },
-      { "slug": "cinema", "title": "Cinema em cartaz", "limit": 10, "scope": "region" }
+      { "group": "eventos", "title": "Eventos que vêm aí", "limit": 10, "scope": "region", "order": "event_start" },
+      { "slug": "cinema", "title": "Cinema em cartaz", "limit": 10, "scope": "region", "dedupeTitle": true }
     ]
   },
   "today": {
