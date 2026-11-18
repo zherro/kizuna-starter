@@ -32,6 +32,7 @@ import { ViewingCityProvider } from '@kizuna/core/client/components/viewing-city
 import { WeatherWidget } from '@kizuna/core/client/components/weather/weather-widget';
 import { Toaster } from 'sonner';
 import cfg from '@/../kizuna.config.json';
+import { adsConfig } from '@/lib/ads';
 import './globals.css';
 
 const headerCfg = (cfg as { header?: { variant?: string } }).header;
@@ -119,7 +120,18 @@ export const metadata: Metadata = {
     url: '/',
   },
   twitter: { card: 'summary_large_image', title: siteName, description: site?.description },
+  // Verificação do AdSense: o robô de revisão procura a conta no HTML do servidor. Sem
+  // `ads.adsenseClient` no config, nada é renderizado.
+  ...(adsConfig.adsenseClient ? { other: { 'google-adsense-account': adsConfig.adsenseClient } } : {}),
 };
+
+// Script do AdSense no <head> do HTML do servidor (o React 19 sobe `<script async src>` para o head e
+// não repete). O id é o mesmo que o `GoogleAd` do core procura antes de injetar o dele: o script
+// carrega uma vez só.
+const ADSENSE_SCRIPT_ID = 'kizuna-adsbygoogle';
+const adsenseSrc = adsConfig.adsenseClient
+  ? `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(adsConfig.adsenseClient)}`
+  : null;
 
 // Cor da barra do navegador (mobile) na 1ª pintura, por modo claro/escuro do sistema. Depois do
 // JS, o <ThemeColorMeta /> passa a copiar o fundo real da página (= header), inclusive quando o
@@ -168,6 +180,9 @@ export default function RootLayout({
         suppressHydrationWarning
         className="min-h-full flex flex-col bg-background text-foreground"
       >
+        {adsenseSrc ? (
+          <script id={ADSENSE_SCRIPT_ID} async src={adsenseSrc} crossOrigin="anonymous" />
+        ) : null}
         <AppPreferencesProvider
           defaultThemeColor={defaultThemeColor}
           themeColorSelectable={themeColorSelectable}
