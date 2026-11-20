@@ -19,7 +19,7 @@ import { adsConfig } from '@/lib/ads';
 import { loadOrderedRail } from '@/lib/server/ordered-rail';
 import { FocusedServiceRail } from '@/components/home/focused-service-rail';
 import { projectBoostPlacement } from '@kizuna/core/server/marketing/boost-config';
-import { resolveCategoryHue, type ServiceDetailConfig } from '@kizuna/core/client/components/services/detail';
+import { resolveCategoryHue, type ServiceDetailConfig } from '@kizuna/core/client/components/services/detail/category-style';
 
 export type CategoryRailConfig = {
   /** slug da categoria (`categories.slug`) — use este OU `group` */

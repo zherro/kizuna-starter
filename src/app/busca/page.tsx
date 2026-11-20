@@ -9,7 +9,13 @@ import { trackRule } from '@/lib/analytics';
 import { AdSlot } from '@kizuna/core/client/ads';
 import { adsConfig } from '@/lib/ads';
 import { parseRegions, regionCitiesFor } from '@kizuna/core/shared/regions';
-import { buildMetadata, loadBrowseRails, parseLocationConfig } from '@kizuna/core/server';
+import {
+  buildMetadata,
+  loadBrowseRails,
+  loadPublicResourceSeed,
+  parseLocationConfig,
+} from '@kizuna/core/server';
+import { ResourceSeedProvider } from '@kizuna/core/client/hooks/resource-seed';
 import { loadRoutableCities } from '@kizuna/core/server/location/cities';
 import { projectBoostPlacement } from '@kizuna/core/server/marketing/boost-config';
 import { SEO_SITE } from '@/lib/seo';
@@ -83,10 +89,25 @@ async function loadInitialRails() {
   }
 }
 
+/**
+ * Taxonomia pública que a busca lê ao montar (título por grupo, carrossel de categorias, painel de
+ * filtros) carregada AQUI, no servidor, e entregue pelo `ResourceSeedProvider` — o navegador não faz
+ * mais 4–5 GETs `/api/resources/...` depois de hidratar. Mesmo cache das listagens públicas (300 s);
+ * recurso que falhar fica de fora e o cliente busca como antes.
+ */
+async function loadTaxonomySeeds() {
+  const resources = ['category_stats', 'categories_group_public', 'categories_public'];
+  // Carrossel/painel com "só categorias com anúncio" (home.categoriesOnlyWithListings) leem também:
+  if (home?.categoriesOnlyWithListings === true) {
+    resources.push('category_service_stats', 'category_service_facets');
+  }
+  return Promise.all(resources.map((r) => loadPublicResourceSeed(r).catch(() => null)));
+}
+
 export default async function BuscaPage() {
-  const initialRails = await loadInitialRails();
+  const [initialRails, taxonomySeeds] = await Promise.all([loadInitialRails(), loadTaxonomySeeds()]);
   return (
-    <>
+    <ResourceSeedProvider seeds={taxonomySeeds}>
       {/* Vitrine renderizada FORA do Suspense: dentro dele o servidor adia o trecho e o HTML estático
           sai só com "Carregando…". O SearchPage a esconde quando a localização fica pronta. */}
       {initialRails ? (
@@ -132,6 +153,6 @@ export default async function BuscaPage() {
           }
         />
       </Suspense>
-    </>
+    </ResourceSeedProvider>
   );
 }

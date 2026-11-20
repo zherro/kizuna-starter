@@ -10,12 +10,14 @@ import {
   stripHtml,
   type ServiceDetailData,
 } from '@kizuna/core/server';
+// Imports diretos (não o barrel `services/detail`): o barrel reexporta carrosséis, botões e outros
+// componentes cliente que esta página não usa e que entrariam no grafo/bundle da rota.
+import { ServiceDetailPage } from '@kizuna/core/client/components/services/detail/service-detail-page';
 import {
-  ServiceDetailPage,
   resolveServiceDetailVariant,
-  newsArticleMeta,
   type ServiceDetailConfig,
-} from '@kizuna/core/client/components/services/detail';
+} from '@kizuna/core/client/components/services/detail/category-style';
+import { newsArticleMeta } from '@kizuna/core/client/components/services/detail/noticia-helpers';
 import { photosFor } from '@kizuna/core/client/components/services/service-helpers';
 import { serverFetchResource } from '@kizuna/core/server/postgrest-crud';
 import { cityPath } from '@kizuna/core/shared/city-routing/city-slug';

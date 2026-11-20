@@ -29,6 +29,7 @@ import { KizunaHeader } from '@kizuna/core/client/components/kizuna-header';
 import { Footer } from '@/components/footer';
 import { CityCookieSync } from '@kizuna/core/client/components/city/city-cookie-sync';
 import { ViewingCityProvider } from '@kizuna/core/client/components/viewing-city';
+import { LinkPrefetchProvider } from '@kizuna/core/client/components/link-prefetch';
 import { WeatherWidget } from '@kizuna/core/client/components/weather/weather-widget';
 import { Toaster } from 'sonner';
 import cfg from '@/../kizuna.config.json';
@@ -150,6 +151,8 @@ export const viewport: Viewport = {
 
 // Primeiros 3 itens da barra inferior (mobile), iguais para logado e visitante. "Divulgar" é o CTA
 // central — o visitante vai ao login e volta (requiresAuth).
+// Prefetch: só os destinos principais (Início, Buscar, Descobrir) pré-carregam ao aparecer; painel e
+// login (dinâmicos, atrás de sessão) ficam `prefetch: false` — no 4G disputavam banda com a página.
 const tabsCommon: MobileTabItem[] = [
   { href: '/', label: 'Início', icon: <Home /> },
   { href: '/busca', label: 'Buscar', icon: <Search /> },
@@ -159,6 +162,7 @@ const tabsCommon: MobileTabItem[] = [
     icon: <Megaphone />,
     featured: true,
     requiresAuth: true,
+    prefetch: false,
   },
 ];
 
@@ -192,6 +196,9 @@ export default function RootLayout({
         >
           <AuthProvider initialUser={null}>
             <ViewingCityProvider>
+            {/* Listas de cards (busca, trilhas, carrossel de categorias) sem prefetch automático: cada
+                card visível pré-carregava a página de destino no celular. Nav principal segue o padrão. */}
+            <LinkPrefetchProvider cards={false}>
             <PwaRegister swUrl="/sw.js?v=1" migrationKey="kizuna-sw-v1" />
             <ThemeColorMeta />
             <CityCookieSync />
@@ -216,7 +223,7 @@ export default function RootLayout({
                 { href: '/hoje', label: 'Hoje', icon: <Sun /> },
                 { href: '/mapa', label: 'Mapa', icon: <MapPin /> },
                 { href: '/turismo', label: 'Turismo', icon: <Map /> },
-                { href: '/painel', label: 'Divulgar', icon: <Megaphone /> },
+                { href: '/painel', label: 'Divulgar', icon: <Megaphone />, prefetch: false },
               ]}
             />
             {/* pb: reserva o espaço da barra inferior no mobile (--mobile-tab-h é publicado pelo MobileTabBar). */}
@@ -237,14 +244,16 @@ export default function RootLayout({
                   icon: <Briefcase />,
                   exact: true,
                   onlyOn: ['/painel'],
+                  prefetch: false,
                 },
                 {
                   href: '/painel',
                   label: 'Meu painel',
                   icon: <LayoutDashboard />,
                   exceptOn: ['/painel'],
+                  prefetch: false,
                 },
-                { href: '/painel/minha-conta', label: 'Conta', icon: <UserCircle /> },
+                { href: '/painel/minha-conta', label: 'Conta', icon: <UserCircle />, prefetch: false },
               ]}
               // Visitante: no lugar de "Meus anúncios"/"Conta" (que só levariam ao login), Descobrir e Entrar.
               guestItems={[
@@ -255,11 +264,13 @@ export default function RootLayout({
                   label: 'Entrar',
                   icon: <LogIn />,
                   match: ['/login', '/registre-se'],
+                  prefetch: false,
                 },
               ]}
             />
             {showPreferencesFab ? <PreferencesFab /> : null}
             <Toaster richColors position="bottom-center" />
+            </LinkPrefetchProvider>
             </ViewingCityProvider>
           </AuthProvider>
         </AppPreferencesProvider>

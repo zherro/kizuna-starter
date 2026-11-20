@@ -1,23 +1,25 @@
-'use client';
-
-import { useEffect, useState, type ReactNode } from 'react';
-import { useAppPreferences } from '@kizuna/core/client/providers/app-preferences-provider';
+// Corpo da home — Server Component. Só as ilhas interativas são client: carrossel de categorias
+// (`CategoryRail`, cards já buscados no servidor), textos que seguem o idioma do usuário
+// (`home-i18n.tsx`), vagas de anúncio (`AdSlot`), chamadas/busca montadas na page e o seletor do
+// fundo "ink" (`HomeInkShell`, só com `inkPicker`). Trilhas, notícias, lugares e SEO chegam como
+// Server Components prontos.
+import type { ReactNode } from 'react';
 import { DiscoverCta } from '@kizuna/core/client/components/home/discover-cta';
-import { HomeHero } from './home/home-hero';
-import { CategoryRail } from './home/category-rail';
-import { NearbyGrid } from './home/nearby-grid';
-import { HowItWorks } from './home/how-it-works';
+import { HomeCategoryRail } from './home/home-category-rail';
 import { AnuncieLinks } from './home/anuncie-links';
-import { SocialInstallCards } from './home/social-install-cards';
+import {
+  HomeHeroI18n,
+  HowItWorksI18n,
+  NearbyGridI18n,
+  SocialInstallCardsI18n,
+} from './home/home-i18n';
 import {
   getHomeInkStyle,
   HOME_INK_FIXED_LEVEL,
-  HOME_INK_LEVELS,
-  HOME_INK_STORAGE_KEY,
   HOME_INK_TONE_PICKER_ENABLED,
   type HomeInkLevel,
 } from './home/home-ink-config';
-import { HomeInkTonePicker } from './home/home-ink-tone-picker';
+import { HomeInkShell } from './home/home-ink-shell';
 import { AdSlot } from '@kizuna/core/client/ads';
 import { adsConfig } from '@/lib/ads';
 
@@ -73,45 +75,11 @@ export function HomeContent({
   showNearby = true,
   cityName,
 }: HomeContentProps = {}) {
-  const { messages } = useAppPreferences();
-  const t = messages.home;
-
-  const [inkLevel, setInkLevel] = useState<HomeInkLevel>(defaultInkLevel);
-
-  useEffect(() => {
-    if (!inkPicker) return;
-    try {
-      const saved = Number(localStorage.getItem(HOME_INK_STORAGE_KEY));
-      if (HOME_INK_LEVELS.includes(saved as HomeInkLevel)) {
-        queueMicrotask(() => setInkLevel(saved as HomeInkLevel));
-      }
-    } catch {
-      // localStorage unavailable — keep the fixed default.
-    }
-  }, [inkPicker]);
-
-  function handleInkLevelChange(level: HomeInkLevel) {
-    setInkLevel(level);
-    try {
-      localStorage.setItem(HOME_INK_STORAGE_KEY, String(level));
-    } catch {
-      // ignore — the picker still works for this render, just won't persist.
-    }
-  }
-
-  return (
-    <main
-      className="bg-background"
-      data-home-ink-level={inkLevel}
-      style={getHomeInkStyle(inkLevel)}
-    >
-      {showHero ? <HomeHero t={t} /> : null}
+  const content = (
+    <>
+      {showHero ? <HomeHeroI18n /> : null}
       <AdSlot slot="home-destaque" city={cityName} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} paidShare={adsConfig.paidShare} />
-      <CategoryRail
-        t={t}
-        variant={categoriesVariant}
-        onlyWithListings={categoriesOnlyWithListings}
-      />
+      <HomeCategoryRail variant={categoriesVariant} onlyWithListings={categoriesOnlyWithListings} />
       {/* Chamadas: celular = "hoje" em linha cheia e, abaixo, mapa e swipe lado a lado; desktop = 3 colunas. */}
       {showDiscover || todayCallout || mapCallout ? (
         <div className="mx-auto grid w-full max-w-[1600px] grid-cols-2 gap-3 px-4 pb-10 pt-6 sm:gap-4 sm:px-6 sm:pb-12 sm:pt-8 lg:grid-cols-3">
@@ -135,13 +103,25 @@ export function HomeContent({
       {newsHighlights}
       {seoContent}
       {placeHighlights}
-      {showNearby ? <NearbyGrid t={t} /> : null}
-      <HowItWorks t={t} />
+      {showNearby ? <NearbyGridI18n /> : null}
+      <HowItWorksI18n />
       <AnuncieLinks />
-      <SocialInstallCards t={t} instagramUrl={instagramUrl} />
-      {inkPicker ? (
-        <HomeInkTonePicker level={inkLevel} onChange={handleInkLevelChange} />
-      ) : null}
+      <SocialInstallCardsI18n instagramUrl={instagramUrl} />
+    </>
+  );
+
+  // Com o seletor, o nível salvo no navegador manda — o `<main>` vira ilha client (conteúdo segue do servidor).
+  if (inkPicker) {
+    return (
+      <HomeInkShell className="bg-background" defaultLevel={defaultInkLevel}>
+        {content}
+      </HomeInkShell>
+    );
+  }
+
+  return (
+    <main className="bg-background" data-home-ink-level={defaultInkLevel} style={getHomeInkStyle(defaultInkLevel)}>
+      {content}
     </main>
   );
 }

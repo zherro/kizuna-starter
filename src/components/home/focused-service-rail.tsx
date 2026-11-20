@@ -5,7 +5,7 @@
 // dentro do pool — a preferência da cidade e a cota das irmãs valem depois do sorteio. Impulsionamento:
 // as vagas patrocinadas (`sponsor_slot`, escolhidas pelo banco) vêm antes de tudo, com rodízio por visita.
 import { useEffect, useState, type ComponentProps } from 'react';
-import { ServiceCarouselSection } from '@kizuna/core/client/components/services/detail';
+import { ServiceCarouselSection } from '@kizuna/core/client/components/services/detail/service-carousel-section';
 import type { ServiceResult } from '@kizuna/core/client/components/search/search-types';
 import type { CityFocusOptions } from '@/lib/city-focus';
 import { arrangeRail } from '@/lib/sponsored-rail';

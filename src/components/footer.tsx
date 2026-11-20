@@ -115,7 +115,8 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-3">
           {/* Col 1 — Brand + Preferences */}
           <div className="flex flex-col gap-4">
-            <Link href="/" className="flex items-center gap-3">
+            {/* Rodapé fica abaixo da dobra: links sem prefetch (só carregam ao tocar). */}
+            <Link href="/" prefetch={false} className="flex items-center gap-3">
               {siteLogo ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={siteLogo} alt={siteName} width={280} height={130} loading="lazy" decoding="async" className="h-16 w-auto" />
@@ -195,6 +196,7 @@ export function Footer() {
                 <Link
                   key={link.href + link.label}
                   href={link.href}
+                  prefetch={false}
                   className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >
                   {link.label}

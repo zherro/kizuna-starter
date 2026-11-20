@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { parseLocationConfig, resolveLocation } from '@kizuna/core/server';
+import { ipDetectionTarget } from '@kizuna/core/shared/location/ip-detect';
+import cfg from '@/../kizuna.config.json';
 
 /**
  * Geolocalização aproximada por IP — proxy server-side do ip-api.com.
@@ -7,7 +10,12 @@ import { NextRequest, NextResponse } from 'next/server';
  * client. Assim o IP não vaza pra um terceiro a partir do navegador e a resposta é
  * cacheável. Em dev (sem proxy) o IP é local e o ip-api devolve falha — o chamador
  * simplesmente cai no fluxo manual.
+ *
+ * A resposta também traz `location` (cidade já validada, ver `GET`), para o navegador não chamar
+ * `/api/location/resolve` em série depois desta.
  */
+
+const locationConfig = parseLocationConfig((cfg as { location?: unknown }).location);
 
 type IpApiResponse = {
   status?: string;
@@ -45,39 +53,18 @@ function isPublicIp(ip: string): boolean {
   return true;
 }
 
-export async function GET(request: NextRequest) {
-  const ip = clientIp(request);
-
-  if (!isPublicIp(ip)) {
-    return NextResponse.json(
-      { message: 'IP nao identificavel para geolocalizacao.' },
-      { status: 404 }
-    );
-  }
-
+/** Consulta o ip-api (cache em memória por IP). `null` = sem resultado; `undefined` = falha. */
+async function lookupIp(ip: string): Promise<IpLocationBody | null | undefined> {
   const cached = cache.get(ip);
-  if (cached && Date.now() - cached.at < TTL_MS) {
-    return NextResponse.json(cached.body);
-  }
-
+  if (cached && Date.now() - cached.at < TTL_MS) return cached.body;
   try {
     const response = await fetch(
       `http://ip-api.com/json/${encodeURIComponent(ip)}?lang=pt-BR&fields=status,regionName,region,city,countryCode`,
       { cache: 'no-store' }
     );
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { message: 'Nao foi possivel consultar a localizacao por IP.' },
-        { status: 502 }
-      );
-    }
-
+    if (!response.ok) return undefined;
     const data = (await response.json().catch(() => null)) as IpApiResponse | null;
-    if (!data || data.status !== 'success') {
-      return NextResponse.json({ message: 'Localizacao por IP indisponivel.' }, { status: 404 });
-    }
-
+    if (!data || data.status !== 'success') return null;
     const body: IpLocationBody = {
       stateCode: String(data.region ?? '').toUpperCase(),
       stateName: data.regionName ?? '',
@@ -85,11 +72,50 @@ export async function GET(request: NextRequest) {
       countryCode: String(data.countryCode ?? '').toUpperCase(),
     };
     cache.set(ip, { at: Date.now(), body });
-    return NextResponse.json(body);
+    return body;
   } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Além do que o provedor devolveu, a resposta já traz `location`: a cidade validada contra a lista
+ * do projeto (mesma regra do `useUserLocation` + `/api/location/resolve`). O navegador faz UMA ida
+ * em vez de `ip` → `resolve` em série na 1ª visita. Se a validação falhar, a resposta sai como antes
+ * (sem `location`) e o cliente cai no `resolve`.
+ */
+export async function GET(request: NextRequest) {
+  const ip = clientIp(request);
+  const body = isPublicIp(ip) ? await lookupIp(ip) : null;
+
+  let location: Awaited<ReturnType<typeof resolveLocation>> | undefined;
+  try {
+    const target = ipDetectionTarget(body ?? null);
+    location = await resolveLocation(locationConfig, {
+      uf: target?.stateCode ?? '',
+      city: target?.cityName ?? '',
+    });
+  } catch {
+    location = undefined;
+  }
+
+  if (location !== undefined) {
+    return NextResponse.json({ ...(body ?? {}), location });
+  }
+
+  // Sem a cidade resolvida: respostas de antes (o cliente segue para o `resolve`).
+  if (body) return NextResponse.json(body);
+  if (!isPublicIp(ip)) {
     return NextResponse.json(
-      { message: 'Nao foi possivel consultar a localizacao por IP.' },
-      { status: 500 }
+      { message: 'IP nao identificavel para geolocalizacao.' },
+      { status: 404 }
     );
   }
+  if (body === null) {
+    return NextResponse.json({ message: 'Localizacao por IP indisponivel.' }, { status: 404 });
+  }
+  return NextResponse.json(
+    { message: 'Nao foi possivel consultar a localizacao por IP.' },
+    { status: 502 }
+  );
 }

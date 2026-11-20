@@ -1,27 +1,29 @@
 'use client';
 
-// EXEMPLO — thin wrapper sobre o <CategoryCarousel> do core, que busca a
-// taxonomia REAL do projeto (só categorias com subcategoria ativa). Trocar o
-// visual, o link de cada card ou o ícone: passe props direto pro CategoryCarousel.
-import { CategoryCarousel } from '@kizuna/core/client/components/taxonomy/category-carousel';
-import type { AppMessages } from '@/i18n/messages';
-
-type HomeMessages = AppMessages['home'];
+// EXEMPLO — thin wrapper sobre o <CategoryCarousel> do core. Com `items` (montados no servidor por
+// `loadCategoryRailItems`), os cards já saem no HTML e nada é buscado no navegador; sem eles, o
+// carrossel busca a taxonomia REAL do projeto no cliente. Os textos seguem o idioma escolhido
+// (`useAppPreferences`). Trocar o visual, o link de cada card ou o ícone: passe props direto pro
+// CategoryCarousel.
+import { CategoryCarousel, type CategoryCarouselItem } from '@kizuna/core/client/components/taxonomy/category-carousel';
+import { useAppPreferences } from '@kizuna/core/client/providers/app-preferences-provider';
 
 export function CategoryRail({
-  t,
   variant = 'classic',
   onlyWithListings = false,
+  items,
 }: {
-  t: HomeMessages;
   variant?: 'classic' | 'compact';
   onlyWithListings?: boolean;
+  items?: CategoryCarouselItem[];
 }) {
+  const t = useAppPreferences().messages.home;
   return (
     <CategoryCarousel
       variant={variant}
       groupBy="group"
       onlyWithListings={onlyWithListings}
+      items={items}
       hideWhenEmpty
       title={t.categoriesTitle}
       allLabel={t.categoriesAll}

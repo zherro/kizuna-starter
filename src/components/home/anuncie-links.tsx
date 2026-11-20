@@ -1,7 +1,7 @@
 import { Building2, CalendarDays, Compass, Martini } from 'lucide-react';
 import { LandingLinkCards } from '@kizuna/core/client/components/landing';
 
-// Lista enxuta de propósito (a home é client component): só título e rota. O texto completo de
+// Lista enxuta de propósito: só título e rota. O texto completo de
 // cada público mora em `@/lib/anuncie`.
 const ITEMS = [
   { href: '/anuncie/pousadas', title: 'Pousadas', text: 'Mostre ao hóspede o que fazer hoje.', icon: Building2 },
