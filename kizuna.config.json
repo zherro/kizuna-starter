@@ -368,9 +368,10 @@
     "captchaEnabled": false
   },
   "ads": {
-    "_comment": "Publicidade (slots). adsenseClient = ID do editor Google (ca-pub-...); vazio = só criativos próprios. maxSlotsPerPage = teto de slots por página (1..10).",
+    "_comment": "Publicidade (slots). adsenseClient = ID do editor Google (ca-pub-...); vazio = só criativos próprios. maxSlotsPerPage = teto de slots por página (1..10). paidSharePercent = % das exibições de um espaço que vai para banners PAGOS de anunciantes quando há campanha no ar nele (0..100, padrão 70); o resto vai para o Google/criativos próprios, pelos pesos do painel root → Publicidade. Sem campanha no ar, o espaço é só Google/próprios. Campanhas cobram por dia, então dividir o espaço não gasta saldo do anunciante.",
     "adsenseClient": "ca-pub-3568624269155711",
-    "maxSlotsPerPage": 3
+    "maxSlotsPerPage": 3,
+    "paidSharePercent": 70
   },
   "analytics": {
     "_comment": "Plugin analytics (métricas do anunciante). events = só os listados ligam. minVisibleMs = tempo contínuo em tela, em milissegundos, antes de contar (piso: view 500, impression 200; teto 60000). minVisibleRatio = fração do elemento visível (0..1). oncePerSession = conta no máximo 1x por sessão do navegador. 0 ms = conta na hora (cliques de ação). entities.<tipo>.events sobrescreve por tipo de entidade. enabled:false desliga; remova o bloco para usar os defaults. collect = o que o servidor grava junto de cada evento (rota /api/analytics/track): device = tipo de aparelho (mobile/tablet/desktop); region = cidade e UF aproximadas, derivadas do IP (só Brasil); ip = grava o IP do acesso (dado pessoal: defina base legal e política de privacidade antes de ligar); encryptIp = cifra o IP com APP_ENCRYPTION_KEY (AES-256-GCM; perder ou trocar a chave deixa os IPs gravados ilegíveis; o painel só mostra IP mascarado); ipRetentionDays = dias até zerar o IP gravado (padrão 30; 0 = nunca zera). O prazo é lido do banco: ALTER DATABASE <banco> SET kizuna.analytics_ip_retention_days = '<dias>' (ver docs/plugins/analytics.md).",
@@ -384,5 +385,14 @@
       "share": { "minVisibleMs": 0 }
     },
     "entities": {}
+  },
+  "marketing": {
+    "boost": {
+      "_comment": "Impulsionamento (selo BORA INDICA): vagas PATROCINADAS que o próprio anúncio ganha nas listas, sempre com o selo \"Patrocinado\". Quem escolhe é o banco (fn_search_services 0014): só impulsionados no ar que já casam com a lista (cidade, categoria, texto), cidade selecionada primeiro, rodízio por visita e a cada 10 min. searchSlots = vagas no topo da /busca (padrão 2). railSlots = vagas no início de cada trilha da home (padrão 1). railPool = candidatos por trilha para o rodízio no navegador (padrão 3, >= railSlots). listSlots = vagas nas outras listas do servidor: Hoje, vitrine da /busca, 'Também pode te interessar' (padrão 1). 0 = nenhuma vaga (só o selo); máximo 10. enabled:false desliga (não manda o parâmetro ao banco). Não confundir com o espaço de banner 'busca-patrocinado' (plugin ads).",
+      "searchSlots": 2,
+      "railSlots": 1,
+      "railPool": 3,
+      "listSlots": 1
+    }
   }
 }

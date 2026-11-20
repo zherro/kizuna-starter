@@ -43,7 +43,7 @@ export default async function CityHomePage({ params }: Props) {
   return (
     <>
       <CityRouteMarker city={city} />
-      <AdSlot slot="cidade-topo" city={city.name} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} />
+      <AdSlot slot="cidade-topo" city={city.name} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} paidShare={adsConfig.paidShare} />
       <HomePage city={city} />
     </>
   );

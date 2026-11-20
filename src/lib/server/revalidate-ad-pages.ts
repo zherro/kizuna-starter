@@ -9,6 +9,8 @@ import { BROWSE_RAILS_TAG, PUBLIC_LISTS_TAG } from '@kizuna/core/server';
  */
 const AD_RESOURCES = new Set(['services', 'service_addresses', 'service_categories_sub']);
 const AD_RPCS = new Set(['fn_form_result_upsert', 'fn_service_moderate']);
+/** Impulsionamento criado/parado (plugin marketing): muda as vagas patrocinadas das listas públicas. */
+const BOOST_RESOURCES = new Set(['boosts']);
 
 /** Tag do `unstable_cache` dos dados do detalhe (`loadAd`) — a página e os dados têm caches separados. */
 export const AD_DETAIL_TAG = 'anuncio-detalhe';
@@ -26,9 +28,32 @@ function revalidateAdPages() {
   revalidatePath('/busca');
 }
 
+/**
+ * Impulsionamento entrou/saiu do ar: as listas públicas (que escolhem as vagas patrocinadas no banco,
+ * `fn_search_services` 0014) estão em cache — trilhas da home (dados 5 min + página 15 min), Hoje,
+ * vitrine da /busca e "Também pode te interessar" no detalhe. Invalida só esses caches; a próxima
+ * visita de cada página regenera (uma vez), sem custo para quem não usa marketing. Chame também de
+ * quem cria o boost fora de `/api/resources` (ex.: liquidação do pagamento).
+ */
+export function revalidateBoostSurfaces() {
+  try {
+    revalidateTag('category-rail', { expire: 0 });
+    revalidateTag('today-feed', { expire: 0 });
+    revalidateTag(BROWSE_RAILS_TAG, { expire: 0 });
+    revalidateTag(AD_DETAIL_TAG, { expire: 0 });
+    revalidatePath('/[cidade]', 'page');
+    revalidatePath('/[cidade]/hoje', 'page');
+    revalidatePath('/hoje');
+    revalidatePath('/busca');
+  } catch {
+    // fora de um contexto de requisição do Next (testes/scripts): nada a invalidar
+  }
+}
+
 /** Depois de uma escrita em `/api/resources/<resource>`: invalida se deu certo e afeta anúncio. */
 export function revalidateAfterResourceWrite<T extends Response>(resource: string, res: T): T {
   if (res.ok && AD_RESOURCES.has(resource)) revalidateAdPages();
+  if (res.ok && BOOST_RESOURCES.has(resource)) revalidateBoostSurfaces();
   return res;
 }
 

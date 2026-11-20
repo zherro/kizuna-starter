@@ -68,7 +68,7 @@ export async function HojeContent({ city }: { city: RoutableCity | null }) {
               city={todayCity}
               showCity
               impressionRule={trackRule('service', 'impression')}
-              source="home"
+              source="today"
               adSlot={
                 index === 0 ? undefined : (
                   <AdSlot
@@ -76,7 +76,7 @@ export async function HojeContent({ city }: { city: RoutableCity | null }) {
                     inline
                     city={city?.name}
                     adsenseClient={adsConfig.adsenseClient}
-                    maxPerPage={adsConfig.maxSlotsPerPage}
+                    maxPerPage={adsConfig.maxSlotsPerPage} paidShare={adsConfig.paidShare}
                   />
                 )
               }

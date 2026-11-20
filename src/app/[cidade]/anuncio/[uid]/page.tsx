@@ -43,7 +43,7 @@ export default async function CityAnuncioPage({ params }: Props) {
     <>
       <CityRouteMarker city={data.city} />
       <AnuncioDetail data={data} path={cityPath(data.city, `/anuncio/${data.service.uid}`)} />
-      <AdSlot slot="anuncio-rodape" city={data.city.name} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} />
+      <AdSlot slot="anuncio-rodape" city={data.city.name} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} paidShare={adsConfig.paidShare} />
     </>
   );
 }

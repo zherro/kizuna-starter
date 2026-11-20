@@ -6,6 +6,8 @@ import { unstable_cache } from 'next/cache';
 import { serverFetchResource } from '@kizuna/core/server/postgrest-crud';
 import { runServiceSearch, seedFromKey } from '@kizuna/core/server/services/service-search';
 import { eventDay } from '@kizuna/core/server/services/today-feed-data';
+import { projectBoostPlacement } from '@kizuna/core/server/marketing/boost-config';
+import { pinSponsored, sponsoredMaxParam } from '@kizuna/core/shared/marketing/boost-placement';
 import type { CategoryRailData } from '@kizuna/core/server';
 import type { ServiceResult } from '@kizuna/core/client/components/search/search-types';
 
@@ -13,6 +15,8 @@ const DEFAULT_LIMIT = 10;
 const CACHE_SECONDS = 300;
 /** Pool = `limit` × isto, para o foco na cidade ter de onde escolher (igual ao core). */
 const POOL_FACTOR = 3;
+/** `marketing.boost.railPool`: candidatos patrocinados por trilha (undefined = desligado). */
+const SPONSORED_POOL = sponsoredMaxParam(projectBoostPlacement, projectBoostPlacement.railPool);
 
 type TaxonomyRow = { id: number | string; name: string; slug: string };
 
@@ -56,6 +60,8 @@ async function fetchOrderedRail(
       p_city_ibge: cities?.[0] ?? cityIbge ?? null,
       ...(cities && cities.length > 1 ? { p_city_ibges: cities } : {}),
       p_order: order,
+      // impulsionamento: candidatos patrocinados no topo do pool (a trilha sorteia `railSlots`)
+      ...(SPONSORED_POOL !== undefined ? { p_sponsored_max: SPONSORED_POOL } : {}),
     },
     seedFromKey(`ordered-rail:${kind}:${row.slug}`)
   );
@@ -65,7 +71,8 @@ async function fetchOrderedRail(
     kind,
     category: { id, name: row.name, slug: row.slug },
     // pool inteiro, já na ordem; quem exibe corta em `limit`
-    items: order === 'event_start' ? sortByEventDay(found) : found,
+    // a ordenação por data não pode tirar a vaga patrocinada da frente
+    items: pinSponsored(order === 'event_start' ? sortByEventDay(found) : found),
     limit,
     hasMore: found.length > limit,
   };

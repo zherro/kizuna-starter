@@ -106,7 +106,7 @@ export function HomeContent({
       style={getHomeInkStyle(inkLevel)}
     >
       {showHero ? <HomeHero t={t} /> : null}
-      <AdSlot slot="home-destaque" city={cityName} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} />
+      <AdSlot slot="home-destaque" city={cityName} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} paidShare={adsConfig.paidShare} />
       <CategoryRail
         t={t}
         variant={categoriesVariant}
@@ -131,7 +131,7 @@ export function HomeContent({
         </div>
       ) : null}
       {categoryRails}
-      <AdSlot slot="home-meio" city={cityName} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} />
+      <AdSlot slot="home-meio" city={cityName} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} paidShare={adsConfig.paidShare} />
       {newsHighlights}
       {seoContent}
       {placeHighlights}

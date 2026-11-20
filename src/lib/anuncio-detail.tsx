@@ -118,7 +118,7 @@ export function AnuncioDetail({ data: loaded, path }: { data: ServiceDetailData;
         data={data}
         detailConfig={serviceDetailConfig}
         path={path}
-        analytics={{ viewRule: trackRule('service', 'view') }}
+        analytics={{ viewRule: trackRule('service', 'view'), impressionRule: trackRule('service', 'impression') }}
         editHref={`/painel/meus-servicos/${data.service.id}`}
       />
     </>

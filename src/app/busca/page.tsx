@@ -11,6 +11,7 @@ import { adsConfig } from '@/lib/ads';
 import { parseRegions, regionCitiesFor } from '@kizuna/core/shared/regions';
 import { buildMetadata, loadBrowseRails, parseLocationConfig } from '@kizuna/core/server';
 import { loadRoutableCities } from '@kizuna/core/server/location/cities';
+import { projectBoostPlacement } from '@kizuna/core/server/marketing/boost-config';
 import { SEO_SITE } from '@/lib/seo';
 import cfg from '@/../kizuna.config.json';
 
@@ -119,12 +120,14 @@ export default async function BuscaPage() {
           initialRails={initialRails ?? undefined}
           regions={regions}
           impressionRule={trackRule('service', 'impression')}
+          // impulsionamento: vagas patrocinadas no topo, escolhidas pelo banco (marketing.boost.searchSlots)
+          sponsoredSlots={projectBoostPlacement.enabled ? projectBoostPlacement.searchSlots : undefined}
           sponsoredSlot={
             <AdSlot
               slot="busca-patrocinado"
               inline
               adsenseClient={adsConfig.adsenseClient}
-              maxPerPage={adsConfig.maxSlotsPerPage}
+              maxPerPage={adsConfig.maxSlotsPerPage} paidShare={adsConfig.paidShare}
             />
           }
         />

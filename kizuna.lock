@@ -115,7 +115,7 @@
         "src/app/api/public/storage/files/[id]/content/route.ts": "sha256:c07d3d2ac172bf6cf3651e7c2f89005a69867419a2c3b0c9b23d40a10c2f1ebb",
         "src/app/api/storage/admin/route.ts": "sha256:41970cf5f6da97f70883fc41e8d2a02f612aca61b5f5671371c42dcea507ca11"
       },
-      "migrations": 6
+      "migrations": 7
     },
     "location": {
       "shellFiles": {
@@ -171,7 +171,7 @@
         "src/app/busca/page.tsx": "sha256:7ad4c3e6d6c71b787991d284a02964050b2c4cf61646c2a90219950a473d4bbe",
         "src/app/api/ai/search-chat/route.ts": "sha256:b7fd44bbb09e8f0c2412a3d74e2a0b909b11ba8741eac9d9e17f3e8689e8a1be"
       },
-      "migrations": 11
+      "migrations": 14
     },
     "swipe": {
       "shellFiles": {
@@ -198,7 +198,7 @@
         "src/app/painel/administracao/aprovacoes/page.tsx": "sha256:ce76e71d93620cb9b229d093890e7ed596b3de352d83858364dae046bd09eb9a",
         "src/app/painel/administracao/aprovacoes/[id]/page.tsx": "sha256:a50365c0f2e802c50c01b1d74c0a00fa0521e6f14c5aec06012ec3a54733c914"
       },
-      "migrations": 16
+      "migrations": 18
     },
     "forms": {
       "migrations": 1
@@ -210,7 +210,7 @@
       "migrations": 1
     },
     "analytics": {
-      "migrations": 2
+      "migrations": 4
     },
     "messaging": {
       "migrations": 1
@@ -229,6 +229,9 @@
     },
     "ads": {
       "migrations": 1
+    },
+    "marketing": {
+      "migrations": 3
     }
   },
   "packageJson": {

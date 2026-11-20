@@ -18,6 +18,7 @@ import { AdSlot } from '@kizuna/core/client/ads';
 import { adsConfig } from '@/lib/ads';
 import { loadOrderedRail } from '@/lib/server/ordered-rail';
 import { FocusedServiceRail } from '@/components/home/focused-service-rail';
+import { projectBoostPlacement } from '@kizuna/core/server/marketing/boost-config';
 import { resolveCategoryHue, type ServiceDetailConfig } from '@kizuna/core/client/components/services/detail';
 
 export type CategoryRailConfig = {
@@ -82,6 +83,7 @@ export async function CategoryRails({
             key={`${kind}:${category.slug}`}
             pool={items}
             shuffle={!ordered}
+            sponsoredSlots={projectBoostPlacement.enabled ? projectBoostPlacement.railSlots : 0}
             focus={{
               // foco só faz sentido quando a trilha junta a região
               cityName: rail.scope === 'region' ? city?.name : null,
@@ -108,7 +110,7 @@ export async function CategoryRails({
                 inline
                 city={city?.name}
                 adsenseClient={adsConfig.adsenseClient}
-                maxPerPage={adsConfig.maxSlotsPerPage}
+                maxPerPage={adsConfig.maxSlotsPerPage} paidShare={adsConfig.paidShare}
               />
             }
           />
