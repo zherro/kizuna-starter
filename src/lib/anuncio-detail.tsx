@@ -17,6 +17,7 @@ import {
   type ServiceDetailConfig,
 } from '@kizuna/core/client/components/services/detail';
 import { photosFor } from '@kizuna/core/client/components/services/service-helpers';
+import { serverFetchResource } from '@kizuna/core/server/postgrest-crud';
 import { cityPath } from '@kizuna/core/shared/city-routing/city-slug';
 import { SEO_SITE } from '@/lib/seo';
 import { NEWS_TIME_ZONE } from '@/lib/noticias';
@@ -25,6 +26,8 @@ import { linkEditorialPlaces } from '@/lib/lugar-links';
 import { findEditorialPlace } from '@/lib/lugares';
 import cfg from '../../kizuna.config.json';
 import { AD_DETAIL_TAG } from '@/lib/server/revalidate-ad-pages';
+import { adNoIndexReason, withIndexing } from '@/lib/seo-index';
+import { eventJsonLd } from '@/lib/event-jsonld';
 
 const serviceDetailConfig: ServiceDetailConfig | null =
   (cfg as { serviceDetail?: ServiceDetailConfig }).serviceDetail ?? null;
@@ -40,16 +43,39 @@ export const loadAd = unstable_cache(
   { revalidate: 300, tags: [AD_DETAIL_TAG] }
 );
 
-export function anuncioMetadata(data: ServiceDetailData, path: string): Metadata {
+type AddressIbgeRow = { cityIbge?: string | null; city_ibge?: string | null };
+
+/** IBGE do endereço principal (ativo) do anúncio — só para o `noindex`; falha = `null` (não decide nada). */
+const loadAdAddressIbge = unstable_cache(
+  async (serviceId: string): Promise<string | null> => {
+    const rows = await serverFetchResource<AddressIbgeRow>(
+      'service_addresses',
+      { service_id: serviceId, active: 'true' },
+      { auth: null, limit: 1, orderBy: 'is_primary', orderDirection: 'desc' }
+    ).catch(() => [] as AddressIbgeRow[]);
+    const ibge = String(rows[0]?.cityIbge ?? rows[0]?.city_ibge ?? '').trim();
+    return ibge || null;
+  },
+  ['anuncio-endereco-ibge'],
+  { revalidate: 300, tags: [AD_DETAIL_TAG] }
+);
+
+export async function anuncioMetadata(data: ServiceDetailData, path: string): Promise<Metadata> {
   const photos = photosFor(data.service);
-  return buildMetadata(SEO_SITE, {
-    title: data.service.title,
-    description:
-      stripHtml(data.service.description) ||
-      `${data.service.title} — veja detalhes no ${SEO_SITE.name}.`,
-    path,
-    image: photos[0] ?? null,
-  });
+  const addressIbge = await loadAdAddressIbge(String(data.service.id));
+  // Evento que já passou e anúncio de fora da região do portal seguem no ar, mas fora do índice
+  // (`noindex, follow`) e do sitemap — mesma regra em `sitemap-ads.ts`.
+  return withIndexing(
+    buildMetadata(SEO_SITE, {
+      title: data.service.title,
+      description:
+        stripHtml(data.service.description) ||
+        `${data.service.title} — veja detalhes no ${SEO_SITE.name}.`,
+      path,
+      image: photos[0] ?? null,
+    }),
+    adNoIndexReason(data, Date.now(), addressIbge) === null
+  );
 }
 
 export function AnuncioDetail({ data: loaded, path }: { data: ServiceDetailData; path: string }) {
@@ -98,6 +124,9 @@ export function AnuncioDetail({ data: loaded, path }: { data: ServiceDetailData;
           };
         })()
       : null;
+  // Evento: `Event` (datas, local, oferta e imagem reais) em vez do `Service` genérico; sem data, cai no `Service`.
+  const eventLd =
+    variant === 'evento' ? eventJsonLd(SEO_SITE, data, { path, photos, timeZone: NEWS_TIME_ZONE }) : null;
   const breadcrumbLd = breadcrumbJsonLd(SEO_SITE, [
     { name: 'Início', path: '/' },
     ...(data.city ? [{ name: data.city.name, path: cityPath(data.city) }] : []),
@@ -107,7 +136,7 @@ export function AnuncioDetail({ data: loaded, path }: { data: ServiceDetailData;
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(articleLd ?? serviceLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(articleLd ?? eventLd ?? serviceLd) }} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbLd) }}

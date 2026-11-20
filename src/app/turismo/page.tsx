@@ -4,16 +4,23 @@ import { TurismoLanding } from '@/components/turismo/turismo-parts';
 import { loadTurismo } from '@/lib/turismo';
 import { chapadaSlug } from '@/lib/turismo-scope';
 import { SEO_SITE } from '@/lib/seo';
+import { turismoHasItems, withIndexing } from '@/lib/seo-index';
 
 export const revalidate = 300;
 
-export const metadata: Metadata = buildMetadata(SEO_SITE, {
-  title: 'Turismo em Cuiabá e região: rotas, onde dormir e onde comer',
-  description:
-    'Rotas turísticas, hospedagens, restaurantes, passeios e distritos de Cuiabá, Várzea Grande e Chapada dos Guimarães.',
-  path: '/turismo',
-  image: null,
-});
+// Listagem vazia ("Volte em breve") fica fora do índice até ter item publicado.
+export function generateMetadata(): Metadata {
+  return withIndexing(
+    buildMetadata(SEO_SITE, {
+      title: 'Turismo em Cuiabá e região: rotas, onde dormir e onde comer',
+      description:
+        'Rotas turísticas, hospedagens, restaurantes, passeios e distritos de Cuiabá, Várzea Grande e Chapada dos Guimarães.',
+      path: '/turismo',
+      image: null,
+    }),
+    turismoHasItems(loadTurismo(), 'all')
+  );
+}
 
 export default async function TurismoPage() {
   const data = loadTurismo();

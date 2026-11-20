@@ -4,15 +4,22 @@ import { RegionCard, TurismoEmpty, TurismoGrid } from '@kizuna/core/client/compo
 import { TurismoListPage } from '@/components/turismo/turismo-parts';
 import { loadTurismo } from '@/lib/turismo';
 import { SEO_SITE } from '@/lib/seo';
+import { turismoHasItems, withIndexing } from '@/lib/seo-index';
 
 export const revalidate = 300;
 
-export const metadata: Metadata = buildMetadata(SEO_SITE, {
-  title: 'Regiões e distritos de Cuiabá',
-  description: 'Conheça os distritos e as regiões turísticas de Cuiabá e da Grande Cuiabá, com o que ver em cada um.',
-  path: '/turismo/regioes',
-  image: null,
-});
+// Listagem vazia ("Volte em breve") fica fora do índice até ter item publicado.
+export function generateMetadata(): Metadata {
+  return withIndexing(
+    buildMetadata(SEO_SITE, {
+      title: 'Regiões e distritos de Cuiabá',
+      description: 'Conheça os distritos e as regiões turísticas de Cuiabá e da Grande Cuiabá, com o que ver em cada um.',
+      path: '/turismo/regioes',
+      image: null,
+    }),
+    turismoHasItems(loadTurismo(), 'regioes')
+  );
+}
 
 export default function RegioesPage() {
   const { regioes } = loadTurismo();

@@ -3,15 +3,22 @@ import { buildMetadata } from '@kizuna/core/server';
 import { TurismoPlacesPage } from '@/components/turismo/turismo-parts';
 import { loadTurismo } from '@/lib/turismo';
 import { SEO_SITE } from '@/lib/seo';
+import { turismoHasItems, withIndexing } from '@/lib/seo-index';
 
 export const revalidate = 300;
 
-export const metadata: Metadata = buildMetadata(SEO_SITE, {
-  title: 'Onde comer em Cuiabá e região: restaurantes e sabores locais',
-  description: 'Restaurantes e casas de comida regional em Cuiabá, Várzea Grande e Chapada dos Guimarães.',
-  path: '/turismo/comer',
-  image: null,
-});
+// Listagem vazia ("Volte em breve") fica fora do índice até ter item publicado.
+export function generateMetadata(): Metadata {
+  return withIndexing(
+    buildMetadata(SEO_SITE, {
+      title: 'Onde comer em Cuiabá e região: restaurantes e sabores locais',
+      description: 'Restaurantes e casas de comida regional em Cuiabá, Várzea Grande e Chapada dos Guimarães.',
+      path: '/turismo/comer',
+      image: null,
+    }),
+    turismoHasItems(loadTurismo(), 'comer')
+  );
+}
 
 export default function ComerPage() {
   const data = loadTurismo();

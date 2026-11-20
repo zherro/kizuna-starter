@@ -9,6 +9,7 @@ import { TurismoLanding } from '@/components/turismo/turismo-parts';
 import { loadTurismo } from '@/lib/turismo';
 import { plazaCitySlugs } from '@/lib/turismo-scope';
 import { SEO_SITE } from '@/lib/seo';
+import { isPortalCityIbge, turismoHasItems, withIndexing } from '@/lib/seo-index';
 
 type Props = { params: Promise<{ cidade: string }> };
 
@@ -28,12 +29,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { cidade } = await params;
   const found = await load(cidade);
   if (!found) return { title: 'Cidade não encontrada' };
-  return buildMetadata(SEO_SITE, {
-    title: `Turismo em ${found.city.name}: rotas, onde dormir e onde comer`,
-    description: `Rotas turísticas, hospedagens, restaurantes, passeios e regiões em ${found.city.name} e na Grande Cuiabá.`,
-    path: cityPath(found.city, '/turismo'),
-    image: null,
-  });
+  // Sem nada publicado na praça (ou cidade fora da região do portal): fora do índice.
+  return withIndexing(
+    buildMetadata(SEO_SITE, {
+      title: `Turismo em ${found.city.name}: rotas, onde dormir e onde comer`,
+      description: `Rotas turísticas, hospedagens, restaurantes, passeios e regiões em ${found.city.name} e na Grande Cuiabá.`,
+      path: cityPath(found.city, '/turismo'),
+      image: null,
+    }),
+    isPortalCityIbge(found.city.ibge) && turismoHasItems(loadTurismo({ citySlugs: found.slugs }))
+  );
 }
 
 export default async function CidadeTurismoPage({ params }: Props) {

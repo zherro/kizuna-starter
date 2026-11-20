@@ -10,6 +10,12 @@
     "logo": "/brand/logo.png",
     "logoSmall": "/brand/logo-sm.webp"
   },
+  "seo": {
+    "_comment": "Indexação (src/lib/seo-index.ts, src/proxy.ts). \"evergreenGroups\": grupos (categories_group.slug) que seguem indexados e no sitemap depois de vencer (expires_at); os demais (evento que já passou, filme fora de cartaz) ficam noindex,follow e fora do sitemap. A região indexável são as cidades de \"regions\" + location.defaultCityIbge: anúncio de outra cidade fica noindex e fora do sitemap. \"redirectHosts\": domínios alternativos que respondem 301 para site.url mantendo caminho e query (só esses hosts — localhost, IP e health check nunca redirecionam); \"redirectKeepPaths\" seguem 200 neles. Desligar sem deploy de código: env SEO_HOST_REDIRECT=off.",
+    "evergreenGroups": ["noticias"],
+    "redirectHosts": ["boracuiaba.com.br", "www.boracuiaba.com.br", "www.boracuiaba.com"],
+    "redirectKeepPaths": ["/ads.txt", "/robots.txt"]
+  },
   "theme": {
     "_comment": "Cor/tema visual padrão. \"default\" é aplicado enquanto o usuário não escolhe outro (ou sempre, se \"selectable\" for false — aí o seletor de cor some do botão de preferências). Temas disponíveis: blue, green, purple, teal, red, orange, coral, terracotta, bora_cuiaba, metro_orange, laranja_intenso, laranja_medio. \"metaColor\" / \"metaColorDark\" são a cor da barra do navegador no mobile (meta theme-color) no modo claro / escuro antes do JS carregar — use o --background do tema; depois o ThemeColorMeta copia o fundo real da página. \"displayFont\": fonte dos títulos, uma de quicksand | baloo | bricolage; sem ela vale o padrão do estilo (NEXT_PUBLIC_UI_STYLE: classic = quicksand, soft = baloo).",
     "default": "bora_cuiaba",

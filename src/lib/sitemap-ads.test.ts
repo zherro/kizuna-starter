@@ -1,6 +1,24 @@
 import { describe, it, expect } from 'vitest';
 import type { ServiceResult } from '@kizuna/core/client/components/search/search-types';
-import { adLastModified, buildAdEntries } from './sitemap-ads';
+import { adLastModified, buildAdEntries, isSitemapAd } from './sitemap-ads';
+
+describe('isSitemapAd', () => {
+  const NOW = new Date('2026-11-20T15:00:00Z').getTime();
+  const slugs = new Set(['cuiaba-mt', 'varzea-grande-mt', 'chapada-dos-guimaraes-mt']);
+  const r = (o: Partial<ServiceResult>) => ({ uid: 'u', city: 'Cuiabá', state: 'MT', ...o }) as ServiceResult;
+  it('tira cidade fora da região e evento vencido; mantém notícia vencida', () => {
+    expect(isSitemapAd(r({}), { citySlugs: slugs, now: NOW })).toBe(true);
+    expect(isSitemapAd(r({ city: 'Campo Grande', state: 'MS' }), { citySlugs: slugs, now: NOW })).toBe(false);
+    expect(isSitemapAd(r({ city: 'Cuiabá', state: 'MA' }), { citySlugs: slugs, now: NOW })).toBe(false);
+    expect(isSitemapAd(r({ category_group_slug: 'eventos', expires_at: '2026-11-01T00:00:00Z' }), { now: NOW })).toBe(false);
+    expect(isSitemapAd(r({ category_group_slug: 'noticias', expires_at: '2026-11-01T00:00:00Z' }), { now: NOW })).toBe(true);
+  });
+  it('buildAdEntries aplica o filtro', () => {
+    const rows = [r({ uid: 'a' }), r({ uid: 'b', city: 'Sinop' })];
+    const out = buildAdEntries('https://x.com', rows, new Map(), { citySlugs: slugs, now: NOW });
+    expect(out.map((e) => e.url)).toEqual(['https://x.com/cuiaba-mt/anuncio/a']);
+  });
+});
 
 const row = (uid: string, city = 'Cuiabá', state = 'MT') => ({ uid, city, state }) as ServiceResult;
 

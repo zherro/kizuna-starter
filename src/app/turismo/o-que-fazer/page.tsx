@@ -3,15 +3,22 @@ import { buildMetadata } from '@kizuna/core/server';
 import { TurismoPlacesPage } from '@/components/turismo/turismo-parts';
 import { loadTurismo } from '@/lib/turismo';
 import { SEO_SITE } from '@/lib/seo';
+import { turismoHasItems, withIndexing } from '@/lib/seo-index';
 
 export const revalidate = 300;
 
-export const metadata: Metadata = buildMetadata(SEO_SITE, {
-  title: 'O que fazer em Cuiabá e região: atrações e passeios',
-  description: 'Atrações, passeios e programas em Cuiabá, Várzea Grande e Chapada dos Guimarães.',
-  path: '/turismo/o-que-fazer',
-  image: null,
-});
+// Listagem vazia ("Volte em breve") fica fora do índice até ter item publicado.
+export function generateMetadata(): Metadata {
+  return withIndexing(
+    buildMetadata(SEO_SITE, {
+      title: 'O que fazer em Cuiabá e região: atrações e passeios',
+      description: 'Atrações, passeios e programas em Cuiabá, Várzea Grande e Chapada dos Guimarães.',
+      path: '/turismo/o-que-fazer',
+      image: null,
+    }),
+    turismoHasItems(loadTurismo(), 'atracoes')
+  );
+}
 
 export default function OQueFazerPage() {
   const data = loadTurismo();

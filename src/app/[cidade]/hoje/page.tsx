@@ -6,6 +6,7 @@ import { cityPath } from '@kizuna/core/shared/city-routing/city-slug';
 import { CityRouteMarker } from '@kizuna/core/client/components/city/city-route-marker';
 import { HojeContent } from '@/components/hoje/hoje-content';
 import { SEO_SITE } from '@/lib/seo';
+import { isPortalCityIbge, withIndexing } from '@/lib/seo-index';
 
 type Props = { params: Promise<{ cidade: string }> };
 
@@ -20,12 +21,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { cidade } = await params;
   const city = await resolveCitySlug(cidade);
   if (!city) return { title: 'Cidade não encontrada' };
-  return buildMetadata(SEO_SITE, {
-    title: `O que fazer hoje em ${city.name}: eventos, cinema, bares e parques`,
-    description: `Veja o que tem para fazer hoje em ${city.name} e região: eventos do dia, filmes em cartaz, bares e parques para aproveitar.`,
-    path: cityPath(city, '/hoje'),
-    image: null,
-  });
+  // Cidade fora da região do portal (sem conteúdo próprio): fora do índice.
+  return withIndexing(
+    buildMetadata(SEO_SITE, {
+      title: `O que fazer hoje em ${city.name}: eventos, cinema, bares e parques`,
+      description: `Veja o que tem para fazer hoje em ${city.name} e região: eventos do dia, filmes em cartaz, bares e parques para aproveitar.`,
+      path: cityPath(city, '/hoje'),
+      image: null,
+    }),
+    isPortalCityIbge(city.ibge)
+  );
 }
 
 export default async function CidadeHojePage({ params }: Props) {

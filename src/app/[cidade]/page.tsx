@@ -7,6 +7,7 @@ import { AdSlot } from '@kizuna/core/client/ads';
 import { adsConfig } from '@/lib/ads';
 import { CityRouteMarker } from '@kizuna/core/client/components/city/city-route-marker';
 import { SEO_SITE } from '@/lib/seo';
+import { isPortalCityIbge, withIndexing } from '@/lib/seo-index';
 import { resolveCitySlug } from '@kizuna/core/server/location/cities';
 
 type Props = { params: Promise<{ cidade: string }> };
@@ -27,12 +28,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { cidade } = await params;
   const city = await resolveCitySlug(cidade);
   if (!city) return { title: 'Cidade não encontrada' };
-  return buildMetadata(SEO_SITE, {
-    title: `O que fazer em ${city.name}, ${city.state}: eventos, lugares e lazer`,
-    description: `Eventos, shows, lugares para ir e dicas de lazer e cultura em ${city.name}. Veja o que rola hoje, no fim de semana e onde curtir.`,
-    path: cityPath(city),
-    image: null,
-  });
+  // Cidade fora da região do portal (sem conteúdo próprio): fora do índice.
+  return withIndexing(
+    buildMetadata(SEO_SITE, {
+      title: `O que fazer em ${city.name}, ${city.state}: eventos, lugares e lazer`,
+      description: `Eventos, shows, lugares para ir e dicas de lazer e cultura em ${city.name}. Veja o que rola hoje, no fim de semana e onde curtir.`,
+      path: cityPath(city),
+      image: null,
+    }),
+    isPortalCityIbge(city.ibge)
+  );
 }
 
 export default async function CityHomePage({ params }: Props) {

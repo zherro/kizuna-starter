@@ -4,15 +4,22 @@ import { RouteCard, TurismoEmpty, TurismoGrid } from '@kizuna/core/client/compon
 import { TurismoListPage, toRouteCard } from '@/components/turismo/turismo-parts';
 import { loadTurismo } from '@/lib/turismo';
 import { SEO_SITE } from '@/lib/seo';
+import { turismoHasItems, withIndexing } from '@/lib/seo-index';
 
 export const revalidate = 300;
 
-export const metadata: Metadata = buildMetadata(SEO_SITE, {
-  title: 'Rotas turísticas em Cuiabá e região',
-  description: 'Roteiros com paradas, duração e dificuldade: natureza, gastronomia, cicloturismo, city tour e mais.',
-  path: '/turismo/rotas',
-  image: null,
-});
+// Listagem vazia ("Volte em breve") fica fora do índice até ter item publicado.
+export function generateMetadata(): Metadata {
+  return withIndexing(
+    buildMetadata(SEO_SITE, {
+      title: 'Rotas turísticas em Cuiabá e região',
+      description: 'Roteiros com paradas, duração e dificuldade: natureza, gastronomia, cicloturismo, city tour e mais.',
+      path: '/turismo/rotas',
+      image: null,
+    }),
+    turismoHasItems(loadTurismo(), 'rotas')
+  );
+}
 
 export default function RotasPage() {
   const { rotas } = loadTurismo();

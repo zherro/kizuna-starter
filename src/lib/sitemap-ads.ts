@@ -1,8 +1,9 @@
 import type { MetadataRoute } from 'next';
-import { serviceHref } from '@kizuna/core/shared/city-routing/city-slug';
+import { citySlug, serviceHref } from '@kizuna/core/shared/city-routing/city-slug';
 import { runServiceSearchStrict } from '@kizuna/core/server/services/service-search';
 import { serverFetchResource } from '@kizuna/core/server/postgrest-crud';
 import type { ServiceResult } from '@kizuna/core/client/components/search/search-types';
+import { EVERGREEN_GROUPS, isExpiredListing } from '@/lib/seo-index';
 
 type Entry = MetadataRoute.Sitemap[number];
 
@@ -19,13 +20,34 @@ export function adLastModified(row: DateRow | undefined): Date | undefined {
   return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
-/** Monta as entradas do sitemap: uma por anúncio (sem repetir uid), com `lastModified` quando há. */
-export function buildAdEntries(url: string, rows: ServiceResult[], dates: Map<string, Date>): Entry[] {
+export type AdEntryFilter = {
+  /** Slugs (`cuiaba-mt`) das cidades do portal; anúncio de outra cidade fica fora. `null`/ausente = todas. */
+  citySlugs?: ReadonlySet<string> | null;
+  /** "Agora" para descartar vencido (evento que já passou), salvo grupo perene. Default `Date.now()`. */
+  now?: number;
+};
+
+/** O anúncio entra no sitemap? Mesma regra do `noindex` do detalhe (`adNoIndexReason`). */
+export function isSitemapAd(r: ServiceResult, filter: AdEntryFilter = {}): boolean {
+  if (filter.citySlugs) {
+    if (!r.city || !r.state || !filter.citySlugs.has(citySlug(r.city, r.state))) return false;
+  }
+  return !isExpiredListing({ groupSlug: r.category_group_slug ?? null, expiresAt: r.expires_at ?? null }, filter.now);
+}
+
+/** Monta as entradas do sitemap: uma por anúncio indexável (sem repetir uid), com `lastModified` quando há. */
+export function buildAdEntries(
+  url: string,
+  rows: ServiceResult[],
+  dates: Map<string, Date>,
+  filter: AdEntryFilter = {}
+): Entry[] {
   const seen = new Set<string>();
   const out: Entry[] = [];
   for (const r of rows) {
     if (!r.uid || seen.has(r.uid)) continue;
     seen.add(r.uid);
+    if (!isSitemapAd(r, filter)) continue;
     out.push({ url: `${url}${serviceHref(r)}`, lastModified: dates.get(r.uid) });
   }
   return out;
@@ -54,18 +76,19 @@ async function fetchPage(page: number, ordered: boolean): Promise<ServiceResult[
     {
       p_page: page,
       p_page_size: PAGE_SIZE,
-      // A página de notícia/evento vencido continua no ar: mantém no sitemap por até 1 ano (máximo da RPC).
-      ...(ordered ? { p_order: 'created_at:desc', p_expired_grace: { noticias: 365, eventos: 365 } } : {}),
+      // Só grupo perene (notícia) segue no sitemap depois de vencer, por até 1 ano (máximo da RPC). Evento
+      // vencido continua no ar, mas fica `noindex` e fora do sitemap (conteúdo raso depois da data).
+      ...(ordered ? { p_order: 'created_at:desc', p_expired_grace: Object.fromEntries([...EVERGREEN_GROUPS].map((g) => [g, 365])) } : {}),
     },
     0
   );
 }
 
 /**
- * Todos os anúncios ativos, com o link canônico (cidade na URL) e `lastmod`. Se a busca falhar ou
+ * Todos os anúncios ativos e indexáveis (ver `AdEntryFilter`), com o link canônico (cidade na URL) e `lastmod`. Se a busca falhar ou
  * vier vazia, LANÇA: o Next mantém o último sitemap bom em vez de publicar um sem anúncios.
  */
-export async function loadAdEntries(url: string): Promise<Entry[]> {
+export async function loadAdEntries(url: string, filter: AdEntryFilter = {}): Promise<Entry[]> {
   let ordered = true;
   const rows: ServiceResult[] = [];
   for (let page = 0; page < MAX_PAGES; page += 1) {
@@ -87,5 +110,5 @@ export async function loadAdEntries(url: string): Promise<Entry[]> {
   for (let i = 0; i < uids.length; i += PAGE_SIZE) {
     for (const [uid, date] of await loadDates(uids.slice(i, i + PAGE_SIZE))) dates.set(uid, date);
   }
-  return buildAdEntries(url, rows, dates);
+  return buildAdEntries(url, rows, dates, filter);
 }
