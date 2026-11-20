@@ -363,6 +363,10 @@
     "whatsapp": "",
     "email": ""
   },
+  "auth": {
+    "_comment": "captchaEnabled = false desliga o Cloudflare Turnstile no login/cadastro (UI e servidor). Ausente ou true = segue as chaves TURNSTILE_* do ambiente.",
+    "captchaEnabled": false
+  },
   "ads": {
     "_comment": "Publicidade (slots). adsenseClient = ID do editor Google (ca-pub-...); vazio = só criativos próprios. maxSlotsPerPage = teto de slots por página (1..10).",
     "adsenseClient": "ca-pub-3568624269155711",
