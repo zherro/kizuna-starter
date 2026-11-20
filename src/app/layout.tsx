@@ -33,6 +33,7 @@ import { WeatherWidget } from '@kizuna/core/client/components/weather/weather-wi
 import { Toaster } from 'sonner';
 import cfg from '@/../kizuna.config.json';
 import { adsConfig } from '@/lib/ads';
+import { CaptchaFlagScript } from '@kizuna/core/client/components/captcha/captcha-flag-script';
 import './globals.css';
 
 const headerCfg = (cfg as { header?: { variant?: string } }).header;
@@ -180,6 +181,8 @@ export default function RootLayout({
         suppressHydrationWarning
         className="min-h-full flex flex-col bg-background text-foreground"
       >
+        {/* AUTH_CAPTCHA_ENABLED=false desliga o captcha também na tela, sem rebuild. */}
+        <CaptchaFlagScript />
         {adsenseSrc ? (
           <script id={ADSENSE_SCRIPT_ID} async src={adsenseSrc} crossOrigin="anonymous" />
         ) : null}
