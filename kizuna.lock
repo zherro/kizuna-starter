@@ -198,7 +198,7 @@
         "src/app/painel/administracao/aprovacoes/page.tsx": "sha256:ce76e71d93620cb9b229d093890e7ed596b3de352d83858364dae046bd09eb9a",
         "src/app/painel/administracao/aprovacoes/[id]/page.tsx": "sha256:a50365c0f2e802c50c01b1d74c0a00fa0521e6f14c5aec06012ec3a54733c914"
       },
-      "migrations": 18
+      "migrations": 19
     },
     "forms": {
       "migrations": 1
