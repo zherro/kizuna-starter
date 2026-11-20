@@ -28,6 +28,7 @@ import { AuthProvider } from '@kizuna/core/client/providers/auth-provider';
 import { KizunaHeader } from '@kizuna/core/client/components/kizuna-header';
 import { Footer } from '@/components/footer';
 import { CityCookieSync } from '@kizuna/core/client/components/city/city-cookie-sync';
+import { PageViewTracker } from '@kizuna/core/client/analytics/page-view-tracker';
 import { ViewingCityProvider } from '@kizuna/core/client/components/viewing-city';
 import { LinkPrefetchProvider } from '@kizuna/core/client/components/link-prefetch';
 import { WeatherWidget } from '@kizuna/core/client/components/weather/weather-widget';
@@ -202,6 +203,8 @@ export default function RootLayout({
             <PwaRegister swUrl="/sw.js?v=1" migrationKey="kizuna-sw-v1" />
             <ThemeColorMeta />
             <CityCookieSync />
+            {/* page_view + utm_* da chegada (plugin analytics 0005): beacon depois do load, ocioso. Painel não conta. */}
+            <PageViewTracker />
             {/* Variante vem de kizuna.config.json (header.variant: classic|compact). */}
             <KizunaHeader
               variant={headerVariant}

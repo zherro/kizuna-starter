@@ -3,7 +3,7 @@
 -- Aplicar DEPOIS do db/auth.sql, em base limpa:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/public.sql
 -- Ordem = kizuna.plugins.json (ordem de dependência).
--- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (3), onboarding (1), storage (7), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (5), services (18), reviews (1), analytics (3), ads (1), marketing (1), search (13), swipe (4), messaging (1), ai_assistant (1), ai_review (1), demandas (4), pedidos (4)
+-- Plugins: user_data (2), system_config (1), account_preferences (1), notifications (3), tickets (3), onboarding (1), storage (7), location (2), pages (2), holidays (1), agenda (4), weather (1), forms (1), taxonomy (5), services (19), reviews (1), analytics (5), ads (2), marketing (3), search (14), swipe (4), messaging (1), ai_assistant (1), ai_review (1), demandas (4), pedidos (4)
 
 
 -- ===============================================================================================
@@ -3079,7 +3079,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: services  (18 arquivos)
+-- PLUGIN: services  (19 arquivos)
 -- ===============================================================================================
 
 
@@ -4234,6 +4234,28 @@ CREATE POLICY services_owner_read ON public.services FOR SELECT TO auth_user
 
 
 -- ===============================================================================================
+-- kizuna-core/plugins/services/0019_services_moderator_children_write.sql
+-- ===============================================================================================
+
+-- plugins/services/0019_services_moderator_children_write.sql
+-- Moderador (services.moderate) escreve endereços e subcategorias do anúncio que modera, como já
+-- escreve a linha de services (services_owner_update). Antes, só o dono podia (sa_owner_write /
+-- scs_owner_write): no wizard em modo revisão o DELETE/PATCH do moderador voltava 0 linhas e o
+-- anúncio ficava incoerente (services gravado, endereço/categoria não).
+-- Só afeta quem tem services.moderate; anon, prestador e dono não mudam. Aditivo e idempotente.
+
+DROP POLICY IF EXISTS sa_moderator_write ON public.service_addresses;
+CREATE POLICY sa_moderator_write ON public.service_addresses FOR ALL TO auth_user
+  USING (auth.fun_auth_has_perm('services', 'moderate'))
+  WITH CHECK (auth.fun_auth_has_perm('services', 'moderate'));
+
+DROP POLICY IF EXISTS scs_moderator_write ON public.service_categories_sub;
+CREATE POLICY scs_moderator_write ON public.service_categories_sub FOR ALL TO auth_user
+  USING (auth.fun_auth_has_perm('services', 'moderate'))
+  WITH CHECK (auth.fun_auth_has_perm('services', 'moderate'));
+
+
+-- ===============================================================================================
 -- PLUGIN: reviews  (1 arquivo)
 -- ===============================================================================================
 
@@ -4879,7 +4901,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: analytics  (3 arquivos)
+-- PLUGIN: analytics  (5 arquivos)
 -- ===============================================================================================
 
 
@@ -5213,7 +5235,482 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: ads  (1 arquivo)
+-- kizuna-core/plugins/analytics/0004_analytics_placement.sql
+-- ===============================================================================================
+
+-- plugins/analytics/0004_analytics_placement.sql
+-- Exibição PATROCINADA separada da orgânica + origens novas. Necessário para a métrica do
+-- impulsionamento (plugin marketing) não misturar o que o anúncio teria de qualquer jeito com o
+-- que a vaga paga entregou. Inócuo para quem não usa marketing: coluna anulável, nada muda nos
+-- eventos já gravados nem no cliente antigo.
+--
+--   (1) `placement text` (NULL = orgânico; 'sponsored' = o card estava numa vaga patrocinada).
+--   (2) "1 linha por (entidade, evento, visitante, dia)" passa a valer POR placement: o mesmo
+--       visitante pode gerar no mesmo dia uma impressão orgânica e uma patrocinada (são duas
+--       exposições diferentes). A constraint UNIQUE vira índice único com COALESCE(placement, '').
+--       `ON CONFLICT DO NOTHING` (sem alvo) das funções continua valendo.
+--   (3) origens novas: 'today' (página Hoje), 'swipe' (Descobrir) e 'related' ("Também pode te
+--       interessar" no detalhe). O CHECK é recriado com a lista inteira.
+--   (4) `fn_analytics_track_ctx` ganha `p_placement text DEFAULT NULL` (14º parâmetro). A assinatura de
+--       13 é removida para não sobrar overload ambíguo no PostgREST; quem chama com 13 argumentos
+--       nomeados continua funcionando (o 14º tem padrão). Valor fora da lista vira NULL (sem erro).
+-- Idempotente.
+
+ALTER TABLE public.analytics_events ADD COLUMN IF NOT EXISTS placement text;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+     WHERE conname = 'analytics_events_placement_chk' AND conrelid = 'public.analytics_events'::regclass
+  ) THEN
+    ALTER TABLE public.analytics_events
+      ADD CONSTRAINT analytics_events_placement_chk CHECK (placement IN ('sponsored'));
+  END IF;
+END $$;
+
+-- (3) origens: recria só se a definição atual não tem 'related' (reaplicar não revalida a tabela).
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+     WHERE conname = 'analytics_events_source_chk'
+       AND conrelid = 'public.analytics_events'::regclass
+       AND pg_get_constraintdef(oid) LIKE '%related%'
+  ) THEN
+    ALTER TABLE public.analytics_events DROP CONSTRAINT IF EXISTS analytics_events_source_chk;
+    ALTER TABLE public.analytics_events ADD CONSTRAINT analytics_events_source_chk
+      CHECK (source IN ('search','home','category','direct','share','other','today','swipe','related'));
+  END IF;
+END $$;
+
+-- (2) unicidade por placement. Cria o índice antes de largar a constraint (nunca fica sem dedupe).
+CREATE UNIQUE INDEX IF NOT EXISTS analytics_events_once_per_day_placement
+  ON public.analytics_events (entity_type, entity_id, event_type, visitor_hash, day, (COALESCE(placement, '')));
+ALTER TABLE public.analytics_events DROP CONSTRAINT IF EXISTS analytics_events_once_per_day;
+
+-- Leitura do dono ganha a coluna nova (o GRANT por coluna da 0003 não a inclui).
+GRANT SELECT (placement) ON TABLE public.analytics_events TO auth_user;
+
+-- Índice para a métrica do impulsionamento (só as linhas patrocinadas, poucas).
+CREATE INDEX IF NOT EXISTS analytics_events_sponsored
+  ON public.analytics_events (entity_id, day) WHERE placement IS NOT NULL;
+
+-- (4) função do servidor com placement
+DROP FUNCTION IF EXISTS public.fn_analytics_track_ctx(text, uuid, text, text, text, integer,
+  text, text, text, text, text, text, uuid);
+CREATE OR REPLACE FUNCTION public.fn_analytics_track_ctx(
+  p_entity_type  text,
+  p_entity_id    uuid,
+  p_event_type   text,
+  p_visitor_hash text,
+  p_source       text,
+  p_visible_ms   integer,
+  p_device       text,
+  p_region_city  text,
+  p_region_uf    text,
+  p_ip_masked    text,
+  p_ip_key       text,
+  p_ip           text,
+  p_viewer_id    uuid,
+  p_placement    text DEFAULT NULL
+)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path = pg_catalog, public
+AS $$
+DECLARE
+  v_rows       integer;
+  v_device     text := lower(btrim(p_device));
+  v_region_uf  text := upper(btrim(p_region_uf));
+  v_region_city text := NULLIF(left(btrim(p_region_city), 80), '');
+  v_ip_key     text := lower(btrim(p_ip_key));
+  v_ip_masked  text := CASE WHEN char_length(p_ip_masked) <= 64 THEN NULLIF(p_ip_masked, '') END;
+  v_ip         text := CASE WHEN char_length(p_ip) <= 512 THEN NULLIF(p_ip, '') END;
+  v_placement  text := CASE WHEN p_placement = 'sponsored' THEN 'sponsored' END;
+  v_constraint text;
+BEGIN
+  IF p_entity_type IS DISTINCT FROM 'service' OR to_regclass('public.services') IS NULL THEN
+    RETURN false;
+  END IF;
+  -- Mesmas regras da policy de INSERT: anúncio ativo e o dono não conta o próprio anúncio.
+  IF NOT EXISTS (
+    SELECT 1 FROM public.services s
+     WHERE s.uid = p_entity_id
+       AND s.active
+       AND s.created_by IS DISTINCT FROM p_viewer_id
+  ) THEN
+    RETURN false;
+  END IF;
+  IF v_device NOT IN ('mobile','tablet','desktop') THEN v_device := NULL; END IF;
+  IF v_region_uf !~ '^[A-Z]{2}$' THEN v_region_uf := NULL; END IF;
+  IF v_ip_key !~ '^[0-9a-f]{64}$' THEN v_ip_key := NULL; END IF;
+  BEGIN
+    INSERT INTO public.analytics_events (
+      entity_type, entity_id, event_type, source, visitor_hash, visible_ms,
+      device, region_city, region_uf, ip_masked, ip_key, ip, placement
+    )
+    VALUES (
+      p_entity_type, p_entity_id, p_event_type, COALESCE(NULLIF(p_source, ''), 'direct'),
+      p_visitor_hash, COALESCE(p_visible_ms, 0),
+      v_device, v_region_city, v_region_uf, v_ip_masked, v_ip_key, v_ip, v_placement
+    )
+    ON CONFLICT DO NOTHING;
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+  EXCEPTION WHEN check_violation OR not_null_violation THEN
+    -- Levanta de novo só com o nome da constraint: o DETAIL original traz a linha inteira (com o IP).
+    GET STACKED DIAGNOSTICS v_constraint = CONSTRAINT_NAME;
+    RAISE EXCEPTION 'analytics_events: valor inválido (%)', COALESCE(NULLIF(v_constraint, ''), 'not null')
+      USING ERRCODE = 'check_violation';
+  END;
+  RETURN v_rows = 1;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.fn_analytics_track_ctx(text, uuid, text, text, text, integer,
+  text, text, text, text, text, text, uuid, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.fn_analytics_track_ctx(text, uuid, text, text, text, integer,
+  text, text, text, text, text, text, uuid, text) FROM anon, auth_user;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    GRANT EXECUTE ON FUNCTION public.fn_analytics_track_ctx(text, uuid, text, text, text, integer,
+      text, text, text, text, text, text, uuid, text) TO service_role;
+  ELSE
+    RAISE NOTICE 'papel service_role ausente (sql/0117) — fn_analytics_track_ctx sem EXECUTE';
+  END IF;
+END $$;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('analytics', '2.3.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/analytics/0005_analytics_page_view_utm.sql
+-- ===============================================================================================
+
+-- plugins/analytics/0005_analytics_page_view_utm.sql
+-- Visitas de página (page_view) + origem de campanha (UTM) + canal do clique de contato.
+-- Inócuo para quem não usa: colunas anuláveis, tabela nova sem escrita pública, e as funções
+-- antigas continuam aceitando as chamadas de antes (parâmetros novos têm DEFAULT NULL).
+--
+--   (1) Tabela PRÓPRIA `analytics_page_views` (e não `analytics_events` com entity_type 'page'):
+--       * `analytics_events.entity_id` é uuid NOT NULL de anúncio; a página não tem uuid (teria de
+--         inventar um hash do caminho) e as policies/funções de lá exigem `public.services`;
+--       * a leitura de `analytics_events` é do DONO do anúncio (RLS por tenant); visitas do site
+--         são do portal inteiro e só o root (ou quem tiver `analytics/site`) lê;
+--       * volume: uma linha por (caminho, visitante-dia) — separar mantém os índices e a leitura do
+--         painel do anunciante do mesmo tamanho de hoje.
+--       Uma linha por (caminho, visitante, dia) (UNIQUE): recarregar/voltar não conta de novo.
+--       Sem IP, sem região por IP, sem user-agent: só caminho, cidade do portal (slug da rota ou do
+--       cookie kz_city), categoria do aparelho e utm_*. Escrita só pelo servidor (service_role).
+--   (2) `analytics_events` ganha utm_source/utm_medium/utm_campaign (origem da SESSÃO que gerou o
+--       evento) e `channel` (canal do contact_click: whatsapp, phone, purchase, site, email,
+--       instagram, other). A deduplicação NÃO muda: o 1º evento do dia (entidade, evento,
+--       visitante, placement) é o que fica — com o utm/canal dele.
+--   (3) origem nova 'map' (clique de contato no painel do mapa).
+--   (4) `fn_analytics_track_ctx` ganha p_utm_source, p_utm_medium, p_utm_campaign, p_channel (DEFAULT
+--       NULL). A assinatura de 14 é removida (sem overload ambíguo no PostgREST); chamadas com 13/14
+--       argumentos nomeados seguem funcionando. Valor fora do formato vira NULL (sem erro).
+--   (5) `fn_analytics_page_view` (escrita, service_role) e `fn_analytics_page_view_summary`
+--       (leitura agregada para o painel; INVOKER, a RLS decide quem vê).
+-- Idempotente.
+
+-- (2) colunas novas em analytics_events
+ALTER TABLE public.analytics_events ADD COLUMN IF NOT EXISTS utm_source   text;
+ALTER TABLE public.analytics_events ADD COLUMN IF NOT EXISTS utm_medium   text;
+ALTER TABLE public.analytics_events ADD COLUMN IF NOT EXISTS utm_campaign text;
+ALTER TABLE public.analytics_events ADD COLUMN IF NOT EXISTS channel      text;
+
+DO $$
+DECLARE
+  c record;
+BEGIN
+  FOR c IN
+    SELECT * FROM (VALUES
+      ('analytics_events_utm_source_chk',   $c$CHECK (utm_source ~ '^[a-z0-9_.-]{1,64}$')$c$),
+      ('analytics_events_utm_medium_chk',   $c$CHECK (utm_medium ~ '^[a-z0-9_.-]{1,64}$')$c$),
+      ('analytics_events_utm_campaign_chk', $c$CHECK (utm_campaign ~ '^[a-z0-9_.-]{1,64}$')$c$),
+      ('analytics_events_channel_chk',
+        $c$CHECK (channel IN ('whatsapp','phone','purchase','site','email','instagram','other'))$c$)
+    ) AS v(name, def)
+  LOOP
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_constraint
+       WHERE conname = c.name AND conrelid = 'public.analytics_events'::regclass
+    ) THEN
+      EXECUTE format('ALTER TABLE public.analytics_events ADD CONSTRAINT %I %s', c.name, c.def);
+    END IF;
+  END LOOP;
+END $$;
+
+-- (3) origem 'map': recria só se a definição atual não a tem (reaplicar não revalida a tabela).
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+     WHERE conname = 'analytics_events_source_chk'
+       AND conrelid = 'public.analytics_events'::regclass
+       AND pg_get_constraintdef(oid) LIKE '%''map''%'
+  ) THEN
+    ALTER TABLE public.analytics_events DROP CONSTRAINT IF EXISTS analytics_events_source_chk;
+    ALTER TABLE public.analytics_events ADD CONSTRAINT analytics_events_source_chk
+      CHECK (source IN ('search','home','category','direct','share','other','today','swipe','related','map'));
+  END IF;
+END $$;
+
+-- Leitura do dono ganha as colunas novas (o GRANT por coluna da 0003/0004 não as inclui).
+GRANT SELECT (utm_source, utm_medium, utm_campaign, channel) ON TABLE public.analytics_events TO auth_user;
+
+-- (4) função do servidor com utm + canal
+DROP FUNCTION IF EXISTS public.fn_analytics_track_ctx(text, uuid, text, text, text, integer,
+  text, text, text, text, text, text, uuid);
+DROP FUNCTION IF EXISTS public.fn_analytics_track_ctx(text, uuid, text, text, text, integer,
+  text, text, text, text, text, text, uuid, text);
+CREATE OR REPLACE FUNCTION public.fn_analytics_track_ctx(
+  p_entity_type  text,
+  p_entity_id    uuid,
+  p_event_type   text,
+  p_visitor_hash text,
+  p_source       text,
+  p_visible_ms   integer,
+  p_device       text,
+  p_region_city  text,
+  p_region_uf    text,
+  p_ip_masked    text,
+  p_ip_key       text,
+  p_ip           text,
+  p_viewer_id    uuid,
+  p_placement    text DEFAULT NULL,
+  p_utm_source   text DEFAULT NULL,
+  p_utm_medium   text DEFAULT NULL,
+  p_utm_campaign text DEFAULT NULL,
+  p_channel      text DEFAULT NULL
+)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path = pg_catalog, public
+AS $$
+DECLARE
+  v_rows         integer;
+  v_device       text := lower(btrim(p_device));
+  v_region_uf    text := upper(btrim(p_region_uf));
+  v_region_city  text := NULLIF(left(btrim(p_region_city), 80), '');
+  v_ip_key       text := lower(btrim(p_ip_key));
+  v_ip_masked    text := CASE WHEN char_length(p_ip_masked) <= 64 THEN NULLIF(p_ip_masked, '') END;
+  v_ip           text := CASE WHEN char_length(p_ip) <= 512 THEN NULLIF(p_ip, '') END;
+  v_placement    text := CASE WHEN p_placement = 'sponsored' THEN 'sponsored' END;
+  v_utm_source   text := CASE WHEN p_utm_source   ~ '^[a-z0-9_.-]{1,64}$' THEN p_utm_source END;
+  v_utm_medium   text := CASE WHEN p_utm_medium   ~ '^[a-z0-9_.-]{1,64}$' THEN p_utm_medium END;
+  v_utm_campaign text := CASE WHEN p_utm_campaign ~ '^[a-z0-9_.-]{1,64}$' THEN p_utm_campaign END;
+  v_channel      text := CASE WHEN p_event_type = 'contact_click'
+                               AND p_channel IN ('whatsapp','phone','purchase','site','email','instagram','other')
+                              THEN p_channel END;
+  v_constraint   text;
+BEGIN
+  IF p_entity_type IS DISTINCT FROM 'service' OR to_regclass('public.services') IS NULL THEN
+    RETURN false;
+  END IF;
+  -- Mesmas regras da policy de INSERT: anúncio ativo e o dono não conta o próprio anúncio.
+  IF NOT EXISTS (
+    SELECT 1 FROM public.services s
+     WHERE s.uid = p_entity_id
+       AND s.active
+       AND s.created_by IS DISTINCT FROM p_viewer_id
+  ) THEN
+    RETURN false;
+  END IF;
+  IF v_device NOT IN ('mobile','tablet','desktop') THEN v_device := NULL; END IF;
+  IF v_region_uf !~ '^[A-Z]{2}$' THEN v_region_uf := NULL; END IF;
+  IF v_ip_key !~ '^[0-9a-f]{64}$' THEN v_ip_key := NULL; END IF;
+  BEGIN
+    INSERT INTO public.analytics_events (
+      entity_type, entity_id, event_type, source, visitor_hash, visible_ms,
+      device, region_city, region_uf, ip_masked, ip_key, ip, placement,
+      utm_source, utm_medium, utm_campaign, channel
+    )
+    VALUES (
+      p_entity_type, p_entity_id, p_event_type, COALESCE(NULLIF(p_source, ''), 'direct'),
+      p_visitor_hash, COALESCE(p_visible_ms, 0),
+      v_device, v_region_city, v_region_uf, v_ip_masked, v_ip_key, v_ip, v_placement,
+      v_utm_source, v_utm_medium, v_utm_campaign, v_channel
+    )
+    ON CONFLICT DO NOTHING;
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+  EXCEPTION WHEN check_violation OR not_null_violation THEN
+    -- Levanta de novo só com o nome da constraint: o DETAIL original traz a linha inteira (com o IP).
+    GET STACKED DIAGNOSTICS v_constraint = CONSTRAINT_NAME;
+    RAISE EXCEPTION 'analytics_events: valor inválido (%)', COALESCE(NULLIF(v_constraint, ''), 'not null')
+      USING ERRCODE = 'check_violation';
+  END;
+  RETURN v_rows = 1;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.fn_analytics_track_ctx(text, uuid, text, text, text, integer,
+  text, text, text, text, text, text, uuid, text, text, text, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.fn_analytics_track_ctx(text, uuid, text, text, text, integer,
+  text, text, text, text, text, text, uuid, text, text, text, text, text) FROM anon, auth_user;
+
+-- (1) visitas de página
+CREATE TABLE IF NOT EXISTS public.analytics_page_views (
+  id            bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  path          text        NOT NULL,
+  city          text,
+  device        text,
+  visitor_hash  text        NOT NULL,
+  utm_source    text,
+  utm_medium    text,
+  utm_campaign  text,
+  day           date        NOT NULL DEFAULT CURRENT_DATE,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT analytics_page_views_path_chk   CHECK (char_length(path) BETWEEN 1 AND 200 AND left(path, 1) = '/'),
+  CONSTRAINT analytics_page_views_city_chk   CHECK (city ~ '^[a-z0-9-]{1,80}$'),
+  CONSTRAINT analytics_page_views_device_chk CHECK (device IN ('mobile','tablet','desktop')),
+  CONSTRAINT analytics_page_views_hash_chk   CHECK (visitor_hash ~ '^[0-9a-f]{16,64}$'),
+  CONSTRAINT analytics_page_views_utm_source_chk   CHECK (utm_source   ~ '^[a-z0-9_.-]{1,64}$'),
+  CONSTRAINT analytics_page_views_utm_medium_chk   CHECK (utm_medium   ~ '^[a-z0-9_.-]{1,64}$'),
+  CONSTRAINT analytics_page_views_utm_campaign_chk CHECK (utm_campaign ~ '^[a-z0-9_.-]{1,64}$'),
+  CONSTRAINT analytics_page_views_once_per_day UNIQUE (path, visitor_hash, day)
+);
+CREATE INDEX IF NOT EXISTS analytics_page_views_day ON public.analytics_page_views (day DESC);
+
+ALTER TABLE public.analytics_page_views ENABLE ROW LEVEL SECURITY;
+-- Escrita só pela função SECURITY DEFINER (service_role). Leitura: auth_user, filtrada pela policy.
+REVOKE ALL ON TABLE public.analytics_page_views FROM PUBLIC, anon, auth_user;
+GRANT SELECT ON TABLE public.analytics_page_views TO auth_user;
+
+-- Permissão própria para ver as visitas do site inteiro (root passa sempre em fun_auth_has_perm).
+INSERT INTO auth.permissions (resource, action, name)
+VALUES ('analytics', 'site', 'Ver as visitas do site (todas as páginas, origem e cidade)')
+ON CONFLICT (resource, action) DO NOTHING;
+
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS analytics_page_views_select_site ON public.analytics_page_views;
+  IF to_regprocedure('auth.fun_auth_has_perm(text,text)') IS NULL THEN
+    RAISE NOTICE 'auth.fun_auth_has_perm ausente — analytics_page_views sem policy de leitura (ninguém lê pela API)';
+    RETURN;
+  END IF;
+  CREATE POLICY analytics_page_views_select_site ON public.analytics_page_views FOR SELECT TO auth_user
+  USING ((SELECT auth.fun_auth_has_perm('analytics', 'site')));
+END $$;
+
+-- (5a) escrita: só o servidor (rota POST /api/analytics/page-view). Campos opcionais fora do
+-- formato viram NULL; caminho/hash inválidos = false (não grava, sem erro).
+-- true = registrou; false = já existia hoje (UNIQUE) ou entrada inválida.
+CREATE OR REPLACE FUNCTION public.fn_analytics_page_view(
+  p_path         text,
+  p_visitor_hash text,
+  p_city         text DEFAULT NULL,
+  p_device       text DEFAULT NULL,
+  p_utm_source   text DEFAULT NULL,
+  p_utm_medium   text DEFAULT NULL,
+  p_utm_campaign text DEFAULT NULL
+)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path = pg_catalog, public
+AS $$
+DECLARE
+  v_rows integer;
+BEGIN
+  IF p_path IS NULL OR char_length(p_path) NOT BETWEEN 1 AND 200 OR left(p_path, 1) <> '/'
+     OR p_visitor_hash IS NULL OR p_visitor_hash !~ '^[0-9a-f]{16,64}$' THEN
+    RETURN false;
+  END IF;
+  INSERT INTO public.analytics_page_views (path, city, device, visitor_hash, utm_source, utm_medium, utm_campaign)
+  VALUES (
+    p_path,
+    CASE WHEN p_city ~ '^[a-z0-9-]{1,80}$' THEN p_city END,
+    CASE WHEN p_device IN ('mobile','tablet','desktop') THEN p_device END,
+    p_visitor_hash,
+    CASE WHEN p_utm_source   ~ '^[a-z0-9_.-]{1,64}$' THEN p_utm_source END,
+    CASE WHEN p_utm_medium   ~ '^[a-z0-9_.-]{1,64}$' THEN p_utm_medium END,
+    CASE WHEN p_utm_campaign ~ '^[a-z0-9_.-]{1,64}$' THEN p_utm_campaign END
+  )
+  ON CONFLICT DO NOTHING;
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+  RETURN v_rows = 1;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.fn_analytics_page_view(text, text, text, text, text, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.fn_analytics_page_view(text, text, text, text, text, text, text) FROM anon, auth_user;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    GRANT EXECUTE ON FUNCTION public.fn_analytics_track_ctx(text, uuid, text, text, text, integer,
+      text, text, text, text, text, text, uuid, text, text, text, text, text) TO service_role;
+    GRANT EXECUTE ON FUNCTION public.fn_analytics_page_view(text, text, text, text, text, text, text) TO service_role;
+  ELSE
+    RAISE NOTICE 'papel service_role ausente (sql/0117) — fn_analytics_track_ctx/fn_analytics_page_view sem EXECUTE';
+  END IF;
+END $$;
+
+-- (5b) leitura agregada para o painel: visitantes-dia por origem, campanha, cidade e aparelho.
+-- INVOKER: a policy acima filtra (sem `analytics/site` → tudo zero). Cada visitante-dia é atribuído
+-- a UMA origem/campanha (a 1ª não vazia do dia), cidade (a 1ª não vazia) e aparelho — assim a
+-- soma das linhas de uma dimensão dá o total. Janela limitada a 366 dias.
+-- dimension: 'total' | 'source' | 'campaign' | 'city' | 'device'; key '' = sem valor (direto/não informado).
+-- visitors = visitantes-dia distintos; pages = páginas distintas vistas por esses visitantes-dia.
+CREATE OR REPLACE FUNCTION public.fn_analytics_page_view_summary(p_from date, p_to date)
+ RETURNS TABLE (dimension text, key text, visitors bigint, pages bigint)
+ LANGUAGE sql
+ STABLE
+ SET search_path = pg_catalog, public
+AS $$
+  WITH r AS (
+    SELECT visitor_hash, day, created_at, utm_source, utm_campaign, city, device
+      FROM public.analytics_page_views
+     WHERE day BETWEEN p_from AND LEAST(p_to, p_from + 366)
+  ), v AS (
+    SELECT
+      COALESCE((array_agg(utm_source   ORDER BY created_at) FILTER (WHERE utm_source   IS NOT NULL))[1], '') AS src,
+      COALESCE((array_agg(utm_campaign ORDER BY created_at) FILTER (WHERE utm_campaign IS NOT NULL))[1], '') AS cmp,
+      COALESCE((array_agg(city         ORDER BY created_at) FILTER (WHERE city         IS NOT NULL))[1], '') AS cty,
+      COALESCE((array_agg(device       ORDER BY created_at) FILTER (WHERE device       IS NOT NULL))[1], '') AS dev,
+      count(*) AS n
+      FROM r
+     GROUP BY visitor_hash, day
+  )
+  SELECT 'total', '', count(*), COALESCE(sum(n), 0)::bigint FROM v
+  UNION ALL SELECT 'source',   src, count(*), sum(n)::bigint FROM v GROUP BY src
+  UNION ALL SELECT 'campaign', cmp, count(*), sum(n)::bigint FROM v GROUP BY cmp
+  UNION ALL SELECT 'city',     cty, count(*), sum(n)::bigint FROM v GROUP BY cty
+  UNION ALL SELECT 'device',   dev, count(*), sum(n)::bigint FROM v GROUP BY dev
+$$;
+REVOKE ALL ON FUNCTION public.fn_analytics_page_view_summary(date, date) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.fn_analytics_page_view_summary(date, date) FROM anon;
+GRANT EXECUTE ON FUNCTION public.fn_analytics_page_view_summary(date, date) TO auth_user;
+
+-- Retenção das visitas: mesmo prazo dos eventos (400 dias). Só com pg_cron.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    PERFORM cron.unschedule(jobid) FROM cron.job WHERE jobname = 'analytics_page_views_retention';
+    PERFORM cron.schedule('analytics_page_views_retention', '20 3 * * *',
+      'DELETE FROM public.analytics_page_views WHERE day < CURRENT_DATE - 400');
+  ELSE
+    RAISE NOTICE 'pg_cron ausente — agendar por fora: DELETE FROM public.analytics_page_views WHERE day < CURRENT_DATE - 400;';
+  END IF;
+END $$;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('analytics', '2.4.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- PLUGIN: ads  (2 arquivos)
 -- ===============================================================================================
 
 
@@ -5397,7 +5894,176 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: marketing  (1 arquivo)
+-- kizuna-core/plugins/ads/0002_ads_track_live_campaign.sql
+-- ===============================================================================================
+
+-- plugins/ads/0002_ads_track_live_campaign.sql
+-- Contagem de banner mais honesta:
+--   1) Só conta impressão/clique de criativo que pode estar no ar NAQUELE espaço: ativo, vigente,
+--      espaço habilitado e, se for de anunciante (plugin marketing, `tenant_id` preenchido), com
+--      campanha viva nesse espaço (`vw_ad_campaigns_live`: criativo aprovado, período corrente, não
+--      parada; a campanha é pré-paga, a reserva de saldo já foi conferida na criação). Criativo do
+--      próprio site (tenant_id NULL) segue como antes.
+--   2) Dedup no servidor: uma impressão e um clique por (visitante do dia, espaço, criativo, dia).
+--      O visitante é o id anônimo diário do navegador (o mesmo `kz-vid` do analytics, aleatório e
+--      trocado a cada dia UTC). A tabela de controle guarda só 2 dias. `ad_stats_daily` continua
+--      sendo contador agregado (sem dado pessoal) — passa a significar "únicos por dia" para quem
+--      chama a função nova.
+--
+-- Assinaturas:
+--   * `fn_ad_track(text, uuid, text, text)` — MESMA assinatura de antes (chamadas antigas seguem
+--     valendo), agora com a regra (1). Sem visitante, não deduplica.
+--   * `fn_ad_track_v2(text, uuid, text, text, text)` — mesma regra + p_visitor_hash (dedup). É a
+--     que o cliente novo chama. Nome separado de propósito: sobrecarga com DEFAULT deixaria a
+--     chamada de 4 argumentos ambígua.
+--
+-- Funciona com ou sem o plugin marketing (ordem do install: ads antes de marketing): as tabelas do
+-- marketing são consultadas por SQL dinâmico só quando existem. Rejeição devolve false, sem erro.
+-- Idempotente.
+
+-- =========================================================================
+-- 1) Controle de dedup (visitante do dia × espaço × criativo × evento)
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS public.ad_track_seen (
+  day          date NOT NULL DEFAULT CURRENT_DATE,
+  slot_slug    text NOT NULL,
+  creative_id  uuid NOT NULL,
+  event        text NOT NULL,
+  visitor_hash text NOT NULL,
+  PRIMARY KEY (day, slot_slug, creative_id, event, visitor_hash),
+  CONSTRAINT ad_track_seen_event_chk CHECK (event IN ('impression', 'click')),
+  CONSTRAINT ad_track_seen_hash_chk  CHECK (visitor_hash ~ '^[0-9a-f]{16,64}$')
+);
+-- Ninguém lê nem escreve direto: só as funções (SECURITY DEFINER). RLS sem policy = negado.
+ALTER TABLE public.ad_track_seen ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.ad_track_seen FROM PUBLIC;
+REVOKE ALL ON public.ad_track_seen FROM anon, auth_user;
+
+-- =========================================================================
+-- 2) Regra comum + dedup
+-- =========================================================================
+CREATE OR REPLACE FUNCTION public.fn_ad_track_v2(
+  p_slot         text,
+  p_creative_id  uuid,
+  p_page         text,
+  p_event        text,
+  p_visitor_hash text
+)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path = public
+AS $$
+DECLARE
+  v_creative uuid := COALESCE(p_creative_id, '00000000-0000-0000-0000-000000000000'::uuid);
+  v_tenant   uuid;
+  v_live     boolean;
+  v_rows     integer;
+BEGIN
+  IF p_event IS NULL OR p_event NOT IN ('impression', 'click') THEN RETURN false; END IF;
+  IF p_page IS NULL OR p_page !~ '^/([A-Za-z0-9_\[\]-]{1,40}(/[A-Za-z0-9_\[\]-]{1,40}){0,3})?$' THEN RETURN false; END IF;
+  IF p_visitor_hash IS NOT NULL AND p_visitor_hash !~ '^[0-9a-f]{16,64}$' THEN RETURN false; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.ad_slots WHERE slug = p_slot AND enabled) THEN RETURN false; END IF;
+  IF p_event = 'click' AND p_creative_id IS NULL THEN RETURN false; END IF;
+
+  IF p_creative_id IS NULL THEN
+    -- impressão do Google: só se o slot aceita 'google' e tem peso > 0.
+    IF NOT EXISTS (
+      SELECT 1 FROM public.ad_slots WHERE slug = p_slot AND 'google' = ANY(media) AND google_weight > 0
+    ) THEN RETURN false; END IF;
+  ELSE
+    -- criativo ativo, vigente e permitido neste espaço.
+    IF NOT EXISTS (
+      SELECT 1 FROM public.ad_creatives WHERE id = p_creative_id AND active
+         AND (starts_at IS NULL OR starts_at <= now()) AND (ends_at IS NULL OR ends_at >= now())
+         AND (cardinality(slots) = 0 OR p_slot = ANY(slots))
+    ) THEN RETURN false; END IF;
+    -- criativo de anunciante (marketing): precisa de campanha viva NESTE espaço.
+    IF EXISTS (SELECT 1 FROM pg_catalog.pg_attribute
+                WHERE attrelid = 'public.ad_creatives'::regclass AND attname = 'tenant_id' AND NOT attisdropped) THEN
+      EXECUTE 'SELECT tenant_id FROM public.ad_creatives WHERE id = $1' INTO v_tenant USING p_creative_id;
+      IF v_tenant IS NOT NULL THEN
+        IF to_regclass('public.vw_ad_campaigns_live') IS NULL THEN RETURN false; END IF;
+        EXECUTE 'SELECT EXISTS (SELECT 1 FROM public.vw_ad_campaigns_live WHERE creative_id = $1 AND slot_slug = $2)'
+          INTO v_live USING p_creative_id, p_slot;
+        IF NOT COALESCE(v_live, false) THEN RETURN false; END IF;
+      END IF;
+    END IF;
+  END IF;
+
+  -- dedup por visitante do dia (sem visitante = chamada antiga, conta sempre).
+  IF p_visitor_hash IS NOT NULL THEN
+    INSERT INTO public.ad_track_seen (day, slot_slug, creative_id, event, visitor_hash)
+    VALUES (CURRENT_DATE, p_slot, v_creative, p_event, p_visitor_hash)
+    ON CONFLICT DO NOTHING;
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    IF v_rows = 0 THEN RETURN false; END IF;
+  END IF;
+
+  INSERT INTO public.ad_stats_daily (slot_slug, creative_id, page, day, impressions, clicks)
+  VALUES (p_slot, v_creative, p_page, CURRENT_DATE,
+          CASE WHEN p_event = 'impression' THEN 1 ELSE 0 END,
+          CASE WHEN p_event = 'click' THEN 1 ELSE 0 END)
+  ON CONFLICT (slot_slug, creative_id, page, day) DO UPDATE
+    SET impressions = public.ad_stats_daily.impressions + EXCLUDED.impressions,
+        clicks      = public.ad_stats_daily.clicks + EXCLUDED.clicks;
+  RETURN true;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.fn_ad_track_v2(text, uuid, text, text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.fn_ad_track_v2(text, uuid, text, text, text) TO anon, auth_user;
+
+-- Assinatura antiga preservada: mesma regra, sem dedup (não há visitante).
+CREATE OR REPLACE FUNCTION public.fn_ad_track(
+  p_slot        text,
+  p_creative_id uuid,
+  p_page        text,
+  p_event       text
+)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path = public
+AS $$
+BEGIN
+  RETURN public.fn_ad_track_v2(p_slot, p_creative_id, p_page, p_event, NULL);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.fn_ad_track(text, uuid, text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.fn_ad_track(text, uuid, text, text) TO anon, auth_user;
+-- `CREATE OR REPLACE` mantém o dono antigo de fn_ad_track (pode ser outro papel, ex.: banco
+-- restaurado de backup). Ela roda como esse dono e chama a v2: o dono precisa de EXECUTE nela.
+DO $$
+DECLARE v_owner name;
+BEGIN
+  SELECT pg_get_userbyid(proowner) INTO v_owner FROM pg_proc
+   WHERE oid = 'public.fn_ad_track(text, uuid, text, text)'::regprocedure;
+  EXECUTE format('GRANT EXECUTE ON FUNCTION public.fn_ad_track_v2(text, uuid, text, text, text) TO %I', v_owner);
+END $$;
+
+-- =========================================================================
+-- 3) Retenção do controle de dedup: 2 dias (pg_cron; sem ele, só avisa)
+-- =========================================================================
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    PERFORM cron.unschedule(jobid) FROM cron.job WHERE jobname = 'ads_seen_retention';
+    PERFORM cron.schedule('ads_seen_retention', '25 3 * * *',
+      'DELETE FROM public.ad_track_seen WHERE day < CURRENT_DATE - 1');
+  ELSE
+    RAISE NOTICE 'pg_cron ausente — agendar por fora: DELETE FROM public.ad_track_seen WHERE day < CURRENT_DATE - 1;';
+  END IF;
+END $$;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('ads', '1.1.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- PLUGIN: marketing  (3 arquivos)
 -- ===============================================================================================
 
 
@@ -5808,7 +6474,160 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===============================================================================================
--- PLUGIN: search  (13 arquivos)
+-- kizuna-core/plugins/marketing/0002_marketing_purchase.sql
+-- ===============================================================================================
+
+-- plugins/marketing/0002_marketing_purchase.sql
+-- Compra direta: o pagamento (PIX etc.) carrega um PROPÓSITO — impulsionar um anúncio ou contratar
+-- um banner. Quem confirma é o servidor (`settlePayment`, service_role): credita a carteira e, no
+-- mesmo fluxo idempotente, cria o boost (vai ao ar sozinho) ou a campanha (fica esperando a
+-- aprovação do banner). Continua o modelo pré-pago: o crédito entra no livro-razão e a reserva é
+-- o próprio boost/campanha (vw_wallet_balance). Se não der para criar, o valor fica no saldo.
+--
+-- Reprovação de banner: o admin para a campanha em `starts_on` (0 dias comprometidos) e o valor
+-- inteiro volta ao saldo — só para criativo reprovado que NUNCA foi exibido (policy abaixo).
+--
+-- Sem funções e sem triggers (mesma regra da 0001). Idempotente.
+
+-- =========================================================================
+-- 1) Propósito e resultado na intenção de pagamento
+-- =========================================================================
+-- purpose: NULL = recarga de saldo (como antes).
+--   {"kind":"boost","serviceUid":uuid,"dailyCents":int,"startsOn":"YYYY-MM-DD","days":int}
+--   {"kind":"campaign","creativeId":uuid,"slotSlug":text,"dailyCents":int,"startsOn":"YYYY-MM-DD","days":int}
+-- fulfilled_ref: o que foi criado ao liquidar ("boost:<id>" / "campaign:<id>").
+-- fulfill_error: por que não deu para criar (o valor ficou no saldo). Só o servidor escreve.
+ALTER TABLE public.payment_intents ADD COLUMN IF NOT EXISTS purpose       jsonb;
+ALTER TABLE public.payment_intents ADD COLUMN IF NOT EXISTS fulfilled_ref text;
+ALTER TABLE public.payment_intents ADD COLUMN IF NOT EXISTS fulfill_error text;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payment_intents_purpose_chk') THEN
+    ALTER TABLE public.payment_intents ADD CONSTRAINT payment_intents_purpose_chk CHECK (
+      purpose IS NULL
+      OR (jsonb_typeof(purpose) = 'object' AND purpose->>'kind' IN ('boost', 'campaign'))
+    );
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payment_intents_fulfill_chk') THEN
+    ALTER TABLE public.payment_intents ADD CONSTRAINT payment_intents_fulfill_chk CHECK (
+      char_length(COALESCE(fulfilled_ref, '')) <= 60 AND char_length(COALESCE(fulfill_error, '')) <= 300
+    );
+  END IF;
+END $$;
+
+-- O dono cria a intenção, mas o resultado é só do servidor.
+DROP POLICY IF EXISTS payment_intents_insert_clean ON public.payment_intents;
+CREATE POLICY payment_intents_insert_clean ON public.payment_intents AS RESTRICTIVE FOR INSERT TO auth_user
+WITH CHECK (fulfilled_ref IS NULL AND fulfill_error IS NULL);
+
+-- =========================================================================
+-- 2) Boost/campanha comprados: vínculo único com o pagamento (idempotência)
+-- =========================================================================
+ALTER TABLE public.boosts       ADD COLUMN IF NOT EXISTS payment_intent_id uuid REFERENCES public.payment_intents(id) ON DELETE SET NULL;
+ALTER TABLE public.ad_campaigns ADD COLUMN IF NOT EXISTS payment_intent_id uuid REFERENCES public.payment_intents(id) ON DELETE SET NULL;
+-- Webhook reentregue não cria dois: a segunda inserção bate aqui (409) e o servidor segue.
+CREATE UNIQUE INDEX IF NOT EXISTS boosts_payment_once       ON public.boosts (payment_intent_id)       WHERE payment_intent_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS ad_campaigns_payment_once ON public.ad_campaigns (payment_intent_id) WHERE payment_intent_id IS NOT NULL;
+
+-- O anunciante não pode vincular pagamento por conta própria (bloquearia a compra de outro, ou a sua).
+DROP POLICY IF EXISTS boosts_insert_no_payment ON public.boosts;
+CREATE POLICY boosts_insert_no_payment ON public.boosts AS RESTRICTIVE FOR INSERT TO auth_user
+WITH CHECK (payment_intent_id IS NULL);
+DROP POLICY IF EXISTS ad_campaigns_insert_no_payment ON public.ad_campaigns;
+CREATE POLICY ad_campaigns_insert_no_payment ON public.ad_campaigns AS RESTRICTIVE FOR INSERT TO auth_user
+WITH CHECK (payment_intent_id IS NULL);
+
+-- =========================================================================
+-- 3) Reprovação devolve tudo: parar em starts_on (0 dias) a campanha de criativo reprovado que
+--    nunca foi exibido. Soma-se (OR) à policy `ad_campaigns_stop` da 0001, que só para do dia
+--    seguinte em diante. Só admin (marketing/ads.manage).
+-- =========================================================================
+DROP POLICY IF EXISTS ad_campaigns_refund_rejected ON public.ad_campaigns;
+CREATE POLICY ad_campaigns_refund_rejected ON public.ad_campaigns FOR UPDATE TO auth_user
+USING (
+  stopped_on IS NULL
+  AND (auth.fun_auth_has_perm('marketing', 'manage') OR auth.fun_auth_has_perm('ads', 'manage'))
+  AND EXISTS (SELECT 1 FROM public.ad_creative_reviews r
+               WHERE r.creative_id = ad_campaigns.creative_id AND r.status = 'rejected')
+  AND EXISTS (SELECT 1 FROM public.ad_creatives c WHERE c.id = ad_campaigns.creative_id AND NOT c.active)
+  AND NOT EXISTS (SELECT 1 FROM public.ad_stats_daily s
+                   WHERE s.creative_id = ad_campaigns.creative_id AND s.impressions > 0)
+)
+WITH CHECK (stopped_on = starts_on);
+
+-- =========================================================================
+-- 4) Servidor: o que `settlePayment` precisa para criar a compra (service_role tem BYPASSRLS;
+--    as regras de dono/saldo/período são conferidas no código antes de inserir).
+-- =========================================================================
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    GRANT SELECT, INSERT ON public.boosts, public.ad_campaigns TO service_role;
+    GRANT SELECT ON public.services, public.ad_creatives, public.ad_slots, public.ad_creative_reviews TO service_role;
+    GRANT SELECT ON public.vw_wallet_balance TO service_role;
+  ELSE
+    RAISE NOTICE 'papel service_role ausente (sql/0117) — a compra direta não poderá ser liquidada';
+  END IF;
+END $$;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('marketing', '1.1.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/marketing/0003_boost_metrics_placement.sql
+-- ===============================================================================================
+
+-- plugins/marketing/0003_boost_metrics_placement.sql
+-- Métrica do impulsionamento separando o que a VAGA PATROCINADA entregou do orgânico no período.
+-- Depende de analytics 0004 (coluna `analytics_events.placement`: 'sponsored' = o card estava numa
+-- vaga patrocinada, ou o detalhe foi aberto a partir de uma). As colunas antigas continuam iguais
+-- (TOTAL do anúncio no período: orgânico + patrocinado); as novas `sponsored_*` são a parte paga.
+-- Orgânico = total − patrocinado. `CREATE OR REPLACE VIEW` só acrescenta colunas no fim.
+-- Sem função, sem trigger (regra do plugin). Idempotente.
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'analytics_events' AND column_name = 'placement'
+  ) THEN
+    RAISE EXCEPTION 'marketing 0003 precisa de analytics 0004 (coluna analytics_events.placement)';
+  END IF;
+END $$;
+
+CREATE OR REPLACE VIEW public.vw_boost_metrics_daily WITH (security_invoker = true) AS
+SELECT b.id AS boost_id, b.tenant_id, b.service_uid, e.day,
+       COUNT(*) FILTER (WHERE e.event_type = 'impression') AS impressions,
+       COUNT(*) FILTER (WHERE e.event_type = 'view') AS views,
+       COUNT(*) FILTER (WHERE e.event_type = 'contact_click') AS contact_clicks,
+       COUNT(*) FILTER (WHERE e.event_type IN ('favorite', 'share')) AS interactions,
+       COUNT(*) FILTER (WHERE e.event_type = 'impression' AND e.placement = 'sponsored') AS sponsored_impressions,
+       COUNT(*) FILTER (WHERE e.event_type = 'view' AND e.placement = 'sponsored') AS sponsored_views,
+       COUNT(*) FILTER (WHERE e.event_type = 'contact_click' AND e.placement = 'sponsored') AS sponsored_contact_clicks,
+       COUNT(*) FILTER (WHERE e.event_type IN ('favorite', 'share') AND e.placement = 'sponsored') AS sponsored_interactions
+FROM public.boosts b
+JOIN public.analytics_events e
+  ON e.entity_id = b.service_uid
+ AND e.day >= b.starts_on
+ AND e.day <= LEAST(b.ends_on, COALESCE(b.stopped_on - 1, b.ends_on))
+GROUP BY b.id, b.tenant_id, b.service_uid, e.day;
+
+GRANT SELECT ON public.vw_boost_metrics_daily TO auth_user;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('marketing', '1.2.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- PLUGIN: search  (14 arquivos)
 -- ===============================================================================================
 
 
@@ -9786,6 +10605,470 @@ GRANT EXECUTE ON FUNCTION public.fn_search_services(character varying, integer, 
 
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('search', '1.12.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===============================================================================================
+-- kizuna-core/plugins/search/0014_search_sponsored.sql
+-- ===============================================================================================
+
+-- plugins/search/0014_search_sponsored.sql
+-- Impulsionamento (plugin marketing) com efeito REAL na listagem, resolvido no banco — sem JS nem
+-- requisição a mais no navegador. `fn_search_services` ganha um 18º parâmetro e duas colunas:
+--   * `p_sponsored_max integer` (padrão NULL): NULL = comportamento de sempre (nada muda para quem
+--     não usa marketing). >= 0 = lê os impulsionados no ar (`vw_boosts_live`, se existir) e marca
+--     `boosted`; > 0 = os N primeiros impulsionados que casam com os filtros vão ao TOPO da página 0
+--     (`sponsor_slot` = 1..N), no máximo 10. Escolha: cidade selecionada primeiro (irmãs depois) e
+--     rodízio por `p_seed` + janela de 10 min (md5(uid||semente||janela)) — mesma semente, mesma
+--     escolha em todas as páginas (o patrocinado não se repete na rolagem); listas com semente fixa
+--     (trilhas em cache) giram a cada 10 min. Vencido nunca ocupa vaga.
+--   * `boosted boolean`: o anúncio tem impulsionamento vigente (selo BORA INDICA sem consulta extra).
+--   * `sponsor_slot integer`: posição patrocinada (1..N) ou NULL (orgânico).
+-- O plugin search NÃO passa a depender do marketing: a view é lida por SQL dinâmico só quando existe.
+-- Corpo igual ao da 0013 fora isso. Tipo de retorno muda → DROP + CREATE (as 3 assinaturas, para
+-- não sobrar overload ambíguo no PostgREST). Idempotente.
+
+DROP FUNCTION IF EXISTS public.fn_search_services(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, integer, text, text[], text[], bigint[], jsonb, jsonb, text);
+DROP FUNCTION IF EXISTS public.fn_search_services(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, integer, text, text[], text[], bigint[], jsonb, jsonb, text, jsonb);
+DROP FUNCTION IF EXISTS public.fn_search_services(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, integer, text, text[], text[], bigint[], jsonb, jsonb, text, jsonb, integer);
+
+CREATE FUNCTION public.fn_search_services(
+  p_state character varying,
+  p_city_id integer,
+  p_group_category_slug character varying,
+  p_category_id bigint DEFAULT NULL::bigint,
+  p_subcategories jsonb DEFAULT NULL::jsonb,
+  p_query text DEFAULT NULL::text,
+  p_seed double precision DEFAULT NULL::double precision,
+  p_page integer DEFAULT 0,
+  p_page_size integer DEFAULT 20,
+  p_city_ibge text DEFAULT NULL::text,
+  p_exclude_category_slugs text[] DEFAULT NULL::text[],
+  p_city_ibges text[] DEFAULT NULL::text[],
+  p_category_ids bigint[] DEFAULT NULL::bigint[],
+  p_tags jsonb DEFAULT NULL::jsonb,
+  p_local_refs jsonb DEFAULT NULL::jsonb,
+  p_order text DEFAULT NULL::text,
+  p_expired_grace jsonb DEFAULT NULL::jsonb,
+  p_sponsored_max integer DEFAULT NULL::integer
+)
+RETURNS TABLE(
+  uid uuid,
+  title character varying,
+  price numeric,
+  price_type character varying,
+  category character varying,
+  category_slug character varying,
+  category_group_slug character varying,
+  subcategory character varying,
+  sponsored boolean,
+  cover_file_id character varying,
+  provider_name character varying,
+  provider_avatar character varying,
+  rating numeric,
+  reviews integer,
+  city text,
+  state text,
+  address_count integer,
+  event_start character varying,
+  venue character varying,
+  expires_at timestamptz,
+  boosted boolean,
+  sponsor_slot integer
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $function$
+DECLARE
+  v_query tsquery;
+  v_group_id bigint;
+  v_state text := NULLIF(btrim(p_state), '');
+  v_city  text := NULLIF(btrim(p_city_ibge), '');
+  -- cidades aceitas: a lista de irmãs (sem vazios) ou só a selecionada; NULL = sem filtro de cidade
+  v_cities text[];
+  v_has_loc boolean;
+  -- tags pedidas (normalizadas, sem vazias); NULL = sem filtro de tag
+  v_tags text[];
+  -- valores de `extras.local_ref` pedidos (aparados, sem vazios); NULL = sem esse filtro
+  v_refs text[];
+  -- anúncios publicados com alguma das tags OU com local_ref pedido; NULL = sem filtro
+  v_tag_ids bigint[];
+  -- `p_order` = '<campo>[:asc|desc]' de uma lista fechada (colunas de services, nada de JSON);
+  -- apelidos: event_start = expires_at:asc (0013: o "Acontece em" do evento), recent = created_at:desc
+  v_order text := lower(btrim(COALESCE(p_order, '')));
+  v_field text;
+  v_desc  boolean;
+  -- 0014: impulsionados no ar (plugin marketing, `vw_boosts_live`); NULL = sem o plugin ou sem pedido
+  v_boosted uuid[];
+  -- 0014: vagas patrocinadas no topo (0 a 10); só com `p_sponsored_max` > 0
+  v_sp_max integer := LEAST(GREATEST(COALESCE(p_sponsored_max, 0), 0), 10);
+  -- 0014: semente do rodízio entre impulsionados (mesma semente = mesma escolha em todas as páginas)
+  v_rot text;
+BEGIN
+  v_order := CASE v_order
+    WHEN 'event_start' THEN 'expires_at:asc'
+    WHEN 'recent' THEN 'created_at:desc'
+    ELSE v_order
+  END;
+  v_field := split_part(v_order, ':', 1);
+  v_desc := split_part(v_order, ':', 2) = 'desc';
+  IF v_field NOT IN ('occurs_at', 'created_at', 'expires_at', 'price', 'title') THEN
+    v_field := NULL; -- relevância (a ordem de sempre)
+  END IF;
+  PERFORM setseed(COALESCE(p_seed, random()));
+  -- rodízio: semente + janela de 10 min — listas com semente fixa (trilhas em cache) também giram
+  v_rot := COALESCE(p_seed, random())::text || ':' || floor(extract(epoch FROM now()) / 600)::bigint::text;
+  -- 0014: SQL dinâmico de propósito — o plugin search não depende do marketing (sem a view, ou sem
+  -- `p_sponsored_max`, nada muda: `boosted` = false e nenhuma vaga patrocinada).
+  IF p_sponsored_max IS NOT NULL AND to_regclass('public.vw_boosts_live') IS NOT NULL THEN
+    EXECUTE 'SELECT array_agg(service_uid) FROM public.vw_boosts_live' INTO v_boosted;
+  END IF;
+  SELECT array_agg(DISTINCT btrim(c)) INTO v_cities
+    FROM unnest(p_city_ibges) c
+   WHERE btrim(c) <> '';
+  IF v_cities IS NULL AND v_city IS NOT NULL THEN
+    v_cities := ARRAY[v_city];
+  END IF;
+  -- o IBGE já identifica a UF: com cidade(s) definida(s) o filtro de estado sairia redundante — e
+  -- barraria irmãs de estados diferentes.
+  IF v_cities IS NOT NULL THEN
+    v_state := NULL;
+  END IF;
+  v_has_loc := (v_state IS NOT NULL OR v_cities IS NOT NULL);
+
+  IF p_tags IS NOT NULL AND jsonb_typeof(p_tags) = 'array' THEN
+    SELECT array_agg(DISTINCT lower(btrim(t))) INTO v_tags
+      FROM jsonb_array_elements_text(p_tags) t
+     WHERE btrim(t) <> '';
+  END IF;
+  IF p_local_refs IS NOT NULL AND jsonb_typeof(p_local_refs) = 'array' THEN
+    SELECT array_agg(DISTINCT btrim(r)) INTO v_refs
+      FROM jsonb_array_elements_text(p_local_refs) r
+     WHERE btrim(r) <> '';
+  END IF;
+  IF v_tags IS NOT NULL OR v_refs IS NOT NULL THEN
+    -- mesmos predicados dos índices parciais `services_extras_tags` (services 0011) e
+    -- `services_extras_local_ref` (services 0014); UNION para cada ramo usar o seu índice
+    v_tag_ids := ARRAY(
+      SELECT st.id
+        FROM public.services st
+       WHERE v_tags IS NOT NULL
+         AND st.active
+         AND st.status = 'active'
+         AND (st.extras -> 'tags') ?| v_tags
+      UNION
+      SELECT sr.id
+        FROM public.services sr
+       WHERE v_refs IS NOT NULL
+         AND sr.active
+         AND sr.status = 'active'
+         AND (sr.extras ->> 'local_ref') = ANY(v_refs)
+      UNION
+      -- o formulário do evento (plugin forms) grava o campo em `form_results.answers.local_ref`;
+      -- `@>` por valor usa o GIN `form_results_answers_gin` (jsonb_path_ops)
+      SELECT sf.id
+        FROM unnest(v_refs) ref
+        JOIN public.form_results fr
+          ON fr.domain = 'service'
+         AND fr.answers @> jsonb_build_object('local_ref', ref)
+        JOIN public.services sf
+          ON sf.id::text = fr.reference_id
+       WHERE sf.active
+         AND sf.status = 'active'
+    );
+  END IF;
+
+  IF p_query IS NOT NULL AND btrim(p_query) <> '' THEN
+    v_query := plainto_tsquery('portuguese', unaccent(p_query));
+  END IF;
+
+  IF p_group_category_slug IS NOT NULL AND btrim(p_group_category_slug) <> '' THEN
+    SELECT cg.id INTO v_group_id
+      FROM public.categories_group cg
+     WHERE cg.slug = p_group_category_slug
+       AND cg.active = true;
+
+    IF v_group_id IS NULL THEN
+      RETURN;
+    END IF;
+  END IF;
+
+  RETURN QUERY
+  WITH services_filtered AS MATERIALIZED (
+    SELECT
+      s.id                                 AS service_id,
+      s.uid,
+      s.title::character varying           AS title,
+      s.starting_price::numeric            AS price,
+      s.price_unit::character varying      AS price_type,
+      c.name::character varying            AS category,
+      c.slug::character varying            AS category_slug,
+      COALESCE(cgs.slug, cgc.slug)::character varying AS category_group_slug,
+      sub.name::character varying          AS subcategory,
+      COALESCE(s.sponsored, false)         AS sponsored,
+      COALESCE(
+        NULLIF(s.extras->>'coverFileId', ''),
+        s.extras->'images'->>0
+      )::character varying                 AS cover_file_id,
+      COALESCE(prov.display_name, prov.full_name)::character varying AS provider_name,
+      prov.avatar_url::character varying   AS provider_avatar,
+      prov.prov_city                       AS provider_city,
+      prov.prov_state                      AS provider_state,
+      -- só com irmãs: o anúncio é da cidade selecionada? (mesma regra do filtro de local abaixo)
+      (
+        cardinality(v_cities) > 1
+        AND v_city IS NOT NULL
+        AND (
+          EXISTS (
+            SELECT 1 FROM public.service_addresses ah
+            WHERE ah.service_id = s.id AND ah.active AND ah.city_ibge = v_city
+          )
+          OR (
+            NOT EXISTS (
+              SELECT 1 FROM public.service_addresses ah0
+              WHERE ah0.service_id = s.id AND ah0.active
+            )
+            AND prov.prov_city_ibge = v_city
+          )
+        )
+      ) IS TRUE                            AS in_home_city,
+      rs.average_rating::numeric           AS rating,
+      COALESCE(rs.total_reviews, 0)::integer AS reviews,
+      CASE
+        WHEN v_query IS NOT NULL
+        THEN ts_rank(
+          to_tsvector('portuguese', unaccent(s.title || ' ' || COALESCE(s.description, ''))),
+          v_query
+        )
+        ELSE 0::real
+      END AS text_rank,
+      s.created_at                         AS created_at,
+      s.occurs_at                          AS occurs_at,
+      s.expires_at                         AS expires_at,
+      -- vencido (ainda aparece só se o grupo tem tolerância em `p_expired_grace`): vai ao fim da lista
+      (s.expires_at IS NOT NULL AND s.expires_at <= now()) AS is_expired,
+      s.starting_price::numeric            AS sort_price,
+      (v_boosted IS NOT NULL AND s.uid = ANY(v_boosted)) AS is_boosted
+    FROM public.services s
+    LEFT JOIN public.categories c ON c.id = s.category_id
+    LEFT JOIN public.categories_group cgs ON cgs.id = s.category_group_id
+    LEFT JOIN public.categories_group cgc ON cgc.id = c.category_group_id
+    -- dias de tolerância do grupo do anúncio (mesmo slug devolvido em `category_group_slug`):
+    -- só inteiro de 1 a 365; o resto (ou sem mapa/sem o grupo) = 0. CASEs aninhados: o cast só roda
+    -- depois de o regex passar, e nunca estoura.
+    LEFT JOIN LATERAL (
+      SELECT COALESCE(
+        CASE WHEN jsonb_typeof(p_expired_grace) = 'object' THEN
+          CASE WHEN (p_expired_grace ->> COALESCE(cgs.slug, cgc.slug)) ~ '^\d{1,3}$' THEN
+            CASE WHEN (p_expired_grace ->> COALESCE(cgs.slug, cgc.slug))::integer BETWEEN 1 AND 365
+                 THEN (p_expired_grace ->> COALESCE(cgs.slug, cgc.slug))::integer
+            END
+          END
+        END,
+        0
+      ) AS days
+    ) gr ON true
+    LEFT JOIN LATERAL (
+      SELECT cs.name
+      FROM public.service_categories_sub scs
+      JOIN public.categories_sub cs ON cs.id = scs.category_sub_id
+      WHERE scs.service_id = s.id
+        AND scs.active = true
+        AND cs.active = true
+      ORDER BY scs.id
+      LIMIT 1
+    ) sub ON true
+    LEFT JOIN LATERAL (
+      SELECT ud.full_name, ud.display_name, ud.avatar_url,
+             ud.state AS prov_state, ud.city AS prov_city, ud.city_ibge AS prov_city_ibge
+      FROM public.user_data ud
+      WHERE ud.tenant_id = s.tenant_id
+        AND ud.active = true
+      ORDER BY ud.created_at
+      LIMIT 1
+    ) prov ON true
+    LEFT JOIN public.review_stats rs
+      ON rs.domain = 'service' AND rs.reference_id = s.id::text
+    WHERE s.active = true
+      AND s.status = 'active'
+      AND (s.expires_at IS NULL OR s.expires_at > now() - make_interval(days => gr.days))
+      AND (p_category_id IS NULL OR s.category_id = p_category_id)
+      AND (v_tag_ids IS NULL OR s.id = ANY(v_tag_ids))
+      AND (
+        p_category_ids IS NULL
+        OR cardinality(p_category_ids) = 0
+        OR s.category_id = ANY(p_category_ids)
+      )
+      AND (
+        p_category_id IS NOT NULL
+        OR (p_category_ids IS NOT NULL AND cardinality(p_category_ids) > 0)
+        OR p_exclude_category_slugs IS NULL
+        OR c.slug IS NULL
+        OR c.slug <> ALL(p_exclude_category_slugs)
+      )
+      AND (
+        v_group_id IS NULL
+        OR s.category_group_id = v_group_id
+        -- grupo principal da categoria: anúncio sem grupo gravado (ou com um grupo antigo, de
+        -- antes de a categoria mudar de grupo) continua aparecendo no grupo da categoria dele
+        OR c.category_group_id = v_group_id
+        OR EXISTS (
+          SELECT 1
+          FROM public.categories_group_link cgl
+          WHERE cgl.category_id = s.category_id
+            AND cgl.category_group_id = v_group_id
+        )
+      )
+      AND (
+        NOT v_has_loc
+        OR s.service_location = 'remoto'
+        OR EXISTS (
+          SELECT 1
+          FROM public.service_addresses a
+          WHERE a.service_id = s.id
+            AND a.active
+            AND (v_state IS NULL OR a.state = v_state)
+            AND (v_cities IS NULL OR a.city_ibge = ANY(v_cities))
+        )
+        OR (
+          NOT EXISTS (
+            SELECT 1 FROM public.service_addresses a0
+            WHERE a0.service_id = s.id AND a0.active
+          )
+          AND (v_state IS NULL OR prov.prov_state = v_state)
+          AND (v_cities IS NULL OR prov.prov_city_ibge = ANY(v_cities))
+        )
+      )
+      AND (
+        p_subcategories IS NULL
+        OR jsonb_array_length(p_subcategories) = 0
+        OR EXISTS (
+          SELECT 1
+          FROM public.service_categories_sub scs
+          WHERE scs.service_id = s.id
+            AND scs.active = true
+            AND scs.category_sub_id IN (
+              SELECT (value)::bigint FROM jsonb_array_elements_text(p_subcategories)
+            )
+        )
+      )
+      AND (
+        v_query IS NULL
+        OR to_tsvector('portuguese', unaccent(s.title || ' ' || COALESCE(s.description, ''))) @@ v_query
+        OR unaccent(s.title) ILIKE '%' || unaccent(p_query) || '%'
+      )
+  ),
+  -- 0014: vagas patrocinadas. Entre os impulsionados que JÁ casam com os filtros (cidade, categoria,
+  -- texto...) e não vencidos: a cidade selecionada primeiro, depois rodízio pela semente. Os
+  -- `v_sp_max` primeiros vão ao topo da página 0 (e não se repetem nas seguintes: é uma ordem só).
+  sponsor AS (
+    SELECT sp.service_id, sp.slot
+    FROM (
+      SELECT f.service_id,
+             row_number() OVER (ORDER BY f.in_home_city DESC, md5(f.uid::text || v_rot)) AS slot
+      FROM services_filtered f
+      WHERE f.is_boosted AND NOT f.is_expired
+    ) sp
+    WHERE sp.slot <= v_sp_max
+  ),
+  page AS (
+    SELECT sf.*, row_number() OVER () AS rn
+    FROM (
+      SELECT f.*, spk.slot::integer AS sponsor_slot
+      FROM services_filtered f
+      LEFT JOIN sponsor spk ON spk.service_id = f.service_id
+      ORDER BY
+        spk.slot ASC NULLS LAST,
+        -- vencidos (tolerância de `p_expired_grace`) sempre depois dos não vencidos; entre eles, o que
+        -- venceu há menos tempo primeiro
+        f.is_expired ASC,
+        CASE WHEN f.is_expired THEN f.expires_at END DESC NULLS LAST,
+        CASE WHEN v_query IS NOT NULL THEN f.text_rank END DESC NULLS LAST,
+        -- occurs_at crescente: o que ainda vai acontecer primeiro (do mais próximo ao mais
+        -- distante), depois o que já passou; sem data por último
+        CASE WHEN v_field = 'occurs_at' AND NOT v_desc THEN (f.occurs_at >= now()) END DESC NULLS LAST,
+        CASE WHEN v_field = 'occurs_at' AND NOT v_desc THEN f.occurs_at END ASC NULLS LAST,
+        CASE WHEN v_field = 'occurs_at' AND v_desc THEN f.occurs_at END DESC NULLS LAST,
+        CASE WHEN v_field = 'created_at' AND NOT v_desc THEN f.created_at END ASC NULLS LAST,
+        CASE WHEN v_field = 'created_at' AND v_desc THEN f.created_at END DESC NULLS LAST,
+        CASE WHEN v_field = 'expires_at' AND NOT v_desc THEN f.expires_at END ASC NULLS LAST,
+        CASE WHEN v_field = 'expires_at' AND v_desc THEN f.expires_at END DESC NULLS LAST,
+        CASE WHEN v_field = 'price' AND NOT v_desc THEN f.sort_price END ASC NULLS LAST,
+        CASE WHEN v_field = 'price' AND v_desc THEN f.sort_price END DESC NULLS LAST,
+        CASE WHEN v_field = 'title' AND NOT v_desc THEN f.title END ASC,
+        CASE WHEN v_field = 'title' AND v_desc THEN f.title END DESC,
+        f.in_home_city DESC,
+        f.rating DESC NULLS LAST,
+        (f.provider_city IS NOT NULL) DESC,
+        random()
+      LIMIT p_page_size
+      OFFSET (p_page * p_page_size)
+    ) sf
+  )
+  SELECT
+    pg.uid,
+    pg.title::character varying,
+    pg.price::numeric,
+    pg.price_type::character varying,
+    pg.category::character varying,
+    pg.category_slug::character varying,
+    pg.category_group_slug::character varying,
+    pg.subcategory::character varying,
+    pg.sponsored,
+    pg.cover_file_id::character varying,
+    pg.provider_name::character varying,
+    pg.provider_avatar::character varying,
+    pg.rating::numeric,
+    pg.reviews::integer,
+    COALESCE(ad.a_city, pg.provider_city)::text,
+    COALESCE(ad.a_state, pg.provider_state)::text,
+    COALESCE(ad.cnt, 0)::integer,
+    -- data de início do formulário (importador/legado); sem ela, o dia do "Acontece em" (expires_at,
+    -- fuso de Cuiabá) quando o anúncio tem formulário — o formulário novo não pede mais data de início
+    COALESCE(
+      ev.event_start,
+      CASE WHEN ev.has_form
+           THEN to_char(pg.expires_at AT TIME ZONE 'America/Cuiaba', 'YYYY-MM-DD')
+      END
+    )::character varying,
+    ad.a_label::character varying,
+    pg.expires_at,
+    pg.is_boosted,
+    pg.sponsor_slot
+  FROM page pg
+  LEFT JOIN LATERAL (
+    SELECT NULLIF(fr.answers->>'data_inicio', '')::character varying AS event_start, true AS has_form
+    FROM public.form_results fr
+    WHERE fr.domain = 'service'
+      AND fr.reference_id = pg.service_id::text
+    LIMIT 1
+  ) ev ON true
+  LEFT JOIN LATERAL (
+    SELECT a.city AS a_city, a.state AS a_state, a.label AS a_label, count(*) OVER () AS cnt
+    FROM public.service_addresses a
+    WHERE a.service_id = pg.service_id
+      AND a.active
+    ORDER BY
+      (v_has_loc
+       AND (v_state IS NULL OR a.state = v_state)
+       AND (v_cities IS NULL OR a.city_ibge = ANY(v_cities))) DESC,
+      (a.city_ibge IS NOT DISTINCT FROM v_city) DESC,
+      a.is_primary DESC,
+      a.id
+    LIMIT 1
+  ) ad ON true
+  ORDER BY pg.rn;
+END;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_search_services(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, integer, text, text[], text[], bigint[], jsonb, jsonb, text, jsonb, integer)
+  TO anon, auth_user;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('search', '1.13.0')
 ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
 
 NOTIFY pgrst, 'reload schema';
