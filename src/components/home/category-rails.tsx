@@ -47,11 +47,15 @@ export async function CategoryRails({
   rails,
   detailConfig,
   city,
+  priorityFirst = false,
 }: {
   rails: CategoryRailConfig[];
   detailConfig?: ServiceDetailConfig | null;
   /** Home de uma cidade: filtra as trilhas por ela e esconde a cidade nos cards. */
   city?: RoutableCity | null;
+  /** 1º card da 1ª trilha com imagem prioritária (eager + fetchpriority=high): use na trilha que
+   * entra na 1ª dobra, candidata a LCP. */
+  priorityFirst?: boolean;
 }) {
   const loaded = await Promise.all(
     rails.map((rail) => {
@@ -104,6 +108,7 @@ export async function CategoryRails({
             showCity={!city || rail.scope === 'region'}
             impressionRule={trackRule('service', 'impression')}
             source="home"
+            priorityFirst={priorityFirst && index === 0}
             adSlot={
               <AdSlot
                 slot="trilho-card"

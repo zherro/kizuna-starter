@@ -399,6 +399,10 @@
       "railSlots": 1,
       "railPool": 3,
       "listSlots": 1
+    },
+    "payments": {
+      "_comment": "Conciliação no provedor de pagamento (conta pode ser a mesma do Alô Serviço). referencePrefix vira o começo da referência da cobrança (bora-impulsionamento-<id>, bora-banner-<id>, bora-recarga-<id>), da descrição (\"Bora Cuiabá — impulsionamento #<id>\", nome de site.name) e do metadata (projeto/tipo/id). Sem a chave, a cobrança sai como antes.",
+      "referencePrefix": "bora"
     }
   }
 }

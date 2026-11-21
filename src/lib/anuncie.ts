@@ -46,14 +46,15 @@ export type Audience = {
 
 export const HAS_CONTACT = WHATSAPP_NUMBER !== '' || CONTACT_EMAIL !== '';
 
+/** Fluxo de criar anúncio (o mesmo do "Divulgar" da barra inferior). Visitante passa pelo login antes. */
+export const CREATE_AD_HREF = '/painel/meus-servicos/novo';
+
+/** Texto do botão principal das páginas /anuncie. */
+export const CREATE_AD_LABEL = 'Anunciar grátis';
+
 const STEP_1 = {
-  title: 'Fale com a gente',
-  text:
-    WHATSAPP_NUMBER !== ''
-      ? 'Toque no botão e mande um oi no WhatsApp.'
-      : CONTACT_EMAIL !== ''
-        ? 'Toque no botão e mande um e-mail.'
-        : undefined,
+  title: 'Crie seu anúncio',
+  text: `Toque em "${CREATE_AD_LABEL}" e entre com sua conta (ou crie uma).`,
 };
 
 export const AUDIENCES: Audience[] = [

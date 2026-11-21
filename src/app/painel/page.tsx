@@ -2,7 +2,12 @@
 // atalhos e convite a anunciar) no topo; depois, em segundo plano, nível da conta e — só com a
 // permissão `analytics/view` (root sempre tem) — as métricas. O `PainelWelcome` é dono do único <h1>.
 // O slide de destaques (PainelHero) saiu daqui; está no showcase (/showcase/painel-hero).
-import { getSession, isPhoneLoginEnabled, type OtpConfig } from '@kizuna/core/server';
+import {
+  getDisplayNameFromEmail,
+  getSession,
+  isPhoneLoginEnabled,
+  type OtpConfig,
+} from '@kizuna/core/server';
 import { AccountLevelCard } from '@kizuna/core/client/components/account-levels';
 import { PainelStats } from '@kizuna/core/client/components/analytics/painel-home';
 import { ShortcutGrid } from '@kizuna/core/client/components/shortcut-grid';
@@ -11,6 +16,18 @@ import { LifeBuoy } from 'lucide-react';
 import { PainelWelcome } from '@kizuna/core/client/components/painel-welcome';
 import { vocabulary } from '@/lib/vocabulary';
 import cfg from '@/../kizuna.config.json';
+
+/**
+ * Nome de verdade para a saudação, ou `null`. O login por senha grava em `display_name` o começo do
+ * e-mail ("bs@…" vira "Bs"); saudar com isso soa errado ("Bora, Bs?"), então sem nome a saudação
+ * fica sem nome ("Bora descobrir?").
+ */
+function realName(displayName?: string, login?: string): string | null {
+  const name = displayName?.trim();
+  if (!name) return null;
+  if (login?.includes('@') && name === getDisplayNameFromEmail(login)) return null;
+  return name;
+}
 
 export default async function PainelPage() {
   const session = await getSession();
@@ -26,7 +43,7 @@ export default async function PainelPage() {
       ) : null}
 
       <PainelWelcome
-        name={session?.display_name}
+        name={realName(session?.display_name, session?.login)}
         advertise={{ href: '/painel/meus-servicos/novo', label: vocabulary.phrases.new }}
       />
 

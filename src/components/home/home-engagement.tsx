@@ -6,7 +6,7 @@ import {
   type PlaceMosaicVariantProp,
 } from '@kizuna/core/client/components/home/place-mosaic-layout';
 import { placeItemsFromServices } from '@kizuna/core/client/components/home/place-mosaic-services';
-import { NewsHighlights } from '@kizuna/core/client/components/home/news-highlights';
+import { NewsCompactList } from '@kizuna/core/client/components/home/news-compact-list';
 import { loadCategoryRail } from '@kizuna/core/server';
 import { citySlug, type RoutableCity } from '@kizuna/core/shared/city-routing/city-slug';
 import { parseRegions, regionCitiesFor } from '@kizuna/core/shared/regions';
@@ -115,24 +115,17 @@ export async function HomePlaces({
 
 export async function HomeNews({
   city,
-  leads = 1,
-  listLimit = 5,
-  narrow = false,
+  limit = 4,
 }: {
   city: RoutableCity | null;
-  /** Manchetes em destaque (1, 2 ou 4) — vem de home.newsLeads. */
-  leads?: 1 | 2 | 4;
-  listLimit?: number;
-  /** Container mais estreito (1280px) e mais respiro — vem de home.newsNarrow. */
-  narrow?: boolean;
+  /** Quantas notícias na lista compacta (miniatura + título + data). Default 4 (~1 tela no celular). */
+  limit?: number;
 }) {
   // Falha de rede/RPC não pode derrubar a home inteira: o bloco apenas some.
   const items = await loadHomeNews({
     cityIbge: city?.ibge,
     cityName: city?.name,
-    limit: leads + listLimit,
+    limit,
   }).catch(() => []);
-  return (
-    <NewsHighlights items={items} moreHref={homeNewsMoreHref(city)} leadCount={leads} listLimit={listLimit} narrow={narrow} />
-  );
+  return <NewsCompactList items={items} moreHref={homeNewsMoreHref(city)} limit={limit} />;
 }

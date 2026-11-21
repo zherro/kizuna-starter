@@ -52,4 +52,37 @@ describe('HomeContent (Server Component)', () => {
     expect(html).toMatch(/<main[^>]*data-home-ink-level="3"/);
     expect(html).toContain('id="trilhas"');
   });
+  it('celular: busca no topo, atalhos numa linha e a 1ª trilha antes de categorias, demais trilhas e notícias', async () => {
+    const html = await render(
+      <HomeContent
+        showHero={false}
+        categoriesVariant="compact"
+        inkPicker={false}
+        showNearby={false}
+        searchBar={<form id="busca" />}
+        shortcuts={<nav id="atalhos" />}
+        todayCallout={<a id="hoje-card" href="/hoje">Hoje</a>}
+        leadRail={<section id="trilha-eventos" />}
+        categoryRails={<section id="trilha-cinema" />}
+        newsHighlights={<section id="noticias" />}
+      />
+    );
+    const at = (needle: string) => {
+      const i = html.indexOf(needle);
+      expect(i, needle).toBeGreaterThan(-1);
+      return i;
+    };
+    const order = [
+      at('id="busca"'),
+      at('id="atalhos"'),
+      at('id="trilha-eventos"'),
+      at('href="/busca?group=eventos"'), // carrossel "O que você quer fazer hoje?"
+      at('id="trilha-cinema"'),
+      at('id="noticias"'),
+    ];
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    // com os atalhos compactos, os cartões grandes só aparecem a partir de sm
+    expect(html).toMatch(/class="[^"]*hidden sm:grid[^"]*"[^>]*>(?:(?!<\/div>).)*id="hoje-card"/s);
+    expect(html).toMatch(/class="px-4 pb-5 sm:hidden"><nav id="atalhos"/);
+  });
 });

@@ -29,7 +29,7 @@ export const ACTION_LABELS: Record<Capability, string> = {
   save: 'Curtir e salvar',
   review: 'Avaliar e comentar',
   comment: 'Avaliar e comentar',
-  'service.create': 'Publicar anuncios',
+  'service.create': 'Publicar anúncios',
   'event.create': 'Publicar eventos',
   sell: 'Vender pela plataforma',
 };

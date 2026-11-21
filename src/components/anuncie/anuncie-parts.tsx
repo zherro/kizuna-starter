@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Building2, CalendarDays, Clapperboard, Compass, Mail, MapPin, Martini } from 'lucide-react';
 import { breadcrumbJsonLd, buildMetadata, jsonLdScript } from '@kizuna/core/server';
 import {
+  LandingAuthAction,
   LandingCta,
   LandingHero,
   LandingLinkCards,
@@ -18,6 +19,8 @@ import {
   BADGES,
   COMMON_SUMMARY,
   CONTACT_EMAIL,
+  CREATE_AD_HREF,
+  CREATE_AD_LABEL,
   GENERIC_WHATSAPP_MESSAGE,
   PILLARS,
   PILLARS_INTRO,
@@ -66,23 +69,63 @@ function WebPageJsonLd({ name, description, path, crumbs }: { name: string; desc
   );
 }
 
-/** Botão do canal configurado (WhatsApp ou e-mail). Sem canal, nada aparece. */
-function ContactButton({ contact }: { contact: Contact | null }) {
+/**
+ * Ação principal: criar o anúncio (visitante passa pelo login e volta). `data-cta` marca o botão
+ * para quem instrumentar cliques depois — o analytics do core só conta eventos de anúncio (UUID).
+ */
+function CreateAdButton({ className }: { className?: string }) {
+  return <LandingAuthAction href={CREATE_AD_HREF} label={CREATE_AD_LABEL} className={className} data-cta="anuncie-criar" />;
+}
+
+/** Botão secundário do canal configurado (WhatsApp ou e-mail). Sem canal, nada aparece. */
+export function ContactButton({ contact }: { contact: Contact | null }) {
   if (!contact) return null;
-  return <WhatsAppButton href={contact.href} label={contact.label} icon={contact.kind === 'email' ? Mail : undefined} />;
+  return (
+    <WhatsAppButton
+      href={contact.href}
+      label={contact.label}
+      variant="soft"
+      icon={contact.kind === 'email' ? Mail : undefined}
+      data-cta={`anuncie-${contact.kind}`}
+    />
+  );
+}
+
+/** Link discreto para a página /hoje: mostra o produto sem competir com os botões. */
+function HojeLink() {
+  return (
+    <Link
+      href="/hoje"
+      data-cta="anuncie-hoje"
+      className="inline-flex min-h-12 items-center rounded-full px-3 text-base font-semibold text-foreground underline decoration-primary decoration-2 underline-offset-[6px] hover:decoration-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      Veja o Bora funcionando
+    </Link>
+  );
+}
+
+/** Botões do hero e do bloco final: criar anúncio, falar com a gente (se houver canal) e ver o /hoje. */
+export function AnuncieActions({ contact }: { contact: Contact | null }) {
+  return (
+    <>
+      <CreateAdButton />
+      <ContactButton contact={contact} />
+      <HojeLink />
+    </>
+  );
 }
 
 function FinalCta({ contact }: { contact: Contact | null }) {
-  // E-mail como linha extra só quando o botão principal é o WhatsApp (senão o botão já é o e-mail).
+  // E-mail como linha extra só quando o botão de contato é o WhatsApp (senão o botão já é o e-mail).
   const extraEmail = contact?.kind === 'whatsapp' && CONTACT_EMAIL;
   return (
     <LandingCta
       id={END_ID}
-      title={contact ? 'Vamos conversar?' : 'Veja o Bora funcionando'}
+      title="Bora anunciar?"
       text={
         contact
-          ? `Chame a gente ${contact.kind === 'whatsapp' ? 'no WhatsApp' : 'por e-mail'}. Anunciar é gratuito.`
-          : 'Anunciar é gratuito.'
+          ? `Crie seu anúncio agora ou chame a gente ${contact.kind === 'whatsapp' ? 'no WhatsApp' : 'por e-mail'}. Anunciar é gratuito.`
+          : 'Crie seu anúncio agora. Anunciar é gratuito.'
       }
       footnote={
         extraEmail ? (
@@ -95,30 +138,21 @@ function FinalCta({ contact }: { contact: Contact | null }) {
         ) : undefined
       }
     >
-      <ContactButton contact={contact} />
-      {contact ? <HojeLink /> : <HojeLink primary />}
+      <AnuncieActions contact={contact} />
     </LandingCta>
   );
 }
 
-function HojeLink({ primary = false }: { primary?: boolean }) {
+/** Botão fixo no celular (some com o hero na tela e no bloco final) + espaço reservado para ele. */
+function StickyCreateAd() {
   return (
-    <Link
-      href="/hoje"
-      className={`inline-flex min-h-12 items-center justify-center rounded-full px-6 text-base font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-        primary
-          ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25 hover:brightness-95'
-          : 'bg-background text-foreground ring-1 ring-border hover:bg-muted'
-      }`}
-    >
-      Veja o Bora funcionando
-    </Link>
+    <>
+      <div aria-hidden="true" className="h-16 md:hidden" />
+      <LandingStickyCta heroId={HERO_ID} endId={END_ID}>
+        <CreateAdButton className="w-full" />
+      </LandingStickyCta>
+    </>
   );
-}
-
-/** Reserva o espaço do botão fixo no celular, para ele não cobrir o fim do conteúdo. */
-function StickySpacer() {
-  return <div aria-hidden="true" className="h-16 md:hidden" />;
 }
 
 export function AudiencePage({ a }: { a: Audience }) {
@@ -138,7 +172,7 @@ export function AudiencePage({ a }: { a: Audience }) {
       />
       <div id={HERO_ID}>
         <LandingHero eyebrow={a.eyebrow} title={a.hook} summary={COMMON_SUMMARY} badges={BADGES}>
-          {contact ? <ContactButton contact={contact} /> : null}
+          <AnuncieActions contact={contact} />
         </LandingHero>
       </div>
       <LandingPoints id="problema" title="O problema" items={a.problems} highlightLast />
@@ -156,12 +190,7 @@ export function AudiencePage({ a }: { a: Audience }) {
       ) : null}
       <LandingSteps id="como-entrar" title="Como entrar" steps={a.steps} />
       <FinalCta contact={contact} />
-      {contact ? (
-        <>
-          <StickySpacer />
-          <LandingStickyCta href={contact.href} label={contact.label} heroId={HERO_ID} endId={END_ID} />
-        </>
-      ) : null}
+      <StickyCreateAd />
     </>
   );
 }
@@ -181,7 +210,7 @@ export function AnuncieIndex() {
       />
       <div id={HERO_ID}>
         <LandingHero eyebrow="Anuncie" title="Seu negócio na lista de quem quer saber o que fazer hoje" summary={COMMON_SUMMARY} badges={BADGES}>
-          {contact ? <ContactButton contact={contact} /> : null}
+          <AnuncieActions contact={contact} />
         </LandingHero>
       </div>
       <LandingLinkCards
@@ -202,12 +231,7 @@ export function AnuncieIndex() {
         items={PILLARS.map((p, i) => ({ ...p, icon: PILLAR_ICONS[i] }))}
       />
       <FinalCta contact={contact} />
-      {contact ? (
-        <>
-          <StickySpacer />
-          <LandingStickyCta href={contact.href} label={contact.label} heroId={HERO_ID} endId={END_ID} />
-        </>
-      ) : null}
+      <StickyCreateAd />
     </>
   );
 }

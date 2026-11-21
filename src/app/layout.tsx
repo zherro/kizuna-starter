@@ -4,7 +4,6 @@ import {
   Briefcase,
   Compass,
   Home,
-  LayoutDashboard,
   LogIn,
   Map,
   MapPin,
@@ -150,8 +149,9 @@ export const viewport: Viewport = {
   ],
 };
 
-// Primeiros 3 itens da barra inferior (mobile), iguais para logado e visitante. "Divulgar" é o CTA
-// central — o visitante vai ao login e volta (requiresAuth).
+// Primeiros 3 itens da barra inferior (mobile), iguais para logado e visitante. "Anunciar" é o CTA
+// central — o visitante vai ao login e volta (requiresAuth). Nome único no site todo: "Anunciar" cria,
+// "Meus anúncios" lista (o mesmo vocabulário do menu do painel, src/lib/vocabulary.ts).
 // Prefetch: só os destinos principais (Início, Buscar, Descobrir) pré-carregam ao aparecer; painel e
 // login (dinâmicos, atrás de sessão) ficam `prefetch: false` — no 4G disputavam banda com a página.
 const tabsCommon: MobileTabItem[] = [
@@ -159,7 +159,7 @@ const tabsCommon: MobileTabItem[] = [
   { href: '/busca', label: 'Buscar', icon: <Search /> },
   {
     href: '/painel/meus-servicos/novo',
-    label: 'Divulgar',
+    label: 'Anunciar',
     icon: <Megaphone />,
     featured: true,
     requiresAuth: true,
@@ -226,7 +226,7 @@ export default function RootLayout({
                 { href: '/hoje', label: 'Hoje', icon: <Sun /> },
                 { href: '/mapa', label: 'Mapa', icon: <MapPin /> },
                 { href: '/turismo', label: 'Turismo', icon: <Map /> },
-                { href: '/painel', label: 'Divulgar', icon: <Megaphone />, prefetch: false },
+                { href: '/painel/meus-servicos/novo', label: 'Anunciar', icon: <Megaphone />, prefetch: false },
               ]}
             />
             {/* pb: reserva o espaço da barra inferior no mobile (--mobile-tab-h é publicado pelo MobileTabBar). */}
@@ -240,20 +240,12 @@ export default function RootLayout({
               hideOn={['/painel/meus-servicos/novo', '/painel/onboarding']}
               items={[
                 ...tabsCommon,
-                // Mesma vaga na barra: dentro do painel "Meus anúncios", fora dele "Meu painel".
+                // Mesmos itens e ordem no site e no painel: a barra não muda ao entrar em /painel.
                 {
                   href: '/painel/meus-servicos',
                   label: 'Meus anúncios',
                   icon: <Briefcase />,
                   exact: true,
-                  onlyOn: ['/painel'],
-                  prefetch: false,
-                },
-                {
-                  href: '/painel',
-                  label: 'Meu painel',
-                  icon: <LayoutDashboard />,
-                  exceptOn: ['/painel'],
                   prefetch: false,
                 },
                 { href: '/painel/minha-conta', label: 'Conta', icon: <UserCircle />, prefetch: false },

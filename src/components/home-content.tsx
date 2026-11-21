@@ -3,6 +3,9 @@
 // (`home-i18n.tsx`), vagas de anúncio (`AdSlot`), chamadas/busca montadas na page e o seletor do
 // fundo "ink" (`HomeInkShell`, só com `inkPicker`). Trilhas, notícias, lugares e SEO chegam como
 // Server Components prontos.
+//
+// Ordem pensada para o celular (360×740, 90% do público): a 1ª dobra é busca → atalhos numa linha →
+// 1ª trilha (eventos). Carrossel de categorias, demais trilhas e notícias vêm depois.
 import type { ReactNode } from 'react';
 import { DiscoverCta } from '@kizuna/core/client/components/home/discover-cta';
 import { HomeCategoryRail } from './home/home-category-rail';
@@ -36,13 +39,17 @@ type HomeContentProps = {
   inkPicker?: boolean;
   /** nível padrão do fundo "ink" (1-7) — vem de home.inkLevel */
   inkLevel?: HomeInkLevel;
-  /** carrosséis por categoria (Server Components montados na page) — vem de home.categoryRails */
+  /** 1ª trilha (a de eventos), logo abaixo da busca e dos atalhos: entra na 1ª dobra do celular */
+  leadRail?: ReactNode;
+  /** demais carrosséis por categoria (Server Components montados na page), depois das categorias — vem de home.categoryRails */
   categoryRails?: ReactNode;
+  /** atalhos numa linha só (Hoje, Mapa, Descobrir) — a versão de celular das chamadas abaixo */
+  shortcuts?: ReactNode;
   /** chamada "O que tem pra hoje" (Server Component montado na page), logo abaixo do swipe */
   todayCallout?: ReactNode;
   /** chamada "Mapa: o que tem perto de você" (Server Component montado na page), logo abaixo da do Hoje */
   mapCallout?: ReactNode;
-  /** busca logo abaixo do swipe (Client Component montado na page) — vem de home.showSearch */
+  /** busca no topo da home, logo abaixo do cabeçalho (Client Component montado na page) — vem de home.showSearch */
   searchBar?: ReactNode;
   /** blocos de engajamento (Server Components montados na page): notícias e, abaixo, lugares da cidade — vêm de home.showNews / home.showPlaces */
   placeHighlights?: ReactNode;
@@ -64,7 +71,9 @@ export function HomeContent({
   showDiscover = false,
   inkPicker = HOME_INK_TONE_PICKER_ENABLED,
   inkLevel: defaultInkLevel = HOME_INK_FIXED_LEVEL,
+  leadRail,
   categoryRails,
+  shortcuts,
   todayCallout,
   mapCallout,
   searchBar,
@@ -75,14 +84,22 @@ export function HomeContent({
   showNearby = true,
   cityName,
 }: HomeContentProps = {}) {
+  const hasCallouts = showDiscover || todayCallout || mapCallout;
   const content = (
     <>
       {showHero ? <HomeHeroI18n /> : null}
-      <AdSlot slot="home-destaque" city={cityName} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} paidShare={adsConfig.paidShare} />
-      <HomeCategoryRail variant={categoriesVariant} onlyWithListings={categoriesOnlyWithListings} />
-      {/* Chamadas: celular = "hoje" em linha cheia e, abaixo, mapa e swipe lado a lado; desktop = 3 colunas. */}
-      {showDiscover || todayCallout || mapCallout ? (
-        <div className="mx-auto grid w-full max-w-[1600px] grid-cols-2 gap-3 px-4 pb-10 pt-6 sm:gap-4 sm:px-6 sm:pb-12 sm:pt-8 lg:grid-cols-3">
+      {/* busca compacta no topo (~60px no celular), centralizada (~700px) no desktop */}
+      {searchBar ? (
+        <div className="mx-auto w-full max-w-[calc(700px+2rem)] px-4 pb-3 pt-3 sm:max-w-[calc(700px+3rem)] sm:px-6 sm:pb-4 sm:pt-8">
+          {searchBar}
+        </div>
+      ) : null}
+      {/* Atalhos: celular = uma linha compacta; a partir de sm = os cartões (desktop: 3 colunas). */}
+      {shortcuts ? <div className="px-4 pb-5 sm:hidden">{shortcuts}</div> : null}
+      {hasCallouts ? (
+        <div
+          className={`mx-auto w-full max-w-[1600px] grid-cols-2 gap-3 px-4 pb-6 pt-1 sm:gap-4 sm:px-6 sm:pb-12 sm:pt-4 lg:grid-cols-3 ${shortcuts ? 'hidden sm:grid' : 'grid'}`}
+        >
           {showDiscover ? (
             <div className="order-3 lg:order-1">
               <DiscoverCta contained={false} />
@@ -92,13 +109,11 @@ export function HomeContent({
           {mapCallout ? <div className="order-2 lg:order-3">{mapCallout}</div> : null}
         </div>
       ) : null}
-      {/* busca centralizada (~700px) e com respiro: é o convite principal depois do swipe */}
-      {searchBar ? (
-        <div className="mx-auto w-full max-w-[calc(700px+2rem)] px-4 pb-14 pt-6 sm:max-w-[calc(700px+3rem)] sm:px-6 sm:pb-16 sm:pt-8">
-          {searchBar}
-        </div>
-      ) : null}
-      {categoryRails}
+      {leadRail}
+      <AdSlot slot="home-destaque" city={cityName} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} paidShare={adsConfig.paidShare} />
+      <HomeCategoryRail variant={categoriesVariant} onlyWithListings={categoriesOnlyWithListings} />
+      {/* o carrossel de categorias não tem respiro embaixo: as trilhas seguintes também não têm em cima */}
+      {categoryRails ? <div className="pt-10 sm:pt-12">{categoryRails}</div> : null}
       <AdSlot slot="home-meio" city={cityName} adsenseClient={adsConfig.adsenseClient} maxPerPage={adsConfig.maxSlotsPerPage} paidShare={adsConfig.paidShare} />
       {newsHighlights}
       {seoContent}

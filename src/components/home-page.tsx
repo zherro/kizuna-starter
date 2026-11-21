@@ -11,6 +11,8 @@ import { TodayCallout } from '@kizuna/core/client/components/today';
 import { MapCallout } from '@kizuna/core/client/components/map';
 import { cityPath } from '@kizuna/core/shared/city-routing/city-slug';
 import { HomeSearch } from '@kizuna/core/client/components/home/home-search';
+import { HomeShortcuts } from '@kizuna/core/client/components/home/home-shortcuts';
+import { Flame, MapPin, Sun } from 'lucide-react';
 import type { ServiceDetailConfig } from '@kizuna/core/client/components/services/detail';
 import type { RoutableCity } from '@kizuna/core/shared/city-routing/city-slug';
 
@@ -23,8 +25,7 @@ const home = cfg.home as typeof cfg.home & {
   showNearby?: boolean;
   showPlaces?: boolean;
   showNews?: boolean;
-  newsLeads?: number;
-  newsNarrow?: boolean;
+  newsLimit?: number;
   showSearch?: boolean;
   placesMosaic?: PlacesMosaicConfig;
 };
@@ -37,6 +38,10 @@ const inkLevel = HOME_INK_LEVELS.includes(home?.inkLevel as HomeInkLevel)
   : undefined;
 
 export function HomePage({ city }: { city: RoutableCity | null }) {
+  const todayHref = city ? cityPath(city, '/hoje') : '/hoje';
+  // 1ª trilha (eventos) entra na 1ª dobra do celular, logo abaixo da busca e dos atalhos; as demais
+  // vêm depois do carrossel de categorias. O 1º card dela leva a imagem prioritária (LCP).
+  const [firstRail, ...otherRails] = categoryRails;
   return (
     <HomeContent
       showHero={cfg.home?.showHero !== false}
@@ -48,14 +53,24 @@ export function HomePage({ city }: { city: RoutableCity | null }) {
       instagramUrl={home?.instagramUrl || undefined}
       showNearby={home?.showNearby !== false}
       cityName={city?.name}
-      todayCallout={<TodayCallout contained={false} href={city ? cityPath(city, '/hoje') : '/hoje'} />}
+      todayCallout={<TodayCallout contained={false} href={todayHref} />}
       mapCallout={<MapCallout contained={false} href="/mapa" />}
+      shortcuts={
+        <HomeShortcuts
+          items={[
+            { href: todayHref, label: 'Hoje', icon: <Sun />, featured: true },
+            { href: '/mapa', label: 'Mapa', icon: <MapPin /> },
+            ...(cfg.home?.showDiscover === true ? [{ href: '/descobrir', label: 'Descobrir', icon: <Flame /> }] : []),
+          ]}
+        />
+      }
       searchBar={
         home?.showSearch !== false ? (
           <HomeSearch
             city={city ? { name: city.name, state: city.state, ibge: String(city.ibge) } : null}
             aiEnabled={aiEnabled}
             contained={false}
+            className="p-1 shadow-sm sm:p-1.5 sm:shadow-md"
           />
         ) : null
       }
@@ -64,17 +79,18 @@ export function HomePage({ city }: { city: RoutableCity | null }) {
       }
       newsHighlights={
         home?.showNews !== false ? (
-          <HomeNews
-            city={city}
-            leads={home?.newsLeads === 4 ? 4 : home?.newsLeads === 2 ? 2 : 1}
-            narrow={home?.newsNarrow === true}
-          />
+          <HomeNews city={city} limit={home?.newsLimit && home.newsLimit > 0 ? home.newsLimit : 4} />
         ) : null
       }
       seoContent={<HomeSeo city={city} showHero={cfg.home?.showHero !== false} />}
+      leadRail={
+        firstRail ? (
+          <CategoryRails rails={[firstRail]} detailConfig={serviceDetailConfig} city={city} priorityFirst />
+        ) : null
+      }
       categoryRails={
-        categoryRails.length > 0 ? (
-          <CategoryRails rails={categoryRails} detailConfig={serviceDetailConfig} city={city} />
+        otherRails.length > 0 ? (
+          <CategoryRails rails={otherRails} detailConfig={serviceDetailConfig} city={city} />
         ) : null
       }
     />

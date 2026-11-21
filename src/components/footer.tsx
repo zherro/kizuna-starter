@@ -191,13 +191,14 @@ export function Footer() {
             <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {messages.footer.navigation}
             </p>
-            <div className="grid grid-flow-col grid-rows-5 gap-x-6 gap-y-2">
+            {/* Alvo de toque ≥ 24 px (min-h-6) por link; o gap encolhe junto, a coluna fica da mesma altura. */}
+            <div className="grid grid-flow-col grid-rows-5 gap-x-6 gap-y-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.href + link.label}
                   href={link.href}
                   prefetch={false}
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  className="inline-flex min-h-6 items-center text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >
                   {link.label}
                 </Link>
